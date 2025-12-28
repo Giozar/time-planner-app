@@ -1,4 +1,5 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject, effect } from '@angular/core';
+import { DataProvider } from '../providers/data.provider'; // Importamos la abstracción, no la implementación
 import { Goal } from '../models/goal.model';
 import { Activity, SubActivity } from '../models/activity.model';
 import { DailyRecord } from '../models/daily-record.model';
@@ -7,84 +8,30 @@ import { DailyRecord } from '../models/daily-record.model';
   providedIn: 'root'
 })
 export class PlannerService {
+  // Inyectamos el contrato abstracto
+  private dataProvider = inject(DataProvider);
 
-  // --- ESTADO (Signals) ---
-  
-  private goalsSignal = signal<Goal[]>([
-    {
-      id: 'g1',
-      title: 'Dominar Angular Avanzado',
-      type: 'trabajo',
-      horizon: 'mediano',
-      progress: 35,
-      status: 'activa',
-      createdAt: new Date()
-    },
-    {
-      id: 'g2',
-      title: 'Salud Física',
-      type: 'sistema_vital',
-      horizon: 'largo',
-      progress: 60,
-      status: 'activa',
-      createdAt: new Date()
-    }
-  ]);
-
-  private activitiesSignal = signal<Activity[]>([
-    {
-      id: 'a1',
-      goalId: 'g1',
-      title: 'Curso Server Side Rendering',
-      level: 'progreso',
-      type: 'compuesta',
-      totalTimeRequiredMin: 300,
-      allowedDays: 'L,M,X,J,V',
-      status: 'en_progreso'
-    },
-    {
-      id: 'a2',
-      goalId: 'g2',
-      title: 'Ejercicio Diario',
-      level: 'sistema',
-      type: 'simple',
-      totalTimeRequiredMin: 45,
-      allowedDays: 'L,M,X,J,V,S,D',
-      status: 'pendiente'
-    }
-  ]);
-
-  private subActivitiesSignal = signal<SubActivity[]>([
-    {
-      id: 's1',
-      activityId: 'a1',
-      title: 'Configurar entorno SSR',
-      estimatedDurationMin: 60,
-      scheduledDate: new Date().toISOString().split('T')[0],
-      status: 'completada'
-    },
-    {
-      id: 's2',
-      activityId: 'a1',
-      title: 'Crear servicio de Signals',
-      estimatedDurationMin: 45,
-      scheduledDate: new Date().toISOString().split('T')[0],
-      status: 'pendiente'
-    },
-    {
-      id: 's3',
-      activityId: 'a2',
-      title: 'Rutina de pesas',
-      estimatedDurationMin: 45,
-      scheduledDate: new Date().toISOString().split('T')[0],
-      status: 'pendiente'
-    }
-  ]);
-
+  // --- ESTADO (Signals inicializados vacíos) ---
+  private goalsSignal = signal<Goal[]>([]);
+  private activitiesSignal = signal<Activity[]>([]);
+  private subActivitiesSignal = signal<SubActivity[]>([]);
   private recordsSignal = signal<DailyRecord[]>([]);
 
-  // --- SELECTORES (Computed) ---
-  
+  constructor() {
+    this.loadInitialData();
+  }
+
+  // --- Carga Inicial ---
+  private loadInitialData() {
+    // Como usamos LocalStorage (síncrono disfrazado de observable), esto es instantáneo.
+    // Con una API real, aquí manejaríamos estados de "loading".
+    this.dataProvider.getGoals().subscribe(data => this.goalsSignal.set(data));
+    this.dataProvider.getActivities().subscribe(data => this.activitiesSignal.set(data));
+    this.dataProvider.getSubActivities().subscribe(data => this.subActivitiesSignal.set(data));
+    this.dataProvider.getRecords().subscribe(data => this.recordsSignal.set(data));
+  }
+
+  // --- SELECTORES (Públicos) ---
   public goals = this.goalsSignal.asReadonly();
   public activities = this.activitiesSignal.asReadonly();
   
@@ -96,22 +43,32 @@ export class PlannerService {
   public todaysMetrics = computed(() => {
     const tasks = this.todaysTasks();
     const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'completada').length;
-    
+    const completed = tasks.filter(t => t.status === 'completada').length; // Ojo: valor en español
     const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
-
-    return {
-      total,
-      completed,
-      percentage,
-      remaining: total - completed
-    };
+    
+    return { total, completed, percentage, remaining: total - completed };
   });
 
-  // --- ACCIONES (Methods) ---
+  // --- ACCIONES (CRUD) ---
 
+  // 1. METAS
   addGoal(newGoal: Goal) {
+    // Actualizamos estado local (UI instantánea)
     this.goalsSignal.update(goals => [...goals, newGoal]);
+    // Persistimos
+    this.dataProvider.saveGoals(this.goalsSignal()).subscribe();
+  }
+
+  // 2. ACTIVIDADES
+  addActivity(newActivity: Activity) {
+    this.activitiesSignal.update(acts => [...acts, newActivity]);
+    this.dataProvider.saveActivities(this.activitiesSignal()).subscribe();
+  }
+
+  // 3. SUBACTIVIDADES (Tareas del día)
+  addSubActivity(newSub: SubActivity) {
+    this.subActivitiesSignal.update(subs => [...subs, newSub]);
+    this.dataProvider.saveSubActivities(this.subActivitiesSignal()).subscribe();
   }
 
   toggleTask(id: string) {
@@ -124,8 +81,11 @@ export class PlannerService {
         return t;
       })
     );
+    // Guardar cambios de estado
+    this.dataProvider.saveSubActivities(this.subActivitiesSignal()).subscribe();
   }
 
+  // 4. CIERRE DEL DÍA
   closeDay(notes: string) {
     const metrics = this.todaysMetrics();
     const tasks = this.todaysTasks();
@@ -147,17 +107,8 @@ export class PlannerService {
     };
 
     this.recordsSignal.update(records => [...records, newRecord]);
+    this.dataProvider.saveRecords(this.recordsSignal()).subscribe();
     
-    console.log('Day closed successfully:', newRecord);
     return newRecord;
   }
-
-  // --- Método para agregar metas (lo usaremos pronto) ---
-  addMeta(newGoal: Goal) {
-    this.goalsSignal.update(goals => [...goals, newGoal]);
-  }
 }
-
-
-
-
