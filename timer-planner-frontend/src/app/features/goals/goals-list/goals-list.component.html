@@ -1,0 +1,41 @@
+<section class="goals-container">
+  <header class="section-header">
+    <h2>Mis Metas</h2>
+    <p>Visualiza tus objetivos a corto, mediano y largo plazo.</p>
+  </header>
+
+  <div class="grid-layout">
+    @for (goal of goals(); track goal.id) {
+      <article class="goal-card" [class.paused]="goal.status === 'pausada'">
+        
+        <div class="card-header">
+          <span class="badge {{ goal.type }}">{{ goal.type | titlecase }}</span>
+          <span class="horizonte">{{ goal.horizon | titlecase }}</span>
+        </div>
+
+        <h3>{{ goal.title }}</h3>
+
+        <div class="progress-section">
+          <div class="progress-info">
+            <span>Progreso</span>
+            <span>{{ goal.progress }}%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" [style.width.%]="goal.progress"></div>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <span class="status-indicator {{ goal.status }}">
+            {{ goal.status | titlecase }}
+          </span>
+        </div>
+
+      </article>
+    } @empty {
+      <div class="empty-state">
+        <p>No tienes metas definidas aún.</p>
+      </div>
+    }
+  </div>
+</section>

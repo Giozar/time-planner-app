@@ -1,0 +1,125 @@
+:host {
+  display: block;
+  padding: 2rem;
+}
+
+.section-header {
+  margin-bottom: 2rem;
+}
+
+.section-header h2 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Card Styles */
+.goal-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  border: 1px solid #e0e0e0;
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.goal-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #34495e;
+}
+
+/* --- BADGES (Tipos de Meta en Español) --- */
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.badge.trabajo { background-color: #e3f2fd; color: #1565c0; }
+.badge.sistema_vital { background-color: #e8f5e9; color: #2e7d32; }
+.badge.progreso { background-color: #f3e5f5; color: #7b1fa2; }
+.badge.creativa { background-color: #fff3e0; color: #ef6c00; }
+
+.horizonte {
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+/* --- BARRA DE PROGRESO --- */
+.progress-section {
+  margin-top: auto;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  color: #546e7a;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 8px;
+  background-color: #eceff1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #3498db;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+}
+
+/* --- ESTADO (Valores en Español) --- */
+.status-indicator {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.status-indicator.activa { color: #27ae60; }
+.status-indicator.pausada { color: #f1c40f; }
+.status-indicator.archivada { color: #95a5a6; }
+
+/* Estilo visual para tarjeta pausada */
+.goal-card.paused {
+  opacity: 0.7;
+  background-color: #fafafa;
+}
+
+/* Estado Vacío */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  color: #7f8c8d;
+  border: 2px dashed #e0e0e0;
+}
