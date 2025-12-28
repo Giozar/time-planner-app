@@ -1,0 +1,51 @@
+<div class="dashboard-container">
+
+    <header class="daily-header">
+        <div>
+            <h1>Agenda de Hoy</h1>
+            <p class="date-display">{{ today | date:'fullDate' }}</p>
+        </div>
+
+        <div class="metrics-card">
+            <div class="metric">
+                <span class="value">{{ metrics().completed }} / {{ metrics().total }}</span>
+                <span class="label">Items</span>
+            </div>
+            <div class="metric">
+                <span class="value">{{ metrics().percentage }}%</span>
+                <span class="label">Ejecución</span>
+            </div>
+        </div>
+    </header>
+
+    <section class="tasks-list">
+        @for (task of tasks(); track task.id) {
+        <div class="task-item" [class.completed]="task.status === 'completada'">
+
+            <label class="checkbox-wrapper">
+                <input type="checkbox" [checked]="task.status === 'completada'" (change)="toggleTask(task.id)">
+                <span class="checkmark"></span>
+            </label>
+
+            <div class="task-content">
+                <div class="task-main">
+                    <span class="task-title">{{ task.title }}</span>
+                    <span class="task-time">{{ task.estimatedDurationMin }} min</span>
+                </div>
+            </div>
+
+        </div>
+        } @empty {
+        <div class="empty-day">
+            <p>No tienes tareas programadas para hoy.</p>
+        </div>
+        }
+    </section>
+
+    <footer class="dashboard-footer">
+        <a routerLink="/daily/summary" class="btn-end-day">
+            Finalizar Día
+        </a>
+    </footer>
+
+</div>

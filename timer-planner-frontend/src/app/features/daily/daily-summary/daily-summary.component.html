@@ -1,0 +1,42 @@
+<div class="summary-container">
+  
+  <header>
+    <h1>Resumen del Día</h1>
+    <p class="subtitle">{{ today | date:'fullDate' }}</p>
+  </header>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="value">{{ metrics().completed }} / {{ metrics().total }}</span>
+      <span class="label">Items Completados</span>
+    </div>
+
+    <div class="stat-card highlight">
+      <span class="value">{{ metrics().percentage }}%</span>
+      <span class="label">Ejecución Total</span>
+    </div>
+
+    <div class="stat-card">
+      <span class="value">{{ metrics().completed * 45 }}m</span> 
+      <span class="label">Tiempo Estimado (Aprox)</span>
+    </div>
+  </div>
+
+  <section class="reflection-area">
+    <label for="notes">Observaciones / Notas del día</label>
+    <textarea 
+      #notesInput 
+      id="notes" 
+      placeholder="¿Qué salió bien? ¿Qué obstaculizó el plan?..."
+      rows="5"
+    ></textarea>
+  </section>
+
+  <footer class="actions">
+    <button class="btn-cancel" onclick="history.back()">Volver</button>
+    <button class="btn-confirm" (click)="finishDay(notesInput.value)">
+      Cerrar Día y Guardar
+    </button>
+  </footer>
+
+</div>
