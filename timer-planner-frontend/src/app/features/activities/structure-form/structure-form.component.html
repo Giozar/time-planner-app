@@ -1,0 +1,25 @@
+<div class="form-container">
+  <header>
+    <h1>Añadir Paso</h1>
+    <p>Define un bloque de trabajo para esta actividad compuesta.</p>
+  </header>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    
+    <div class="form-group">
+      <label for="title">Nombre del Paso / Subtarea</label>
+      <input id="title" type="text" formControlName="title" placeholder="Ej: Capítulo 1, Investigación, Borrador..." autofocus>
+    </div>
+
+    <div class="form-group">
+      <label for="duration">Duración Estimada (min)</label>
+      <input id="duration" type="number" formControlName="duration">
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>
+      <button type="submit" class="btn-save" [disabled]="form.invalid">Añadir Paso</button>
+    </div>
+
+  </form>
+</div>

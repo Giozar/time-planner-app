@@ -15,20 +15,25 @@ export class GoalDetailComponent {
   private router = inject(Router);
   private plannerService = inject(PlannerService);
 
-  // 1. Obtener el ID de la URL
   goalId = this.route.snapshot.paramMap.get('id');
 
-  // 2. Buscar la meta específica usando Signals
   goal = computed(() => 
     this.plannerService.goals().find(g => g.id === this.goalId)
   );
 
-  // 3. Filtrar las actividades que pertenecen a esta meta
+  // Usamos las actividades "extendidas" (con tiempos calculados)
   activities = computed(() => 
-    this.plannerService.activities().filter(a => a.goalId === this.goalId)
+    this.plannerService.extendedActivities().filter(a => a.goalId === this.goalId)
   );
 
-  // Si no encuentra la meta (ej: url manual errónea), volvemos
+  // Obtenemos TODAS las subactividades para pintarlas dentro de sus padres
+  allSubActivities = this.plannerService.subActivities;
+
+  // Helper para filtrar subactividades en el HTML
+  getSubtasks(activityId: string) {
+    return this.allSubActivities().filter(s => s.activityId === activityId);
+  }
+
   ngOnInit() {
     if (!this.goal()) {
       this.router.navigate(['/goals']);

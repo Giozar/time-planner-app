@@ -20,6 +20,6 @@ export interface SubActivity {
   activityId: string;
   title: string;
   estimatedDurationMin: number;
-  scheduledDate: string;
+  scheduledDate?: string;
   status: SubActivityStatus;
 }

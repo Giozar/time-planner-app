@@ -1,0 +1,124 @@
+:host {
+  display: block;
+  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+h1 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #34495e;
+}
+
+input, select {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ced6e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: white;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Error visual */
+input.invalid {
+  border-color: #e74c3c;
+}
+
+.error-msg {
+  display: block;
+  margin-top: 0.4rem;
+  color: #e74c3c;
+  font-size: 0.85rem;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+button {
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  font-weight: 600;
+}
+
+.btn-cancel {
+  background: transparent;
+  color: #7f8c8d;
+}
+
+.btn-cancel:hover {
+  background: #f1f2f6;
+}
+
+.btn-save {
+  background: #2c3e50;
+  color: white;
+}
+
+.btn-save:hover {
+  background: #34495e;
+}
+
+.btn-save:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* ... estilos previos ... */
+
+.required {
+  color: #e74c3c;
+  margin-left: 4px;
+}
+
+.info-text p {
+  margin: 0;
+  padding: 0.8rem;
+  background-color: #f8f9fa;
+  border: 1px dashed #bdc3c7;
+  border-radius: 8px;
+  color: #7f8c8d;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Animación suave al cambiar tipo */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}

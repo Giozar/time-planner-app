@@ -49,6 +49,37 @@ export class PlannerService {
     return { total, completed, percentage, remaining: total - completed };
   });
 
+  // ... selectores anteriores (goals, activities)
+
+  // 1. SELECTOR INTELIGENTE DE ACTIVIDADES
+  // Este selector enriquece las actividades calculando su tiempo total real
+  public extendedActivities = computed(() => {
+    const acts = this.activitiesSignal();
+    const subs = this.subActivitiesSignal();
+
+    return acts.map(activity => {
+      // Si es simple, usamos su tiempo propio.
+      if (activity.type === 'simple') {
+        return activity;
+      }
+
+      // Si es compuesta, sumamos la duración de sus subactividades
+      const children = subs.filter(s => s.activityId === activity.id);
+      const calculatedTime = children.reduce((acc, curr) => acc + curr.estimatedDurationMin, 0);
+
+      // Retornamos una copia con el tiempo calculado sobrescrito para la vista
+      return { 
+        ...activity, 
+        totalTimeRequiredMin: calculatedTime 
+      };
+    });
+  });
+
+  // 2. SELECTOR DE SUBACTIVIDADES (Público para usarlas en las vistas)
+  public subActivities = this.subActivitiesSignal.asReadonly();
+
+  // ... resto de selectores (todaysTasks, metrics)
+
   // --- ACCIONES (CRUD) ---
 
   // 1. METAS

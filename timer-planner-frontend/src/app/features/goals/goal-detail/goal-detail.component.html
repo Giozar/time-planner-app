@@ -6,14 +6,11 @@
         <a routerLink="/goals" class="back-link">← Volver a Metas</a>
         <span class="badge {{ currentGoal.type }}">{{ currentGoal.type | titlecase }}</span>
       </div>
-      
       <h1>{{ currentGoal.title }}</h1>
-      
       <div class="meta-info">
         <span>Horizonte: <strong>{{ currentGoal.horizon | titlecase }}</strong></span>
         <span>Estado: <strong>{{ currentGoal.status | titlecase }}</strong></span>
       </div>
-
       <div class="progress-container">
         <div class="progress-bar-bg">
           <div class="progress-bar-fill" [style.width.%]="currentGoal.progress"></div>
@@ -26,7 +23,7 @@
 
     <section class="activities-section">
       <div class="section-header">
-        <h2>Plan de Acción (Actividades)</h2>
+        <h2>Plan de Acción</h2>
         <a [routerLink]="['/goals', currentGoal.id, 'activities', 'new']" class="btn-add">
           + Nueva Actividad
         </a>
@@ -34,23 +31,58 @@
 
       <div class="activities-list">
         @for (activity of activities(); track activity.id) {
+          
           <div class="activity-card">
-            <div class="activity-main">
-              <h3>{{ activity.title }}</h3>
+            
+            <div class="card-main">
+              <div class="card-header-row">
+                <h3>{{ activity.title }}</h3>
+                <span class="deadline-tag">{{ activity.deadline | date:'mediumDate' }}</span>
+              </div>
+              
               <div class="tags">
                 <span class="tag-level">{{ activity.level.replace('_', ' ') | titlecase }}</span>
                 <span class="tag-type">{{ activity.type | titlecase }}</span>
               </div>
+
+              <div class="activity-meta">
+                <span>⏱ {{ activity.totalTimeRequiredMin }} min totales</span>
+                <span class="status {{ activity.status }}">{{ activity.status | titlecase }}</span>
+              </div>
             </div>
-            <div class="activity-meta">
-              <span>{{ activity.totalTimeRequiredMin }} min totales</span>
-              <span class="status {{ activity.status }}">{{ activity.status | titlecase }}</span>
-            </div>
+
+            @if (activity.type === 'compuesta') {
+              <div class="subtasks-container">
+                <div class="subtasks-header">
+                  <h4>Estructura (Pasos)</h4>
+                  <a [routerLink]="['/goals', currentGoal.id, 'activities', activity.id, 'add-step']" class="btn-small-add">
+                    + Añadir Paso
+                  </a>
+                </div>
+
+                <ul class="subtasks-list">
+                  @for (sub of getSubtasks(activity.id); track sub.id) {
+                    <li class="subtask-item">
+                      <span class="sub-name">{{ sub.title }}</span>
+                      <span class="sub-time">{{ sub.estimatedDurationMin }}m</span>
+                    </li>
+                  } @empty {
+                    <li class="empty-subtasks">No hay pasos definidos aún.</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (activity.type === 'simple') {
+               <div class="simple-actions">
+                 <span class="hint-simple">Actividad directa</span>
+               </div>
+            }
+
           </div>
         } @empty {
           <div class="empty-activities">
-            <p>Aún no has definido actividades para esta meta.</p>
-            <p class="hint">Crea actividades para empezar a trabajar.</p>
+            <p>No hay actividades. Crea la primera.</p>
           </div>
         }
       </div>

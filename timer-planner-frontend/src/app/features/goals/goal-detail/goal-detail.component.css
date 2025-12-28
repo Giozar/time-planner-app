@@ -163,6 +163,99 @@ h1 {
   color: #95a5a6;
 }
 
+
+
+/* ... estilos anteriores ... */
+
+.activity-card {
+  flex-direction: column; /* Cambiamos a columna para apilar la lista abajo */
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.deadline-tag {
+  font-size: 0.8rem;
+  color: #c0392b;
+  background: #fadbd8;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Subtasks Area */
+.subtasks-container {
+  margin-top: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #eee;
+}
+
+.subtasks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.subtasks-header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  text-transform: uppercase;
+}
+
+.btn-small-add {
+  font-size: 0.8rem;
+  text-decoration: none;
+  color: #2980b9;
+  font-weight: 600;
+  border: 1px solid #2980b9;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-small-add:hover {
+  background: #2980b9;
+  color: white;
+}
+
+.subtasks-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.subtask-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.95rem;
+  color: #34495e;
+}
+
+.subtask-item:last-child {
+  border-bottom: none;
+}
+
+.sub-time {
+  color: #95a5a6;
+  font-size: 0.9rem;
+}
+
+.empty-subtasks {
+  font-style: italic;
+  color: #bdc3c7;
+  font-size: 0.9rem;
+}
+
 /* Reutilización de Badges (copia del goals-list) */
 .badge { padding: 0.25rem 0.75rem; border-radius: 50px; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; }
 .badge.trabajo { background-color: #e3f2fd; color: #1565c0; }
