@@ -9,8 +9,8 @@ export interface Activity {
   title: string;
   level: ActivityLevel;
   type: ActivityType;
-  deadline?: Date;
-  totalTimeRequiredMin: number;
+  deadline: string; 
+  totalTimeRequiredMin?: number; 
   allowedDays: string;
   status: ActivityStatus;
 }

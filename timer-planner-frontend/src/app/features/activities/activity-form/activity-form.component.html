@@ -1,22 +1,27 @@
 <div class="form-container">
   <header>
     <h1>Nueva Actividad</h1>
-    <p>Define una tarea recurrente o proyecto para tu meta.</p>
+    <p>Define una tarea o proyecto asociado a tu meta.</p>
   </header>
 
   <form [formGroup]="activityForm" (ngSubmit)="onSubmit()">
     
     <div class="form-group">
       <label for="title">Nombre de la Actividad</label>
-      <input id="title" type="text" formControlName="title" placeholder="Ej: Leer documentación AWS">
+      <input 
+        id="title" 
+        type="text" 
+        formControlName="title" 
+        placeholder="Ej: Leer documentación AWS"
+      >
     </div>
 
     <div class="row">
       <div class="form-group half">
         <label for="type">Tipo</label>
         <select id="type" formControlName="type">
-          <option value="simple">Simple (Se hace directo)</option>
-          <option value="compuesta">Compuesta (Requiere sub-pasos)</option>
+          <option value="simple">Simple (Acción directa)</option>
+          <option value="compuesta">Compuesta (Proyecto / Múltiples pasos)</option>
         </select>
       </div>
 
@@ -24,19 +29,42 @@
         <label for="level">Nivel / Enfoque</label>
         <select id="level" formControlName="level">
           <option value="urgente_directo">Urgente Directo</option>
+          <option value="urgente_sistemico">Urgente Sistémico</option>
           <option value="progreso">Progreso (Avance)</option>
           <option value="sistema">Sistema (Mantenimiento)</option>
+          <option value="creativa">Creativa</option>
         </select>
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="time">Tiempo Estimado (minutos)</label>
-      <input id="time" type="number" formControlName="timeRequired">
+    <div class="row">
+      
+      <div class="form-group half">
+        <label for="deadline">Fecha Límite (Deadline) <span class="required">*</span></label>
+        <input 
+          id="deadline" 
+          type="date" 
+          formControlName="deadline"
+          [min]="minDate"
+        >
+      </div>
+
+      @if (!isComposite) {
+        <div class="form-group half fade-in">
+          <label for="time">Tiempo Estimado (minutos)</label>
+          <input id="time" type="number" formControlName="timeRequired">
+        </div>
+      } @else {
+        <div class="form-group half fade-in info-text">
+          <label>Duración</label>
+          <p>La duración se calculará sumando las subactividades que definas después.</p>
+        </div>
+      }
+
     </div>
 
     <div class="form-group">
-      <label for="days">Días Permitidos (Texto)</label>
+      <label for="days">Días Sugeridos</label>
       <input id="days" type="text" formControlName="days" placeholder="Ej: L,M,V o Todos los días">
     </div>
 
