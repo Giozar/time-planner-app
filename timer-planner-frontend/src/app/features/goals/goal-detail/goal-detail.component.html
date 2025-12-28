@@ -1,0 +1,60 @@
+@if (goal(); as currentGoal) {
+  <div class="detail-container">
+    
+    <header class="goal-header">
+      <div class="header-top">
+        <a routerLink="/goals" class="back-link">← Volver a Metas</a>
+        <span class="badge {{ currentGoal.type }}">{{ currentGoal.type | titlecase }}</span>
+      </div>
+      
+      <h1>{{ currentGoal.title }}</h1>
+      
+      <div class="meta-info">
+        <span>Horizonte: <strong>{{ currentGoal.horizon | titlecase }}</strong></span>
+        <span>Estado: <strong>{{ currentGoal.status | titlecase }}</strong></span>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" [style.width.%]="currentGoal.progress"></div>
+        </div>
+        <span class="progress-text">{{ currentGoal.progress }}% Completado</span>
+      </div>
+    </header>
+
+    <hr class="divider">
+
+    <section class="activities-section">
+      <div class="section-header">
+        <h2>Plan de Acción (Actividades)</h2>
+        <a [routerLink]="['/goals', currentGoal.id, 'activities', 'new']" class="btn-add">
+          + Nueva Actividad
+        </a>
+      </div>
+
+      <div class="activities-list">
+        @for (activity of activities(); track activity.id) {
+          <div class="activity-card">
+            <div class="activity-main">
+              <h3>{{ activity.title }}</h3>
+              <div class="tags">
+                <span class="tag-level">{{ activity.level.replace('_', ' ') | titlecase }}</span>
+                <span class="tag-type">{{ activity.type | titlecase }}</span>
+              </div>
+            </div>
+            <div class="activity-meta">
+              <span>{{ activity.totalTimeRequiredMin }} min totales</span>
+              <span class="status {{ activity.status }}">{{ activity.status | titlecase }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-activities">
+            <p>Aún no has definido actividades para esta meta.</p>
+            <p class="hint">Crea actividades para empezar a trabajar.</p>
+          </div>
+        }
+      </div>
+    </section>
+
+  </div>
+}
