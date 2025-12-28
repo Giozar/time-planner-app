@@ -20,7 +20,7 @@ export class DailyDashboardComponent {
   // Fecha actual para mostrar en el título
   today = new Date();
 
-  toggleTask(taskId: string) {
-    this.plannerService.toggleTask(taskId);
+  toggleTask(taskId: string, sourceType: 'activity' | 'subactivity') {
+    this.plannerService.toggleTaskExecution(taskId, sourceType);
   }
 }

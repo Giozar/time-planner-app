@@ -113,6 +113,114 @@ button {
   line-height: 1.4;
 }
 
+/* ... estilos base anteriores ... */
+
+.plan-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 1.5rem;
+}
+
+.plan-section h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Week Grid */
+.week-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.day-check {
+  cursor: pointer;
+}
+
+.day-check input {
+  display: none; /* Ocultar checkbox nativo */
+}
+
+.day-check span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #bdc3c7;
+  color: #7f8c8d;
+  font-weight: bold;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.day-check input:checked + span {
+  background-color: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+/* Specific Dates */
+.date-adder {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.date-adder button {
+  padding: 0 1rem;
+  background: #2c3e50;
+  color: white;
+  border-radius: 4px;
+}
+
+.selected-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.date-tag {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.remove {
+  cursor: pointer;
+  font-weight: bold;
+  color: #1565c0;
+}
+
+.remove:hover {
+  color: #d32f2f;
+}
+
+.info-box {
+  background: #fff3e0;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #ff9800;
+  margin-bottom: 1.5rem;
+  color: #ef6c00;
+}
+
 /* Animación suave al cambiar tipo */
 .fade-in {
   animation: fadeIn 0.3s ease-in;

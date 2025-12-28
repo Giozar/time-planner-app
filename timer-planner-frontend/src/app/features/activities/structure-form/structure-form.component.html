@@ -1,24 +1,82 @@
 <div class="form-container">
   <header>
-    <h1>Añadir Paso</h1>
-    <p>Define un bloque de trabajo para esta actividad compuesta.</p>
+    <h1>Añadir Paso (Subactividad)</h1>
+    <p>Define una parte ejecutable de tu proyecto.</p>
   </header>
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()">
     
     <div class="form-group">
-      <label for="title">Nombre del Paso / Subtarea</label>
-      <input id="title" type="text" formControlName="title" placeholder="Ej: Capítulo 1, Investigación, Borrador..." autofocus>
+      <label>Nombre del Paso</label>
+      <input type="text" formControlName="title" placeholder="Ej: Módulo 1, Investigación...">
     </div>
 
     <div class="form-group">
-      <label for="duration">Duración Estimada (min)</label>
-      <input id="duration" type="number" formControlName="duration">
+      <label>Fecha Límite para este paso</label>
+      <input type="date" formControlName="deadline" [min]="minDate">
+    </div>
+
+    <hr class="divider">
+    
+    <div class="plan-section">
+      <h3>Plan de Ejecución</h3>
+      
+      <div class="form-group">
+        <label>Duración por Sesión (min)</label>
+        <input type="number" formControlName="duration">
+      </div>
+
+      <div class="form-group">
+        <label>Estrategia</label>
+        <div class="radio-group">
+          <label>
+            <input type="radio" formControlName="planType" value="patron_repetitivo">
+            Patrón Repetitivo (Días fijos)
+          </label>
+          <label>
+            <input type="radio" formControlName="planType" value="fechas_especificas">
+            Fechas Específicas
+          </label>
+        </div>
+      </div>
+
+      @if (isPattern) {
+        <div class="form-group pattern-box">
+          <label>Días de trabajo:</label>
+          <div class="week-grid">
+            @for (day of weekDays; track day.value) {
+              <label class="day-check">
+                <input type="checkbox" [value]="day.value" (change)="onDayChange($event)">
+                <span>{{ day.label }}</span>
+              </label>
+            }
+          </div>
+        </div>
+      }
+
+      @if (!isPattern) {
+        <div class="form-group dates-box">
+          <label>Añadir Fecha</label>
+          <div class="date-adder">
+            <input type="date" #dateInput [min]="minDate">
+            <button type="button" (click)="addSpecificDate(dateInput)">+</button>
+          </div>
+          
+          <div class="selected-dates">
+            @for (date of specificDatesArray.value; track $index) {
+              <span class="date-tag">
+                {{ date }} 
+                <span class="remove" (click)="removeSpecificDate($index)">×</span>
+              </span>
+            }
+          </div>
+        </div>
+      }
     </div>
 
     <div class="actions">
       <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>
-      <button type="submit" class="btn-save" [disabled]="form.invalid">Añadir Paso</button>
+      <button type="submit" class="btn-save" [disabled]="form.invalid">Guardar Paso</button>
     </div>
 
   </form>

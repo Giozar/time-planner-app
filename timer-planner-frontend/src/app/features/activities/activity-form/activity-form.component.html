@@ -1,76 +1,109 @@
 <div class="form-container">
   <header>
     <h1>Nueva Actividad</h1>
-    <p>Define una tarea o proyecto asociado a tu meta.</p>
+    <p>Define trabajo estructurado y planificable.</p>
   </header>
 
   <form [formGroup]="activityForm" (ngSubmit)="onSubmit()">
-    
+
     <div class="form-group">
-      <label for="title">Nombre de la Actividad</label>
-      <input 
-        id="title" 
-        type="text" 
-        formControlName="title" 
-        placeholder="Ej: Leer documentación AWS"
-      >
+      <label>Título</label>
+      <input type="text" formControlName="title" placeholder="Ej: Redactar Informe Final">
     </div>
 
     <div class="row">
       <div class="form-group half">
-        <label for="type">Tipo</label>
-        <select id="type" formControlName="type">
-          <option value="simple">Simple (Acción directa)</option>
-          <option value="compuesta">Compuesta (Proyecto / Múltiples pasos)</option>
+        <label>Tipo</label>
+        <select formControlName="type">
+          <option value="simple">Simple (Se ejecuta directo)</option>
+          <option value="compuesta">Compuesta (Requiere pasos)</option>
         </select>
       </div>
-
       <div class="form-group half">
-        <label for="level">Nivel / Enfoque</label>
-        <select id="level" formControlName="level">
+        <label>Nivel</label>
+        <select formControlName="level">
           <option value="urgente_directo">Urgente Directo</option>
-          <option value="urgente_sistemico">Urgente Sistémico</option>
-          <option value="progreso">Progreso (Avance)</option>
-          <option value="sistema">Sistema (Mantenimiento)</option>
-          <option value="creativa">Creativa</option>
+          <option value="progreso">Progreso</option>
+          <option value="sistema">Sistema</option>
         </select>
       </div>
     </div>
 
-    <div class="row">
-      
-      <div class="form-group half">
-        <label for="deadline">Fecha Límite (Deadline) <span class="required">*</span></label>
-        <input 
-          id="deadline" 
-          type="date" 
-          formControlName="deadline"
-          [min]="minDate"
-        >
-      </div>
-
-      @if (!isComposite) {
-        <div class="form-group half fade-in">
-          <label for="time">Tiempo Estimado (minutos)</label>
-          <input id="time" type="number" formControlName="timeRequired">
-        </div>
-      } @else {
-        <div class="form-group half fade-in info-text">
-          <label>Duración</label>
-          <p>La duración se calculará sumando las subactividades que definas después.</p>
-        </div>
-      }
-
-    </div>
-
     <div class="form-group">
-      <label for="days">Días Sugeridos</label>
-      <input id="days" type="text" formControlName="days" placeholder="Ej: L,M,V o Todos los días">
+      <label>Fecha Límite (Deadline) <span class="req">*</span></label>
+      <input type="date" formControlName="deadline" [min]="minDate">
     </div>
+
+    <hr class="divider">
+
+    @if (isSimple) {
+      <div class="plan-section fade-in">
+        <h3>Plan de Ejecución</h3>
+        
+        <div class="form-group">
+          <label>Duración por Sesión (min)</label>
+          <input type="number" formControlName="duration">
+        </div>
+
+        <div class="form-group">
+          <label>Estrategia</label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" formControlName="planType" value="patron_repetitivo">
+              Patrón Repetitivo (Días fijos hasta deadline)
+            </label>
+            <label>
+              <input type="radio" formControlName="planType" value="fechas_especificas">
+              Fechas Específicas (Días sueltos)
+            </label>
+          </div>
+        </div>
+
+        @if (isPattern) {
+          <div class="form-group pattern-box">
+            <label>Selecciona los días:</label>
+            <div class="week-grid">
+              @for (day of weekDays; track day.value) {
+                <label class="day-check">
+                  <input type="checkbox" [value]="day.value" (change)="onDayChange($event)">
+                  <span>{{ day.label }}</span>
+                </label>
+              }
+            </div>
+            <p class="hint">Se generarán todas las sesiones automáticamente.</p>
+          </div>
+        }
+
+        @if (!isPattern) {
+          <div class="form-group dates-box">
+            <label>Añadir Fecha</label>
+            <div class="date-adder">
+              <input type="date" #dateInput [min]="minDate">
+              <button type="button" (click)="addSpecificDate(dateInput)">+</button>
+            </div>
+            
+            <div class="selected-dates">
+              @for (date of specificDatesArray.value; track $index) {
+                <span class="date-tag">
+                  {{ date }} 
+                  <span class="remove" (click)="removeSpecificDate($index)">×</span>
+                </span>
+              } @empty {
+                <span class="empty-hint">Sin fechas añadidas</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="info-box fade-in">
+        <p><strong>Actividad Compuesta:</strong> No defines tiempos ahora. Crearás subactividades (pasos) después, y cada paso tendrá su propio plan de ejecución.</p>
+      </div>
+    }
 
     <div class="actions">
       <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>
-      <button type="submit" class="btn-save" [disabled]="activityForm.invalid">Guardar Actividad</button>
+      <button type="submit" class="btn-save" [disabled]="activityForm.invalid">Crear Actividad</button>
     </div>
 
   </form>

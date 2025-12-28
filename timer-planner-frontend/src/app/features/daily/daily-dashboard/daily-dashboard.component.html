@@ -23,7 +23,7 @@
         <div class="task-item" [class.completed]="task.status === 'completada'">
 
             <label class="checkbox-wrapper">
-                <input type="checkbox" [checked]="task.status === 'completada'" (change)="toggleTask(task.id)">
+                <input type="checkbox" [checked]="task.isCompleted" (change)="toggleTask(task.id, task.sourceType)">
                 <span class="checkmark"></span>
             </label>
 
