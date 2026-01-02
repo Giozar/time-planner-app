@@ -1,1 +1,10 @@
-/* You can add global styles to this file, and also import other style files */
+/* src/styles.css */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f4f6f8;
+}
+
+* {
+  box-sizing: border-box;
+}

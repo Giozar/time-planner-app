@@ -1,0 +1,42 @@
+<div class="app-container">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <!-- TODO: Add logo image -->
+      <div class="logo"></div>
+      <span class="brand-name">Planner V1</span>
+    </div>
+
+    <nav class="nav-menu">
+      <a routerLink="/daily" routerLinkActive="active" class="nav-item">
+        <span class="icon">
+          <mat-icon fontIcon="calendar_today" class="icon-inline"></mat-icon>
+        </span>
+        <span class="text">Agenda Hoy</span>
+      </a>
+
+      <a routerLink="/goals" routerLinkActive="active" class="nav-item">
+        <span class="icon">
+          <mat-icon fontIcon="track_changes" class="icon-inline"></mat-icon>
+        </span>
+        <span class="text">Mis Metas</span>
+      </a>
+
+      <a class="nav-item disabled">
+        <span class="icon">
+          <mat-icon fontIcon="work_history" class="icon-inline"></mat-icon>
+        </span>
+        <span class="text">Historial (Pronto)</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p>v1.0.0</p>
+    </div>
+  </aside>
+
+  <main class="content-area">
+    <router-outlet></router-outlet>
+  </main>
+
+</div>
