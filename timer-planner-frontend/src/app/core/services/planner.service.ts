@@ -133,6 +133,33 @@ export class PlannerService {
     this.saveAll();
   }
 
+  // --- ACTUALIZAR (UPDATE) ---
+
+  updateGoal(updatedGoal: Goal) {
+    this.goalsSignal.update(goals => 
+      goals.map(g => g.id === updatedGoal.id ? updatedGoal : g)
+    );
+    this.saveAll();
+  }
+
+  updateActivity(updatedActivity: Activity) {
+    this.activitiesSignal.update(acts => 
+      acts.map(a => a.id === updatedActivity.id ? updatedActivity : a)
+    );
+    // Si cambió el plan, hay que recalcular progresos hacia arriba
+    this.updateGoalProgress(updatedActivity.goalId);
+    this.saveAll();
+  }
+
+  updateSubActivity(updatedSub: SubActivity) {
+    this.subActivitiesSignal.update(subs => 
+      subs.map(s => s.id === updatedSub.id ? updatedSub : s)
+    );
+    // Recalcular hacia arriba
+    this.updateCompositeActivityProgress(updatedSub.activityId);
+    this.saveAll();
+  }
+
   // ==========================================
   // LÓGICA DE RECÁLCULO EN CADENA (BUBBLE UP)
   // ==========================================
