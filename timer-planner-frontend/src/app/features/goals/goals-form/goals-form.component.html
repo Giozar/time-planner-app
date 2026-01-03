@@ -1,23 +1,14 @@
 <div class="form-container">
   <header>
-    <h1>Nueva Meta</h1>
-    <p>Define un nuevo objetivo en tu sistema.</p>
+    <h1>{{ isEditMode ? 'Editar Meta' : 'Nueva Meta' }}</h1>
+    <p>{{ isEditMode ? 'Modifica los detalles de tu objetivo.' : 'Define un nuevo objetivo en tu sistema.' }}</p>
   </header>
 
   <form [formGroup]="goalForm" (ngSubmit)="onSubmit()">
     
     <div class="form-group">
       <label for="title">Título de la Meta</label>
-      <input 
-        id="title" 
-        type="text" 
-        formControlName="title" 
-        placeholder="Ej: Aprender Francés B2"
-        [class.invalid]="goalForm.get('title')?.invalid && goalForm.get('title')?.touched"
-      >
-      @if (goalForm.get('title')?.invalid && goalForm.get('title')?.touched) {
-        <span class="error-msg">El título es requerido (mínimo 3 letras).</span>
-      }
+      <input id="title" type="text" formControlName="title" [class.invalid]="goalForm.get('title')?.invalid && goalForm.get('title')?.touched">
     </div>
 
     <div class="form-group">
@@ -25,7 +16,7 @@
       <select id="type" formControlName="type">
         <option value="trabajo">Trabajo / Profesional</option>
         <option value="sistema_vital">Sistema Vital (Salud, Finanzas)</option>
-        <option value="progreso">Progreso Personal (Hobby, Idioma)</option>
+        <option value="progreso">Progreso Personal</option>
         <option value="creativa">Creativa / Ocio</option>
       </select>
     </div>
@@ -33,15 +24,17 @@
     <div class="form-group">
       <label for="horizon">Horizonte</label>
       <select id="horizon" formControlName="horizon">
-        <option value="corto">Corto Plazo (semanas)</option>
-        <option value="mediano">Mediano Plazo (meses)</option>
-        <option value="largo">Largo Plazo (años)</option>
+        <option value="corto">Corto Plazo</option>
+        <option value="mediano">Mediano Plazo</option>
+        <option value="largo">Largo Plazo</option>
       </select>
     </div>
 
     <div class="actions">
       <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>
-      <button type="submit" class="btn-save" [disabled]="goalForm.invalid">Guardar Meta</button>
+      <button type="submit" class="btn-save" [disabled]="goalForm.invalid">
+        {{ isEditMode ? 'Guardar Cambios' : 'Crear Meta' }}
+      </button>
     </div>
 
   </form>

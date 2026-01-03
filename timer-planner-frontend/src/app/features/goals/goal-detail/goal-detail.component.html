@@ -2,11 +2,14 @@
 <div class="detail-container">
 
   <header class="goal-header">
-    <div class="header-top">
-      <a routerLink="/goals" class="back-link">← Volver a Metas</a>
+      <div class="header-top">
+        <a routerLink="/goals" class="back-link">← Volver a Metas</a>
+        <a [routerLink]="['/goals', currentGoal.id, 'edit']" class="btn-icon-edit" title="Editar Meta">
+          <mat-icon>edit</mat-icon>
+        </a>
+      </div>
       <span class="badge {{ currentGoal.type }}">{{ currentGoal.type | titlecase }}</span>
-    </div>
-    <h1>{{ currentGoal.title }}</h1>
+      <h1>{{ currentGoal.title }}</h1>
     
     <div class="meta-info">
       <span>Horizonte: <strong>{{ currentGoal.horizon | titlecase }}</strong></span>

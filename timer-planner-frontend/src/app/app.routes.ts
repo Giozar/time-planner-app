@@ -20,10 +20,14 @@ export const routes: Routes = [
       { path: 'daily', component: DailyDashboardComponent },
       { path: 'daily/summary', component: DailySummaryComponent },
       
+      // ...
       // RUTAS DE METAS
       { path: 'goals', component: GoalsListComponent },
       { path: 'goals/new', component: GoalsFormComponent },
       { path: 'goals/:id', component: GoalDetailComponent },
+      
+      // NUEVA RUTA DE EDICIÓN (Reutiliza el mismo componente)
+      { path: 'goals/:id/edit', component: GoalsFormComponent },
       
       // RUTAS DE ACTIVIDADES
       { path: 'goals/:id/activities/new', component: ActivityFormComponent },

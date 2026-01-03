@@ -9,9 +9,29 @@
 /* --- HEADER & NAVIGATION --- */
 .header-top {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* Esto separa "Volver" del botón "Editar" */
   align-items: center;
   margin-bottom: 1rem;
+}
+
+.btn-icon-edit {
+  color: #7f8c8d;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn-icon-edit:hover {
+  color: #3498db; /* Azul al pasar el mouse */
+}
+
+/* Ajuste de tamaño del icono si es necesario */
+.btn-icon-edit mat-icon {
+  font-size: 1.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .back-link {
