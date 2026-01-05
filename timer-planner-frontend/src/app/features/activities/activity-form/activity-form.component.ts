@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
-import { Activity, WeekDay, ExecutionPlan } from '../../../core/models/activity.model';
+import { Activity, WeekDay, ExecutionPlan, ActivityStatus } from '../../../core/models/activity.model';
 import { DateUtils } from '../../../core/utils/date.utils';
 
 @Component({
@@ -27,8 +27,8 @@ export class ActivityFormComponent implements OnInit {
   // Guardamos datos originales para no perder el progreso al editar
   private originalCompletedDates: string[] = [];
   private originalProgress: number = 0;
-  private originalStatus: any = 'pendiente';
-
+  private originalStatus: ActivityStatus = 'pendiente';
+  private originalType: 'simple' | 'compuesta' = 'simple';
   weekDays: { label: string, value: WeekDay }[] = [
     { label: 'Lun', value: 'L' }, { label: 'Mar', value: 'M' },
     { label: 'Mié', value: 'X' }, { label: 'Jue', value: 'J' },
@@ -84,10 +84,13 @@ export class ActivityFormComponent implements OnInit {
   // --- CARGAR DATOS PARA EDICIÓN ---
   private loadActivityData(id: string) {
     const activity = this.plannerService.activities().find(a => a.id === id);
+
+    // GUARDAMOS EL TIPO ORIGINAL
     if (!activity) {
       this.router.navigate(['/goals']);
       return;
     }
+    this.originalType = activity.type;
 
     // Guardar estado original
     this.originalProgress = activity.progress;
@@ -171,6 +174,31 @@ export class ActivityFormComponent implements OnInit {
     if (this.activityForm.invalid || !this.goalId) return;
     
     const val = this.activityForm.value;
+    const newType = val.type as 'simple' | 'compuesta';
+
+    if (this.isEditMode && this.activityId && this.originalType === 'compuesta' && newType === 'simple') {
+      
+      // 1. Verificamos si tiene hijos
+      const stepsCount = this.plannerService.getSubActivitiesCount(this.activityId);
+
+      if (stepsCount > 0) {
+        // 2. Pedimos confirmación explícita
+        const confirmDelete = confirm(
+          `CAMBIO DE TIPO DETECTADO\n\n` +
+          `Esta actividad tiene ${stepsCount} pasos (subactividades) registrados.\n` +
+          `Al convertirla en "Actividad Simple", estos pasos se eliminarán permanentemente.\n\n` +
+          `¿Deseas continuar y borrar los pasos?`
+        );
+
+        if (!confirmDelete) {
+          return; // Cancelamos el guardado. El usuario se arrepintió.
+        }
+
+        // 3. Limpieza: Borramos los hijos antes de actualizar el padre
+        this.plannerService.deleteSubActivitiesByActivityId(this.activityId);
+      }
+    }
+
     let finalExecutionPlan: ExecutionPlan | undefined = undefined;
 
     if (val.type === 'simple') {
@@ -212,14 +240,14 @@ export class ActivityFormComponent implements OnInit {
       goalId: this.goalId,
       title: val.title!,
       level: val.level as any,
-      type: val.type as any,
+      type: newType,
       deadline: val.deadline!,
       status: this.isEditMode ? this.originalStatus : 'pendiente',
-      progress: this.isEditMode ? this.originalProgress : 0, 
+      progress: this.isEditMode ? this.originalProgress : 0,
       
       executionPlan: finalExecutionPlan,
       
-      totalTimeRequiredMin: finalExecutionPlan 
+      totalTimeRequiredMin: finalExecutionPlan
         ? finalExecutionPlan.dates!.length * finalExecutionPlan.durationPerExecutionMin 
         : undefined
     };

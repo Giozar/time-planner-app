@@ -292,6 +292,19 @@ export class PlannerService {
     this.dataProvider.saveSubActivities(this.subActivitiesSignal()).subscribe();
   }
 
+  // --- NUEVOS MÉTODOS DE UTILIDAD PARA VALIDACIÓN ---
+
+  // 1. Contar subactividades (para mostrar en la alerta)
+  getSubActivitiesCount(activityId: string): number {
+    return this.subActivitiesSignal().filter(s => s.activityId === activityId).length;
+  }
+
+  // 2. Borrar subactividades de un padre (limpieza profunda)
+  deleteSubActivitiesByActivityId(activityId: string) {
+    this.subActivitiesSignal.update(subs => subs.filter(s => s.activityId !== activityId));
+    // No llamamos saveAll aquí todavía, porque se llamará inmediatamente después al actualizar la actividad
+  }
+
   // Cierre del día (Simplificado)
   closeDay(notes: string) {
     const metrics = this.todaysMetrics();
