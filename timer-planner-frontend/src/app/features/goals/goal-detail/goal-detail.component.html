@@ -41,12 +41,16 @@
         
         <div class="card-main">
           <div class="card-header-row">
-            <h3>{{ activity.title }}</h3>
+            <div class="title-group">
+              <h3>{{ activity.title }}</h3>
+              <a [routerLink]="['/goals', currentGoal.id, 'activities', activity.id, 'edit']" class="icon-btn-small">
+                <mat-icon>edit</mat-icon>
+              </a>
+            </div>
             <span class="deadline-tag">
-              <mat-icon fontIcon="calendar_today" class="icon-inline"></mat-icon>
-              {{ activity.deadline | date:'mediumDate' }}
-            </span>
-          </div>
+                  <mat-icon fontIcon="calendar_today" class="icon-inline"></mat-icon>
+                  {{ activity.deadline | date:'mediumDate' }}</span>
+              </div>
 
           <div class="tags">
             <span class="tag-level">{{ activity.level.replace('_', ' ') | titlecase }}</span>

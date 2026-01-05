@@ -20,48 +20,59 @@ export class ActivityFormComponent implements OnInit {
   private router = inject(Router);
 
   goalId: string | null = null;
-  minDate = DateUtils.getTodayISO(); // Para validación de fechas
+  activityId: string | null = null; // Nuevo: ID para edición
+  isEditMode = false;               // Nuevo: Bandera de modo
+  minDate = DateUtils.getTodayISO();
 
-  // Días de la semana para el checkbox
+  // Guardamos datos originales para no perder el progreso al editar
+  private originalCompletedDates: string[] = [];
+  private originalProgress: number = 0;
+  private originalStatus: any = 'pendiente';
+
   weekDays: { label: string, value: WeekDay }[] = [
-    { label: 'Lun', value: 'L' },
-    { label: 'Mar', value: 'M' },
-    { label: 'Mié', value: 'X' },
-    { label: 'Jue', value: 'J' },
-    { label: 'Vie', value: 'V' },
-    { label: 'Sáb', value: 'S' },
-    { label: 'Dom', value: 'D' }
+    { label: 'Lun', value: 'L' }, { label: 'Mar', value: 'M' },
+    { label: 'Mié', value: 'X' }, { label: 'Jue', value: 'J' },
+    { label: 'Vie', value: 'V' }, { label: 'Sáb', value: 'S' }, { label: 'Dom', value: 'D' }
   ];
 
   activityForm = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
     level: ['urgente_directo', Validators.required],
-    type: ['simple', Validators.required], // simple | compuesta
+    type: ['simple', Validators.required],
     deadline: ['', Validators.required],
     
-    // Configuración de Ejecución (Solo si es simple)
-    planType: ['patron_repetitivo'], // patron_repetitivo | fechas_especificas
-    duration: [60], // Minutos por sesión
+    planType: ['patron_repetitivo'], 
+    duration: [60], 
     
-    // Controles para Patrón
-    patternDays: this.fb.array([]), // Checkboxes de días
-
-    // Controles para Fechas Específicas
-    specificDates: this.fb.array([]) // Lista de fechas manuales
+    patternDays: this.fb.array([]),
+    specificDates: this.fb.array([])
   });
 
   get isSimple() { return this.activityForm.get('type')?.value === 'simple'; }
   get isPattern() { return this.activityForm.get('planType')?.value === 'patron_repetitivo'; }
   get specificDatesArray() { return this.activityForm.get('specificDates') as FormArray; }
+  get patternDaysArray() { return this.activityForm.get('patternDays') as FormArray; } // Getter faltante agregado
 
   ngOnInit() {
-    this.goalId = this.route.snapshot.paramMap.get('id');
-    if (!this.goalId) this.router.navigate(['/goals']);
+    // 1. OBTENCIÓN DE IDs ROBUSTA
+    // Intenta obtener 'goalId' (ruta de edición) o 'id' (ruta de creación antigua)
+    this.goalId = this.route.snapshot.paramMap.get('goalId') || this.route.snapshot.paramMap.get('id');
+    this.activityId = this.route.snapshot.paramMap.get('activityId');
 
-    // Manejo dinámico de validaciones
+    if (!this.goalId) {
+      this.router.navigate(['/goals']);
+      return;
+    }
+
+    // 2. DETECTAR MODO EDICIÓN
+    if (this.activityId) {
+      this.isEditMode = true;
+      this.loadActivityData(this.activityId);
+    }
+
+    // Lógica dinámica de validaciones
     this.activityForm.get('type')?.valueChanges.subscribe(type => {
       if (type === 'compuesta') {
-        // Si es compuesta, no necesita plan de ejecución directo
         this.activityForm.get('duration')?.clearValidators();
       } else {
         this.activityForm.get('duration')?.setValidators([Validators.required, Validators.min(5)]);
@@ -70,9 +81,64 @@ export class ActivityFormComponent implements OnInit {
     });
   }
 
-  // --- MÉTODOS PARA CHECKBOXES DE DÍAS (Patrón) ---
+  // --- CARGAR DATOS PARA EDICIÓN ---
+  private loadActivityData(id: string) {
+    const activity = this.plannerService.activities().find(a => a.id === id);
+    if (!activity) {
+      this.router.navigate(['/goals']);
+      return;
+    }
+
+    // Guardar estado original
+    this.originalProgress = activity.progress;
+    this.originalStatus = activity.status;
+    if (activity.executionPlan) {
+      this.originalCompletedDates = activity.executionPlan.completedDates || [];
+    }
+
+    // Rellenar formulario base
+    this.activityForm.patchValue({
+      title: activity.title,
+      level: activity.level as any,
+      type: activity.type as any,
+      deadline: activity.deadline,
+      planType: activity.executionPlan?.type || 'patron_repetitivo',
+      duration: activity.executionPlan?.durationPerExecutionMin || 60
+    });
+
+    // Rellenar Arrays (Checkboxes y Fechas)
+    if (activity.type === 'simple' && activity.executionPlan) {
+      
+      // Restaurar Patrón de Días
+      if (activity.executionPlan.type === 'patron_repetitivo' && activity.executionPlan.patternDays) {
+        const checkArray = this.patternDaysArray;
+        checkArray.clear();
+        activity.executionPlan.patternDays.forEach(day => {
+          checkArray.push(new FormControl(day));
+        });
+      }
+
+      // Restaurar Fechas Específicas
+      if (activity.executionPlan.type === 'fechas_especificas' && activity.executionPlan.dates) {
+        const datesArray = this.specificDatesArray;
+        datesArray.clear();
+        // Solo cargamos visualmente para editar
+        activity.executionPlan.dates.forEach(date => {
+           // Opcional: filtrar solo fechas futuras si no quieres editar el pasado
+           datesArray.push(new FormControl(date));
+        });
+      }
+    }
+  }
+
+  // --- HELPER PARA HTML (Checkboxes) ---
+  isDayChecked(dayValue: string): boolean {
+    return this.patternDaysArray.value.includes(dayValue);
+  }
+
+  // --- LOGICA DE CHECKBOXES ---
   onDayChange(e: any) {
-    const checkArray: FormArray = this.activityForm.get('patternDays') as FormArray;
+    const checkArray = this.patternDaysArray;
     if (e.target.checked) {
       checkArray.push(new FormControl(e.target.value));
     } else {
@@ -87,15 +153,12 @@ export class ActivityFormComponent implements OnInit {
     }
   }
 
-  // --- MÉTODOS PARA FECHAS ESPECÍFICAS ---
+  // --- MÉTODOS FECHAS ---
   addSpecificDate(dateInput: HTMLInputElement) {
     const date = dateInput.value;
-    if (date) {
-      // Evitar duplicados
-      if (!this.specificDatesArray.value.includes(date)) {
-        this.specificDatesArray.push(new FormControl(date));
-      }
-      dateInput.value = ''; // Limpiar input
+    if (date && !this.specificDatesArray.value.includes(date)) {
+      this.specificDatesArray.push(new FormControl(date));
+      dateInput.value = '';
     }
   }
 
@@ -103,31 +166,30 @@ export class ActivityFormComponent implements OnInit {
     this.specificDatesArray.removeAt(index);
   }
 
-  // --- SUBMIT ---
+  // --- GUARDAR ---
   onSubmit() {
     if (this.activityForm.invalid || !this.goalId) return;
     
     const val = this.activityForm.value;
     let finalExecutionPlan: ExecutionPlan | undefined = undefined;
 
-    // LÓGICA DE GENERACIÓN DE PLAN (Solo si es simple)
     if (val.type === 'simple') {
       let finalDates: string[] = [];
 
       if (val.planType === 'patron_repetitivo') {
-        // Generar fechas finitas usando el util
         const daysSelected = val.patternDays as WeekDay[];
         if (daysSelected.length === 0) {
           alert('Selecciona al menos un día para el patrón.');
           return;
         }
+        // Regenerar fechas desde HOY hasta DEADLINE
         finalDates = DateUtils.generateDatesFromPattern(
-          DateUtils.getTodayISO(), // Desde hoy
-          val.deadline!,          // Hasta deadline
+          DateUtils.getTodayISO(),
+          val.deadline!,
           daysSelected
         );
+        // NOTA: Aquí podrías mezclar con fechas pasadas si quisieras mantener el historial visual
       } else {
-        // Fechas manuales
         finalDates = (val.specificDates as string[]).sort();
         if (finalDates.length === 0) {
           alert('Añade al menos una fecha específica.');
@@ -135,42 +197,39 @@ export class ActivityFormComponent implements OnInit {
         }
       }
 
-      // Validar que se generaron fechas
-      if (finalDates.length === 0) {
-        alert('El plan no genera ninguna fecha de ejecución válida antes del deadline.');
-        return;
-      }
-
       finalExecutionPlan = {
         type: val.planType as any,
         durationPerExecutionMin: val.duration || 60,
         dates: finalDates,
         patternDays: val.planType === 'patron_repetitivo' ? (val.patternDays as WeekDay[]) : undefined,
-        completedDates: [] // Empieza vacío
+        // IMPORTANTE: Mantener las fechas que ya se completaron
+        completedDates: this.originalCompletedDates 
       };
     }
 
-    // CREAR OBJETO
-    const newActivity: Activity = {
-      id: crypto.randomUUID(),
+    const activityData: Activity = {
+      id: this.activityId || crypto.randomUUID(), // Usar ID existente si es edición
       goalId: this.goalId,
       title: val.title!,
       level: val.level as any,
       type: val.type as any,
       deadline: val.deadline!,
-      status: 'pendiente',
-      progress: 0,
+      status: this.isEditMode ? this.originalStatus : 'pendiente',
+      progress: this.isEditMode ? this.originalProgress : 0, 
       
-      // Asignar plan (undefined si es compuesta)
       executionPlan: finalExecutionPlan,
       
-      // Total tiempo: si es simple, calculamos total. Si compuesta, undefined.
       totalTimeRequiredMin: finalExecutionPlan 
         ? finalExecutionPlan.dates!.length * finalExecutionPlan.durationPerExecutionMin 
         : undefined
     };
 
-    this.plannerService.addActivity(newActivity);
+    if (this.isEditMode) {
+      this.plannerService.updateActivity(activityData);
+    } else {
+      this.plannerService.addActivity(activityData);
+    }
+
     this.router.navigate(['/goals', this.goalId]);
   }
 

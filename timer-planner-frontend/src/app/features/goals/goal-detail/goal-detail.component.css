@@ -206,6 +206,29 @@ h1 {
   font-weight: 600;
 }
 
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.title-group h3 {
+  margin: 0;
+}
+
+.icon-btn-small {
+  color: #bdc3c7;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transform: scale(0.8); /* Un poco más pequeño */
+  transition: color 0.2s;
+}
+
+.icon-btn-small:hover {
+  color: #3498db;
+}
+
 /* Iconos SVG */
 .icon-inline {
   width: 16px;

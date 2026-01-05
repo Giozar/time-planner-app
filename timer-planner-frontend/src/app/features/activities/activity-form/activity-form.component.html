@@ -1,6 +1,6 @@
 <div class="form-container">
   <header>
-    <h1>Nueva Actividad</h1>
+    <h1>{{ isEditMode ? 'Editar Actividad' : 'Nueva Actividad' }}</h1>
     <p>Define trabajo estructurado y planificable.</p>
   </header>
 
@@ -65,7 +65,12 @@
             <div class="week-grid">
               @for (day of weekDays; track day.value) {
                 <label class="day-check">
-                  <input type="checkbox" [value]="day.value" (change)="onDayChange($event)">
+                  <input 
+                    type="checkbox" 
+                    [value]="day.value" 
+                    [checked]="isDayChecked(day.value)"
+                    (change)="onDayChange($event)"
+                  >
                   <span>{{ day.label }}</span>
                 </label>
               }
@@ -103,7 +108,9 @@
 
     <div class="actions">
       <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>
-      <button type="submit" class="btn-save" [disabled]="activityForm.invalid">Crear Actividad</button>
+      <button type="submit" class="btn-save" [disabled]="activityForm.invalid">
+        {{ isEditMode ? 'Guardar Cambios' : 'Crear Actividad' }}
+      </button>
     </div>
 
   </form>

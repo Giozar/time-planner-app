@@ -31,7 +31,9 @@ export const routes: Routes = [
       
       // RUTAS DE ACTIVIDADES
       { path: 'goals/:id/activities/new', component: ActivityFormComponent },
-      //{ path: 'goals/:goalId/activities/:activityId/plan', component: SubactivityFormComponent },
+
+      { path: 'goals/:goalId/activities/:activityId/edit', component: ActivityFormComponent },
+      
       { path: 'goals/:goalId/activities/:activityId/add-step', component: StructureFormComponent },
 
       // Redirección por defecto al Dashboard
