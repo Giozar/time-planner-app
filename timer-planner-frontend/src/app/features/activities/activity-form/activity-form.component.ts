@@ -171,58 +171,43 @@ export class ActivityFormComponent implements OnInit {
 
   // --- GUARDAR ---
   onSubmit() {
+    // 1. VALIDACIÓN BÁSICA DE FORMULARIO
     if (this.activityForm.invalid || !this.goalId) return;
     
     const val = this.activityForm.value;
     const newType = val.type as 'simple' | 'compuesta';
-
-    if (this.isEditMode && this.activityId && this.originalType === 'compuesta' && newType === 'simple') {
-      
-      // 1. Verificamos si tiene hijos
-      const stepsCount = this.plannerService.getSubActivitiesCount(this.activityId);
-
-      if (stepsCount > 0) {
-        // 2. Pedimos confirmación explícita
-        const confirmDelete = confirm(
-          `CAMBIO DE TIPO DETECTADO\n\n` +
-          `Esta actividad tiene ${stepsCount} pasos (subactividades) registrados.\n` +
-          `Al convertirla en "Actividad Simple", estos pasos se eliminarán permanentemente.\n\n` +
-          `¿Deseas continuar y borrar los pasos?`
-        );
-
-        if (!confirmDelete) {
-          return; // Cancelamos el guardado. El usuario se arrepintió.
-        }
-
-        // 3. Limpieza: Borramos los hijos antes de actualizar el padre
-        this.plannerService.deleteSubActivitiesByActivityId(this.activityId);
-      }
-    }
-
     let finalExecutionPlan: ExecutionPlan | undefined = undefined;
 
-    if (val.type === 'simple') {
+    // 2. CÁLCULO Y VALIDACIÓN DE LÓGICA (PLANES Y FECHAS)
+    // Hacemos esto PRIMERO. Si falla algo aquí (ej: no seleccionaste fechas), 
+    // el código se detiene y NO borramos nada.
+    if (newType === 'simple') {
       let finalDates: string[] = [];
 
       if (val.planType === 'patron_repetitivo') {
         const daysSelected = val.patternDays as WeekDay[];
         if (daysSelected.length === 0) {
           alert('Selecciona al menos un día para el patrón.');
-          return;
+          return; // <-- SE DETIENE AQUÍ, NO BORRA NADA
         }
-        // Regenerar fechas desde HOY hasta DEADLINE
+        
         finalDates = DateUtils.generateDatesFromPattern(
           DateUtils.getTodayISO(),
           val.deadline!,
           daysSelected
         );
-        // NOTA: Aquí podrías mezclar con fechas pasadas si quisieras mantener el historial visual
       } else {
+        // Validación de fechas específicas
         finalDates = (val.specificDates as string[]).sort();
         if (finalDates.length === 0) {
           alert('Añade al menos una fecha específica.');
-          return;
+          return; // <-- SE DETIENE AQUÍ, TE SALVA DE BORRAR POR ERROR
         }
+      }
+
+      if (finalDates.length === 0) {
+        alert('El plan no genera ninguna fecha de ejecución válida antes del deadline.');
+        return;
       }
 
       finalExecutionPlan = {
@@ -230,13 +215,14 @@ export class ActivityFormComponent implements OnInit {
         durationPerExecutionMin: val.duration || 60,
         dates: finalDates,
         patternDays: val.planType === 'patron_repetitivo' ? (val.patternDays as WeekDay[]) : undefined,
-        // IMPORTANTE: Mantener las fechas que ya se completaron
         completedDates: this.originalCompletedDates 
       };
     }
 
+    // 3. PREPARAR EL OBJETO A GUARDAR (En memoria)
+    // Ya sabemos que los datos son válidos, preparamos el paquete.
     const activityData: Activity = {
-      id: this.activityId || crypto.randomUUID(), // Usar ID existente si es edición
+      id: this.activityId || crypto.randomUUID(),
       goalId: this.goalId,
       title: val.title!,
       level: val.level as any,
@@ -247,11 +233,35 @@ export class ActivityFormComponent implements OnInit {
       
       executionPlan: finalExecutionPlan,
       
-      totalTimeRequiredMin: finalExecutionPlan
+      totalTimeRequiredMin: finalExecutionPlan 
         ? finalExecutionPlan.dates!.length * finalExecutionPlan.durationPerExecutionMin 
         : undefined
     };
 
+    // 4. ALERTA DE SEGURIDAD (EL ÚLTIMO PASO)
+    // Solo llegamos aquí si todo lo de arriba funcionó bien.
+    if (this.isEditMode && this.activityId && this.originalType === 'compuesta' && newType === 'simple') {
+      
+      const stepsCount = this.plannerService.getSubActivitiesCount(this.activityId);
+
+      if (stepsCount > 0) {
+        const confirmDelete = confirm(
+          `CAMBIO DE TIPO DETECTADO\n\n` +
+          `Esta actividad tiene ${stepsCount} pasos registrados.\n` +
+          `Al convertirla en simple, estos pasos se eliminarán.\n\n` +
+          `¿Confirmas que deseas continuar?`
+        );
+
+        if (!confirmDelete) {
+          return; // El usuario canceló. No se guarda nada, no se borra nada.
+        }
+
+        // Si confirmó, borramos los pasos AHORA (porque sabemos que el guardado ocurrirá sí o sí en la siguiente línea)
+        this.plannerService.deleteSubActivitiesByActivityId(this.activityId);
+      }
+    }
+
+    // 5. GUARDADO FINAL
     if (this.isEditMode) {
       this.plannerService.updateActivity(activityData);
     } else {
