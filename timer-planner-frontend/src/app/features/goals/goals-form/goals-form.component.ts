@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router'; // Importar ActivatedRoute
+import { Router, ActivatedRoute } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
 import { Goal } from '../../../core/models/goal.model';
 
@@ -16,7 +16,7 @@ export class GoalsFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private plannerService = inject(PlannerService);
   private router = inject(Router);
-  private route = inject(ActivatedRoute); // Inyectar ruta activa
+  private route = inject(ActivatedRoute);
 
   isEditMode = false;
   goalId: string | null = null;
@@ -69,7 +69,7 @@ export class GoalsFormComponent implements OnInit {
       const formValue = this.goalForm.value;
 
       if (this.isEditMode && this.goalId) {
-        // --- MODO EDICIÓN ---
+        // --- Modo Edición ---
         const updatedGoal: Goal = {
           id: this.goalId, // Mismo ID
           title: formValue.title!,
@@ -85,7 +85,7 @@ export class GoalsFormComponent implements OnInit {
         this.router.navigate(['/goals', this.goalId]);
 
       } else {
-        // --- MODO CREAR (Lo que ya tenías) ---
+        // --- Modo Crear ---
         const newGoal: Goal = {
           id: crypto.randomUUID(),
           title: formValue.title!,

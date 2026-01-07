@@ -1,12 +1,11 @@
 import { Routes } from '@angular/router';
 import { MainLayoutComponent } from './shared/layout/main-layout/main-layout.component';
 
-// Importaciones de tus Features
+// Importaciones de Features
 import { GoalsListComponent } from './features/goals/goals-list/goals-list.component';
 import { GoalsFormComponent } from './features/goals/goals-form/goals-form.component';
 import { GoalDetailComponent } from './features/goals/goal-detail/goal-detail.component';
 import { ActivityFormComponent } from './features/activities/activity-form/activity-form.component';
-// import { SubactivityFormComponent } from './features/activities/subactivity-form/subactivity-form.component';
 import { StructureFormComponent } from './features/activities/structure-form/structure-form.component';
 import { DailyDashboardComponent } from './features/daily/daily-dashboard/daily-dashboard.component';
 import { DailySummaryComponent } from './features/daily/daily-summary/daily-summary.component';
@@ -14,7 +13,7 @@ import { DailySummaryComponent } from './features/daily/daily-summary/daily-summ
 export const routes: Routes = [
   {
     path: '',
-    component: MainLayoutComponent, // <--- El Layout envuelve todo
+    component: MainLayoutComponent,
     children: [
       // RUTAS DEL DÍA
       { path: 'daily', component: DailyDashboardComponent },
@@ -43,6 +42,6 @@ export const routes: Routes = [
     ]
   },
   
-  // (Opcional) Rutas fuera del layout (ej: Login, 404) irían aquí fuera
+  // Rutas fuera del layout
   { path: '**', redirectTo: 'daily' }
 ];

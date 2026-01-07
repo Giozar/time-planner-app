@@ -21,7 +21,7 @@ export class StructureFormComponent implements OnInit {
 
   goalId: string | null = null;
   activityId: string | null = null;
-  subActivityId: string | null = null; // Nuevo: ID del paso
+  subActivityId: string | null = null;
   isEditMode = false;
   
   minDate = DateUtils.getTodayISO();
@@ -66,7 +66,7 @@ export class StructureFormComponent implements OnInit {
     }
   }
 
-  // --- CARGAR DATOS ---
+  // --- Cargar datos ---
   private loadStepData(id: string) {
     const sub = this.plannerService.subActivities().find(s => s.id === id);
     if (!sub) {
@@ -99,7 +99,7 @@ export class StructureFormComponent implements OnInit {
     }
   }
 
-  // --- UI HELPERS ---
+  // --- UI Helpers ---
   isDayChecked(dayValue: string): boolean {
     return this.patternDaysArray.value.includes(dayValue);
   }
@@ -132,7 +132,7 @@ export class StructureFormComponent implements OnInit {
     this.specificDatesArray.removeAt(index);
   }
 
-  // --- GUARDAR ---
+  // --- Guardar ---
   onSubmit() {
     if (this.form.invalid || !this.activityId) return;
 

@@ -20,8 +20,8 @@ export class ActivityFormComponent implements OnInit {
   private router = inject(Router);
 
   goalId: string | null = null;
-  activityId: string | null = null; // Nuevo: ID para edición
-  isEditMode = false;               // Nuevo: Bandera de modo
+  activityId: string | null = null;
+  isEditMode = false;
   minDate = DateUtils.getTodayISO();
 
   // Guardamos datos originales para no perder el progreso al editar
@@ -54,7 +54,7 @@ export class ActivityFormComponent implements OnInit {
   get patternDaysArray() { return this.activityForm.get('patternDays') as FormArray; } // Getter faltante agregado
 
   ngOnInit() {
-    // 1. OBTENCIÓN DE IDs ROBUSTA
+    // 1. Obtención de IDs
     // Intenta obtener 'goalId' (ruta de edición) o 'id' (ruta de creación antigua)
     this.goalId = this.route.snapshot.paramMap.get('goalId') || this.route.snapshot.paramMap.get('id');
     this.activityId = this.route.snapshot.paramMap.get('activityId');
@@ -64,7 +64,7 @@ export class ActivityFormComponent implements OnInit {
       return;
     }
 
-    // 2. DETECTAR MODO EDICIÓN
+    // 2. Detectar modo edición
     if (this.activityId) {
       this.isEditMode = true;
       this.loadActivityData(this.activityId);
@@ -81,7 +81,7 @@ export class ActivityFormComponent implements OnInit {
     });
   }
 
-  // --- CARGAR DATOS PARA EDICIÓN ---
+  // --- Cargar datos para edición ---
   private loadActivityData(id: string) {
     const activity = this.plannerService.activities().find(a => a.id === id);
 
@@ -139,7 +139,7 @@ export class ActivityFormComponent implements OnInit {
     return this.patternDaysArray.value.includes(dayValue);
   }
 
-  // --- LOGICA DE CHECKBOXES ---
+  // --- Lógica de checkboxes ---
   onDayChange(e: any) {
     const checkArray = this.patternDaysArray;
     if (e.target.checked) {
@@ -169,16 +169,15 @@ export class ActivityFormComponent implements OnInit {
     this.specificDatesArray.removeAt(index);
   }
 
-  // --- GUARDAR ---
   onSubmit() {
-    // 1. VALIDACIÓN BÁSICA DE FORMULARIO
+    // 1. Validación básica
     if (this.activityForm.invalid || !this.goalId) return;
     
     const val = this.activityForm.value;
     const newType = val.type as 'simple' | 'compuesta';
     let finalExecutionPlan: ExecutionPlan | undefined = undefined;
 
-    // 2. CÁLCULO Y VALIDACIÓN DE LÓGICA (PLANES Y FECHAS)
+    // 2. Cálculo y validación de lógica (Planes y Fechas)
     // Hacemos esto PRIMERO. Si falla algo aquí (ej: no seleccionaste fechas), 
     // el código se detiene y NO borramos nada.
     if (newType === 'simple') {
@@ -219,7 +218,7 @@ export class ActivityFormComponent implements OnInit {
       };
     }
 
-    // 3. PREPARAR EL OBJETO A GUARDAR (En memoria)
+    // 3. Preparar el objeto a guardar
     // Ya sabemos que los datos son válidos, preparamos el paquete.
     const activityData: Activity = {
       id: this.activityId || crypto.randomUUID(),
@@ -238,7 +237,7 @@ export class ActivityFormComponent implements OnInit {
         : undefined
     };
 
-    // 4. ALERTA DE SEGURIDAD (EL ÚLTIMO PASO)
+    // 4. Alerta de seguridad
     // Solo llegamos aquí si todo lo de arriba funcionó bien.
     if (this.isEditMode && this.activityId && this.originalType === 'compuesta' && newType === 'simple') {
       
@@ -261,7 +260,7 @@ export class ActivityFormComponent implements OnInit {
       }
     }
 
-    // 5. GUARDADO FINAL
+    // 5. Guardado final
     if (this.isEditMode) {
       this.plannerService.updateActivity(activityData);
     } else {
