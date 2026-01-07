@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
 import { Activity, WeekDay, ExecutionPlan, ActivityStatus } from '../../../core/models/activity.model';
 import { DateUtils } from '../../../core/utils/date.utils';
+import { NativeDialogService } from '../../../core/services/native-dialog.service';
 
 @Component({
   selector: 'app-activity-form',
@@ -18,6 +19,7 @@ export class ActivityFormComponent implements OnInit {
   private plannerService = inject(PlannerService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(NativeDialogService);
 
   goalId: string | null = null;
   activityId: string | null = null;
@@ -170,6 +172,10 @@ export class ActivityFormComponent implements OnInit {
   }
 
   onSubmit() {
+    this.saveActivity();
+  }
+
+  async saveActivity() {
     // 1. Validación básica
     if (this.activityForm.invalid || !this.goalId) return;
     
@@ -186,8 +192,8 @@ export class ActivityFormComponent implements OnInit {
       if (val.planType === 'patron_repetitivo') {
         const daysSelected = val.patternDays as WeekDay[];
         if (daysSelected.length === 0) {
-          alert('Selecciona al menos un día para el patrón.');
-          return; // <-- SE DETIENE AQUÍ, NO BORRA NADA
+          this.dialog.alert('Atención', 'Selecciona al menos un día.');
+          return;
         }
         
         finalDates = DateUtils.generateDatesFromPattern(
@@ -199,13 +205,13 @@ export class ActivityFormComponent implements OnInit {
         // Validación de fechas específicas
         finalDates = (val.specificDates as string[]).sort();
         if (finalDates.length === 0) {
-          alert('Añade al menos una fecha específica.');
-          return; // <-- SE DETIENE AQUÍ, TE SALVA DE BORRAR POR ERROR
+          this.dialog.alert('Atención', 'Añade fechas específicas.');
+          return;
         }
       }
 
       if (finalDates.length === 0) {
-        alert('El plan no genera ninguna fecha de ejecución válida antes del deadline.');
+        this.dialog.alert('Atención', 'El plan no genera ninguna fecha de ejecución válida antes del deadline.');
         return;
       }
 
@@ -238,24 +244,23 @@ export class ActivityFormComponent implements OnInit {
     };
 
     // 4. Alerta de seguridad
-    // Solo llegamos aquí si todo lo de arriba funcionó bien.
     if (this.isEditMode && this.activityId && this.originalType === 'compuesta' && newType === 'simple') {
-      
       const stepsCount = this.plannerService.getSubActivitiesCount(this.activityId);
 
       if (stepsCount > 0) {
-        const confirmDelete = confirm(
-          `CAMBIO DE TIPO DETECTADO\n\n` +
-          `Esta actividad tiene ${stepsCount} pasos registrados.\n` +
-          `Al convertirla en simple, estos pasos se eliminarán.\n\n` +
-          `¿Confirmas que deseas continuar?`
+        const confirmed = await this.dialog.confirm(
+          'Cambio de Tipo Detectado',
+          `Esta actividad tiene ${stepsCount} pasos registrados.\nAl convertirla en simple, estos pasos se eliminarán.\n\n¿Confirmas que deseas continuar?`,
+          {
+            confirmText: 'Convertir y borrar pasos',
+            isDanger: true
+          }
         );
 
-        if (!confirmDelete) {
-          return; // El usuario canceló. No se guarda nada, no se borra nada.
+        if (!confirmed) {
+          return;
         }
 
-        // Si confirmó, borramos los pasos AHORA (porque sabemos que el guardado ocurrirá sí o sí en la siguiente línea)
         this.plannerService.deleteSubActivitiesByActivityId(this.activityId);
       }
     }

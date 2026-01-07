@@ -4,61 +4,98 @@
 }
 
 .section-header {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
-.section-header h2 {
-  font-size: 1.8rem;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
-}
-
-/* Modificación del Header para alinear el botón */
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.title-group h2 {
+  font-size: 2rem;
+  color: #1a2a3a;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.title-group p {
+  margin: 0.4rem 0 0 0;
+  color: #64748b;
+  font-size: 1rem;
 }
 
 /* Botón Añadir */
 .btn-add {
-  background-color: #2c3e50;
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
   color: white;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
   text-decoration: none;
   font-weight: 600;
-  transition: background 0.2s;
-  display: inline-block;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .btn-add:hover {
-  background-color: #3498db;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
+}
+
+.btn-add mat-icon {
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
 }
 
 .grid-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
 }
 
 /* Card Styles */
 .goal-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  border: 1px solid #e0e0e0;
-  transition: transform 0.2s ease;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.goal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: transparent;
+  transition: background 0.3s;
 }
 
 .goal-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border-color: #e2e8f0;
+}
+
+.goal-card:hover::before {
+  background: #3498db;
 }
 
 .card-header {
@@ -83,10 +120,25 @@ h3 {
   text-transform: uppercase;
 }
 
-.badge.trabajo { background-color: #e3f2fd; color: #1565c0; }
-.badge.sistema_vital { background-color: #e8f5e9; color: #2e7d32; }
-.badge.progreso { background-color: #f3e5f5; color: #7b1fa2; }
-.badge.creativa { background-color: #fff3e0; color: #ef6c00; }
+.badge.trabajo {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.badge.sistema_vital {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge.progreso {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.badge.creativa {
+  background-color: #fff3e0;
+  color: #ef6c00;
+}
 
 .horizonte {
   color: #7f8c8d;
@@ -108,17 +160,17 @@ h3 {
 
 .progress-bar-bg {
   width: 100%;
-  height: 8px;
-  background-color: #eceff1;
-  border-radius: 4px;
+  height: 10px;
+  background-color: #f1f5f9;
+  border-radius: 20px;
   overflow: hidden;
 }
 
 .progress-bar-fill {
   height: 100%;
-  background-color: #3498db;
-  border-radius: 4px;
-  transition: width 0.5s ease-out;
+  background: linear-gradient(90deg, #3498db, #6366f1);
+  border-radius: 20px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* --- ESTADO (Valores en Español) --- */
@@ -127,9 +179,17 @@ h3 {
   font-weight: bold;
 }
 
-.status-indicator.activa { color: #27ae60; }
-.status-indicator.pausada { color: #f1c40f; }
-.status-indicator.archivada { color: #95a5a6; }
+.status-indicator.activa {
+  color: #27ae60;
+}
+
+.status-indicator.pausada {
+  color: #f1c40f;
+}
+
+.status-indicator.archivada {
+  color: #95a5a6;
+}
 
 /* Estilo visual para tarjeta pausada */
 .goal-card.paused {

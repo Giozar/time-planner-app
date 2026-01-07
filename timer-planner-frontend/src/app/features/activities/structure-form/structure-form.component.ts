@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
 import { SubActivity, WeekDay, ExecutionPlan } from '../../../core/models/activity.model';
 import { DateUtils } from '../../../core/utils/date.utils';
+import { NativeDialogService } from '../../../core/services/native-dialog.service';
 
 @Component({
   selector: 'app-structure-form',
@@ -18,6 +19,7 @@ export class StructureFormComponent implements OnInit {
   private plannerService = inject(PlannerService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(NativeDialogService);
 
   goalId: string | null = null;
   activityId: string | null = null;
@@ -143,7 +145,7 @@ export class StructureFormComponent implements OnInit {
     if (val.planType === 'patron_repetitivo') {
       const daysSelected = val.patternDays as WeekDay[];
       if (daysSelected.length === 0) {
-        alert('Selecciona al menos un día.');
+        this.dialog.alert('Atención', 'Selecciona al menos un día.');
         return;
       }
       finalDates = DateUtils.generateDatesFromPattern(
@@ -154,13 +156,13 @@ export class StructureFormComponent implements OnInit {
     } else {
       finalDates = (val.specificDates as string[]).sort();
       if (finalDates.length === 0) {
-        alert('Añade fechas específicas.');
+        this.dialog.alert('Atención', 'Añade fechas específicas.');
         return;
       }
     }
 
     if (finalDates.length === 0) {
-      alert('No se generaron fechas válidas.');
+      this.dialog.alert('Atención', 'No se generaron fechas válidas.');
       return;
     }
 
