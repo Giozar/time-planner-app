@@ -1,6 +1,6 @@
 <div class="form-container">
   <header>
-    <h1>Añadir Paso (Subactividad)</h1>
+    <h1>{{ isEditMode ? 'Editar Paso' : 'Añadir Paso (Subactividad)' }}</h1>
     <p>Define una parte ejecutable de tu proyecto.</p>
   </header>
 
@@ -46,7 +46,12 @@
           <div class="week-grid">
             @for (day of weekDays; track day.value) {
               <label class="day-check">
-                <input type="checkbox" [value]="day.value" (change)="onDayChange($event)">
+                <input 
+                  type="checkbox" 
+                  [value]="day.value" 
+                  [checked]="isDayChecked(day.value)"
+                  (change)="onDayChange($event)"
+                >
                 <span>{{ day.label }}</span>
               </label>
             }
@@ -76,7 +81,9 @@
 
     <div class="actions">
       <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>
-      <button type="submit" class="btn-save" [disabled]="form.invalid">Guardar Paso</button>
+      <button type="submit" class="btn-save" [disabled]="form.invalid">
+        {{ isEditMode ? 'Guardar Cambios' : 'Guardar Paso' }}
+      </button>
     </div>
 
   </form>

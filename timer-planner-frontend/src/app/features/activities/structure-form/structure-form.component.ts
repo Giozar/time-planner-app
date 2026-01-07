@@ -21,9 +21,16 @@ export class StructureFormComponent implements OnInit {
 
   goalId: string | null = null;
   activityId: string | null = null;
+  subActivityId: string | null = null; // Nuevo: ID del paso
+  isEditMode = false;
+  
   minDate = DateUtils.getTodayISO();
 
-  // Días de la semana para checkbox
+  // Guardar estado original
+  private originalCompletedDates: string[] = [];
+  private originalProgress: number = 0;
+  private originalStatus: any = 'pendiente';
+
   weekDays: { label: string, value: WeekDay }[] = [
     { label: 'Lun', value: 'L' }, { label: 'Mar', value: 'M' },
     { label: 'Mié', value: 'X' }, { label: 'Jue', value: 'J' },
@@ -32,31 +39,73 @@ export class StructureFormComponent implements OnInit {
 
   form = this.fb.group({
     title: ['', Validators.required],
-    deadline: ['', Validators.required], // Subactividad necesita deadline
-    
-    // Configuración de Ejecución
+    deadline: ['', Validators.required],
     planType: ['patron_repetitivo'], 
     duration: [45, [Validators.required, Validators.min(5)]],
-    
     patternDays: this.fb.array([]),
     specificDates: this.fb.array([])
   });
 
   get isPattern() { return this.form.get('planType')?.value === 'patron_repetitivo'; }
   get specificDatesArray() { return this.form.get('specificDates') as FormArray; }
+  get patternDaysArray() { return this.form.get('patternDays') as FormArray; }
 
   ngOnInit() {
     this.goalId = this.route.snapshot.paramMap.get('goalId');
     this.activityId = this.route.snapshot.paramMap.get('activityId');
-    
+    this.subActivityId = this.route.snapshot.paramMap.get('stepId'); // Capturamos ID del paso
+
     if (!this.activityId || !this.goalId) {
       this.router.navigate(['/goals']);
+      return;
+    }
+
+    if (this.subActivityId) {
+      this.isEditMode = true;
+      this.loadStepData(this.subActivityId);
     }
   }
 
-  // --- MÉTODOS PARA CHECKBOXES DE DÍAS (Igual que ActivityForm) ---
+  // --- CARGAR DATOS ---
+  private loadStepData(id: string) {
+    const sub = this.plannerService.subActivities().find(s => s.id === id);
+    if (!sub) {
+      this.cancel();
+      return;
+    }
+
+    // Guardar originales
+    this.originalProgress = sub.progress;
+    this.originalStatus = sub.status;
+    this.originalCompletedDates = sub.executionPlan.completedDates || [];
+
+    // Rellenar formulario
+    this.form.patchValue({
+      title: sub.title,
+      deadline: sub.deadline,
+      planType: sub.executionPlan.type,
+      duration: sub.executionPlan.durationPerExecutionMin
+    });
+
+    // Restaurar Arrays
+    if (sub.executionPlan.type === 'patron_repetitivo' && sub.executionPlan.patternDays) {
+      const checkArray = this.patternDaysArray;
+      checkArray.clear();
+      sub.executionPlan.patternDays.forEach(day => checkArray.push(new FormControl(day)));
+    } else if (sub.executionPlan.type === 'fechas_especificas' && sub.executionPlan.dates) {
+      const datesArray = this.specificDatesArray;
+      datesArray.clear();
+      sub.executionPlan.dates.forEach(date => datesArray.push(new FormControl(date)));
+    }
+  }
+
+  // --- UI HELPERS ---
+  isDayChecked(dayValue: string): boolean {
+    return this.patternDaysArray.value.includes(dayValue);
+  }
+
   onDayChange(e: any) {
-    const checkArray: FormArray = this.form.get('patternDays') as FormArray;
+    const checkArray = this.patternDaysArray;
     if (e.target.checked) {
       checkArray.push(new FormControl(e.target.value));
     } else {
@@ -71,7 +120,6 @@ export class StructureFormComponent implements OnInit {
     }
   }
 
-  // --- MÉTODOS PARA FECHAS ESPECÍFICAS ---
   addSpecificDate(dateInput: HTMLInputElement) {
     const date = dateInput.value;
     if (date && !this.specificDatesArray.value.includes(date)) {
@@ -84,13 +132,14 @@ export class StructureFormComponent implements OnInit {
     this.specificDatesArray.removeAt(index);
   }
 
+  // --- GUARDAR ---
   onSubmit() {
     if (this.form.invalid || !this.activityId) return;
 
     const val = this.form.value;
     let finalDates: string[] = [];
 
-    // Generación de fechas (Igual lógica que ActivityForm)
+    // Lógica de fechas (Igual que antes)
     if (val.planType === 'patron_repetitivo') {
       const daysSelected = val.patternDays as WeekDay[];
       if (daysSelected.length === 0) {
@@ -111,7 +160,7 @@ export class StructureFormComponent implements OnInit {
     }
 
     if (finalDates.length === 0) {
-      alert('No se generaron fechas válidas antes del deadline.');
+      alert('No se generaron fechas válidas.');
       return;
     }
 
@@ -120,20 +169,25 @@ export class StructureFormComponent implements OnInit {
       durationPerExecutionMin: val.duration || 45,
       dates: finalDates,
       patternDays: val.planType === 'patron_repetitivo' ? (val.patternDays as WeekDay[]) : undefined,
-      completedDates: []
+      completedDates: this.originalCompletedDates // MANTENER PROGRESO
     };
 
-    const newSub: SubActivity = {
-      id: crypto.randomUUID(),
+    const subData: SubActivity = {
+      id: this.subActivityId || crypto.randomUUID(),
       activityId: this.activityId,
       title: val.title!,
       deadline: val.deadline!,
       executionPlan: executionPlan,
-      progress: 0,
-      status: 'pendiente'
+      status: this.isEditMode ? this.originalStatus : 'pendiente',
+      progress: this.isEditMode ? this.originalProgress : 0
     };
 
-    this.plannerService.addSubActivity(newSub);
+    if (this.isEditMode) {
+      this.plannerService.updateSubActivity(subData);
+    } else {
+      this.plannerService.addSubActivity(subData);
+    }
+
     this.router.navigate(['/goals', this.goalId]);
   }
 

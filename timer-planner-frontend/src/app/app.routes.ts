@@ -36,6 +36,8 @@ export const routes: Routes = [
       
       { path: 'goals/:goalId/activities/:activityId/add-step', component: StructureFormComponent },
 
+      { path: 'goals/:goalId/activities/:activityId/steps/:stepId/edit', component: StructureFormComponent },
+      
       // Redirección por defecto al Dashboard
       { path: '', redirectTo: 'daily', pathMatch: 'full' }
     ]
