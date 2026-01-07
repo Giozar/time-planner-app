@@ -2,15 +2,15 @@
 <div class="detail-container">
 
   <header class="goal-header">
-      <div class="header-top">
-        <a routerLink="/goals" class="back-link">← Volver a Metas</a>
-        <a [routerLink]="['/goals', currentGoal.id, 'edit']" class="btn-icon-edit" title="Editar Meta">
-          <mat-icon>edit</mat-icon>
-        </a>
-      </div>
-      <span class="badge {{ currentGoal.type }}">{{ currentGoal.type | titlecase }}</span>
-      <h1>{{ currentGoal.title }}</h1>
-    
+    <div class="header-top">
+      <a routerLink="/goals" class="back-link">← Volver a Metas</a>
+      <a [routerLink]="['/goals', currentGoal.id, 'edit']" class="btn-icon-edit" title="Editar Meta">
+        <mat-icon>edit</mat-icon>
+      </a>
+    </div>
+    <span class="badge {{ currentGoal.type }}">{{ currentGoal.type | titlecase }}</span>
+    <h1>{{ currentGoal.title }}</h1>
+
     <div class="meta-info">
       <span>Horizonte: <strong>{{ currentGoal.horizon | titlecase }}</strong></span>
       <span>Estado: <strong>{{ currentGoal.status | titlecase }}</strong></span>
@@ -38,7 +38,7 @@
       @for (activity of activities(); track activity.id) {
 
       <div class="activity-card">
-        
+
         <div class="card-main">
           <div class="card-header-row">
             <div class="title-group">
@@ -46,11 +46,14 @@
               <a [routerLink]="['/goals', currentGoal.id, 'activities', activity.id, 'edit']" class="icon-btn-small">
                 <mat-icon>edit</mat-icon>
               </a>
+              <button class="icon-btn-small-danger" (click)="onDeleteActivity(activity)" title="Eliminar Actividad">
+                <mat-icon>delete</mat-icon>
+              </button>
             </div>
             <span class="deadline-tag">
-                  <mat-icon fontIcon="calendar_today" class="icon-inline"></mat-icon>
-                  {{ activity.deadline | date:'mediumDate' }}</span>
-              </div>
+              <mat-icon fontIcon="calendar_today" class="icon-inline"></mat-icon>
+              {{ activity.deadline | date:'mediumDate' }}</span>
+          </div>
 
           <div class="tags">
             <span class="tag-level">{{ activity.level.replace('_', ' ') | titlecase }}</span>
@@ -89,32 +92,35 @@
           <ul class="subtasks-list">
             @for (sub of getSubtasks(activity.id); track sub.id) {
             <li class="subtask-item">
-  <div class="sub-info">
-    <span class="sub-name">{{ sub.title }}</span>
+              <div class="sub-info">
+                <span class="sub-name">{{ sub.title }}</span>
 
-    <div class="sub-right-content">
-      
-      <a [routerLink]="['/goals', currentGoal.id, 'activities', activity.id, 'steps', sub.id, 'edit']" 
-         class="action-icon-btn" 
-         title="Editar Paso">
-        <mat-icon>edit</mat-icon>
-      </a>
-      
-      <span class="sub-details">
-        <mat-icon fontIcon="schedule" class="icon-inline"></mat-icon>
-        {{ sub.executionPlan.durationPerExecutionMin }} min
-        <span class="sub-progress-text">
-          ({{ sub.executionPlan.completedDates.length }} / {{ sub.executionPlan.dates?.length }})
-        </span>
-      </span>
+                <div class="sub-right-content">
 
-    </div>
-  </div>
+                  <a [routerLink]="['/goals', currentGoal.id, 'activities', activity.id, 'steps', sub.id, 'edit']"
+                    class="action-icon-btn" title="Editar Paso">
+                    <mat-icon>edit</mat-icon>
+                  </a>
 
-  <div class="mini-progress">
-    <div class="mini-bar" [style.width.%]="sub.progress"></div>
-  </div>
-</li>
+                  <button class="action-icon-btn-danger" (click)="onDeleteSubActivity(sub)" title="Eliminar Paso">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+
+                  <span class="sub-details">
+                    <mat-icon fontIcon="schedule" class="icon-inline"></mat-icon>
+                    {{ sub.executionPlan.durationPerExecutionMin }} min
+                    <span class="sub-progress-text">
+                      ({{ sub.executionPlan.completedDates.length }} / {{ sub.executionPlan.dates?.length }})
+                    </span>
+                  </span>
+
+                </div>
+              </div>
+
+              <div class="mini-progress">
+                <div class="mini-bar" [style.width.%]="sub.progress"></div>
+              </div>
+            </li>
             } @empty {
             <li class="empty-subtasks">No hay pasos definidos aún.</li>
             }

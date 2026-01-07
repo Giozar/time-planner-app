@@ -3,13 +3,15 @@
   padding: 2rem;
   max-width: 900px;
   margin: 0 auto;
-  font-family: 'Roboto', 'Segoe UI', sans-serif; /* Asegurar fuente limpia */
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  /* Asegurar fuente limpia */
 }
 
 /* --- HEADER & NAVIGATION --- */
 .header-top {
   display: flex;
-  justify-content: space-between; /* Esto separa "Volver" del botón "Editar" */
+  justify-content: space-between;
+  /* Esto separa "Volver" del botón "Editar" */
   align-items: center;
   margin-bottom: 1rem;
 }
@@ -24,7 +26,8 @@
 }
 
 .btn-icon-edit:hover {
-  color: #3498db; /* Azul al pasar el mouse */
+  color: #3498db;
+  /* Azul al pasar el mouse */
 }
 
 /* Ajuste de tamaño del icono si es necesario */
@@ -78,10 +81,26 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-.badge.trabajo { background-color: #e3f2fd; color: #1565c0; }
-.badge.sistema_vital { background-color: #e8f5e9; color: #2e7d32; }
-.badge.progreso { background-color: #f3e5f5; color: #7b1fa2; }
-.badge.creativa { background-color: #fff3e0; color: #ef6c00; }
+
+.badge.trabajo {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.badge.sistema_vital {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.badge.progreso {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.badge.creativa {
+  background-color: #fff3e0;
+  color: #ef6c00;
+}
 
 /* --- BARRAS DE PROGRESO --- */
 /* Barra Grande (Meta) */
@@ -157,13 +176,13 @@ h1 {
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-add:hover {
   background: #3498db;
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .activities-list {
@@ -178,14 +197,15 @@ h1 {
   border: 1px solid #eaeded;
   border-radius: 12px;
   display: flex;
-  flex-direction: column; /* Estructura vertical: Info principal arriba, subtareas abajo */
+  flex-direction: column;
+  /* Estructura vertical: Info principal arriba, subtareas abajo */
   transition: all 0.2s;
   overflow: hidden;
 }
 
 .activity-card:hover {
   border-color: #d6dbdf;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
 }
 
 .card-main {
@@ -221,12 +241,29 @@ h1 {
   display: flex;
   align-items: center;
   cursor: pointer;
-  transform: scale(0.8); /* Un poco más pequeño */
+  transform: scale(0.8);
+  /* Un poco más pequeño */
   transition: color 0.2s;
 }
 
 .icon-btn-small:hover {
   color: #3498db;
+}
+
+.icon-btn-small-danger {
+  color: #bdc3c7;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transform: scale(0.8);
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.icon-btn-small-danger:hover {
+  color: #ef4444;
 }
 
 /* Iconos SVG */
@@ -256,7 +293,8 @@ h1 {
   margin-bottom: 1rem;
 }
 
-.tag-level, .tag-type {
+.tag-level,
+.tag-type {
   font-size: 0.7rem;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
@@ -294,9 +332,18 @@ h1 {
   font-weight: 700;
   font-size: 0.85rem;
 }
-.status.completada { color: #27ae60; }
-.status.en_progreso { color: #2980b9; }
-.status.pendiente { color: #7f8c8d; }
+
+.status.completada {
+  color: #27ae60;
+}
+
+.status.en_progreso {
+  color: #2980b9;
+}
+
+.status.pendiente {
+  color: #7f8c8d;
+}
 
 .meta-progress {
   display: flex;
@@ -402,7 +449,8 @@ h1 {
 
 .mini-bar {
   height: 100%;
-  background-color: #27ae60; /* Verde para pasos */
+  background-color: #27ae60;
+  /* Verde para pasos */
   transition: width 0.3s;
 }
 
@@ -431,6 +479,7 @@ h1 {
   margin-top: 0.5rem;
   display: inline-block;
 }
+
 .btn-link:hover {
   text-decoration: underline;
 }
@@ -439,7 +488,8 @@ h1 {
 .sub-right-content {
   display: flex;
   align-items: center;
-  gap: 0.8rem; /* Espacio entre botones y texto */
+  gap: 0.8rem;
+  /* Espacio entre botones y texto */
 }
 
 /* Estilo para los botones de icono (Editar/Borrar) */
@@ -452,23 +502,49 @@ h1 {
   align-items: center;
   justify-content: center;
   padding: 0;
-  text-decoration: none; /* Para el <a> */
+  text-decoration: none;
+  /* Para el <a> */
   transition: color 0.2s;
 }
 
 /* Tamaño de los iconos de acción */
 .action-icon-btn mat-icon {
-  font-size: 1.2rem; /* Un poco más pequeños que los normales */
+  font-size: 1.2rem;
+  /* Un poco más pequeños que los normales */
   width: 1.2rem;
   height: 1.2rem;
 }
 
 .action-icon-btn:hover {
-  color: #3498db; /* Azul al editar */
+  color: #3498db;
+  /* Azul al editar */
+}
+
+.action-icon-btn-danger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #bdc3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.action-icon-btn-danger mat-icon {
+  font-size: 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.action-icon-btn-danger:hover {
+  color: #ef4444;
 }
 
 .action-icon-btn.delete:hover {
-  color: #e74c3c; /* Rojo al borrar */
+  color: #e74c3c;
+  /* Rojo al borrar */
 }
 
 /* Ajuste para tu icono de reloj inline */

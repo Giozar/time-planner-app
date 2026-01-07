@@ -160,6 +160,72 @@ export class PlannerService {
     this.saveAll();
   }
 
+  // --- BORRAR (DELETE) ---
+
+  deleteGoal(goalId: string) {
+    // 1. Obtener IDs de actividades hijas para borrar sus subactividades
+    const activitiesToDelete = this.activitiesSignal().filter(a => a.goalId === goalId);
+    const activityIds = activitiesToDelete.map(a => a.id);
+
+    // 2. Borrar subactividades en cascada
+    this.subActivitiesSignal.update(subs => 
+      subs.filter(s => !activityIds.includes(s.activityId))
+    );
+
+    // 3. Borrar actividades
+    this.activitiesSignal.update(acts => 
+      acts.filter(a => a.goalId !== goalId)
+    );
+
+    // 4. Borrar la meta
+    this.goalsSignal.update(goals => 
+      goals.filter(g => g.id !== goalId)
+    );
+
+    this.saveAll();
+  }
+
+  deleteActivity(activityId: string) {
+    let goalIdToUpdate: string | null = null;
+
+    // 1. Identificar meta padre
+    const activity = this.activitiesSignal().find(a => a.id === activityId);
+    if (activity) goalIdToUpdate = activity.goalId;
+
+    // 2. Borrar subactividades hijas
+    this.subActivitiesSignal.update(subs => 
+      subs.filter(s => s.activityId !== activityId)
+    );
+
+    // 3. Borrar actividad
+    this.activitiesSignal.update(acts => 
+      acts.filter(a => a.id !== activityId)
+    );
+
+    // 4. Recalcular meta
+    if (goalIdToUpdate) this.updateGoalProgress(goalIdToUpdate);
+
+    this.saveAll();
+  }
+
+  deleteSubActivity(subId: string) {
+    let activityIdToUpdate: string | null = null;
+
+    // 1. Identificar actividad padre
+    const sub = this.subActivitiesSignal().find(s => s.id === subId);
+    if (sub) activityIdToUpdate = sub.activityId;
+
+    // 2. Borrar subactividad
+    this.subActivitiesSignal.update(subs => 
+      subs.filter(s => s.id !== subId)
+    );
+
+    // 3. Recalcular actividad
+    if (activityIdToUpdate) this.updateCompositeActivityProgress(activityIdToUpdate);
+
+    this.saveAll();
+  }
+
   // ==========================================
   // LÓGICA DE RECÁLCULO EN CADENA (BUBBLE UP)
   // ==========================================
@@ -299,10 +365,9 @@ export class PlannerService {
     return this.subActivitiesSignal().filter(s => s.activityId === activityId).length;
   }
 
-  // 2. Borrar subactividades de un padre (limpieza profunda)
+  // 2. Borrar subactividades de un padre (limpieza profunda) - DEPRECATED: Usar deleteActivity
   deleteSubActivitiesByActivityId(activityId: string) {
     this.subActivitiesSignal.update(subs => subs.filter(s => s.activityId !== activityId));
-    // No llamamos saveAll aquí todavía, porque se llamará inmediatamente después al actualizar la actividad
   }
 
   // Cierre del día (Simplificado)

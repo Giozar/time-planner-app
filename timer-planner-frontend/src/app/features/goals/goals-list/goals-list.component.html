@@ -19,7 +19,12 @@
 
       <div class="card-header">
         <span class="badge {{ goal.type }}">{{ goal.type | titlecase }}</span>
-        <span class="horizonte">{{ goal.horizon | titlecase }}</span>
+        <div class="header-actions">
+          <span class="horizonte">{{ goal.horizon | titlecase }}</span>
+          <button class="btn-icon-danger" (click)="onDeleteGoal($event, goal)" title="Eliminar Meta">
+            <mat-icon fontIcon="delete"></mat-icon>
+          </button>
+        </div>
       </div>
 
       <h3>{{ goal.title }}</h3>
