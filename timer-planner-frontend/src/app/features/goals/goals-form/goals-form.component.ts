@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
-import { Goal } from '../../../core/models/goal.model';
+import { Goal, GOAL_TYPE_OPTIONS, GOAL_HORIZON_OPTIONS } from '../../../core/models/goal.model';
 
 @Component({
   selector: 'app-goals-form',
@@ -17,6 +17,9 @@ export class GoalsFormComponent implements OnInit {
   private plannerService = inject(PlannerService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  readonly typeOptions = GOAL_TYPE_OPTIONS;
+  readonly horizonOptions = GOAL_HORIZON_OPTIONS;
 
   isEditMode = false;
   goalId: string | null = null;

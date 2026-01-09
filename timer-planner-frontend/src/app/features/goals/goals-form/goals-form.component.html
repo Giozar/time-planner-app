@@ -5,28 +5,28 @@
   </header>
 
   <form [formGroup]="goalForm" (ngSubmit)="onSubmit()">
-    
+
     <div class="form-group">
       <label for="title">Título de la Meta</label>
-      <input id="title" type="text" formControlName="title" [class.invalid]="goalForm.get('title')?.invalid && goalForm.get('title')?.touched">
+      <input id="title" type="text" formControlName="title"
+        [class.invalid]="goalForm.get('title')?.invalid && goalForm.get('title')?.touched">
     </div>
 
     <div class="form-group">
       <label for="type">Tipo de Objetivo</label>
       <select id="type" formControlName="type">
-        <option value="trabajo">Trabajo / Profesional</option>
-        <option value="sistema_vital">Sistema Vital (Salud, Finanzas)</option>
-        <option value="progreso">Progreso Personal</option>
-        <option value="creativa">Creativa / Ocio</option>
+        @for (opt of typeOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+        }
       </select>
     </div>
 
     <div class="form-group">
       <label for="horizon">Horizonte</label>
       <select id="horizon" formControlName="horizon">
-        <option value="corto">Corto Plazo</option>
-        <option value="mediano">Mediano Plazo</option>
-        <option value="largo">Largo Plazo</option>
+        @for (opt of horizonOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+        }
       </select>
     </div>
 

@@ -5,7 +5,7 @@
   </header>
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()">
-    
+
     <div class="form-group">
       <label>Nombre del Paso</label>
       <input type="text" formControlName="title" placeholder="Ej: Módulo 1, Investigación...">
@@ -17,10 +17,10 @@
     </div>
 
     <hr class="divider">
-    
+
     <div class="plan-section">
       <h3>Plan de Ejecución</h3>
-      
+
       <div class="form-group">
         <label>Duración por Sesión (min)</label>
         <input type="number" formControlName="duration">
@@ -29,53 +29,47 @@
       <div class="form-group">
         <label>Estrategia</label>
         <div class="radio-group">
+          @for (opt of planTypeOptions; track opt.value) {
           <label>
-            <input type="radio" formControlName="planType" value="patron_repetitivo">
-            Patrón Repetitivo (Días fijos)
+            <input type="radio" formControlName="planType" [value]="opt.value">
+            {{ opt.label }}
           </label>
-          <label>
-            <input type="radio" formControlName="planType" value="fechas_especificas">
-            Fechas Específicas
-          </label>
+          }
         </div>
       </div>
 
       @if (isPattern) {
-        <div class="form-group pattern-box">
-          <label>Días de trabajo:</label>
-          <div class="week-grid">
-            @for (day of weekDays; track day.value) {
-              <label class="day-check">
-                <input 
-                  type="checkbox" 
-                  [value]="day.value" 
-                  [checked]="isDayChecked(day.value)"
-                  (change)="onDayChange($event)"
-                >
-                <span>{{ day.label }}</span>
-              </label>
-            }
-          </div>
+      <div class="form-group pattern-box">
+        <label>Días de trabajo:</label>
+        <div class="week-grid">
+          @for (day of weekDays; track day.value) {
+          <label class="day-check">
+            <input type="checkbox" [value]="day.value" [checked]="isDayChecked(day.value)"
+              (change)="onDayChange($event)">
+            <span>{{ day.label }}</span>
+          </label>
+          }
         </div>
+      </div>
       }
 
       @if (!isPattern) {
-        <div class="form-group dates-box">
-          <label>Añadir Fecha</label>
-          <div class="date-adder">
-            <input type="date" #dateInput [min]="minDate">
-            <button type="button" (click)="addSpecificDate(dateInput)">+</button>
-          </div>
-          
-          <div class="selected-dates">
-            @for (date of specificDatesArray.value; track $index) {
-              <span class="date-tag">
-                {{ date }} 
-                <span class="remove" (click)="removeSpecificDate($index)">×</span>
-              </span>
-            }
-          </div>
+      <div class="form-group dates-box">
+        <label>Añadir Fecha</label>
+        <div class="date-adder">
+          <input type="date" #dateInput [min]="minDate">
+          <button type="button" (click)="addSpecificDate(dateInput)">+</button>
         </div>
+
+        <div class="selected-dates">
+          @for (date of specificDatesArray.value; track $index) {
+          <span class="date-tag">
+            {{ date }}
+            <span class="remove" (click)="removeSpecificDate($index)">×</span>
+          </span>
+          }
+        </div>
+      </div>
       }
     </div>
 

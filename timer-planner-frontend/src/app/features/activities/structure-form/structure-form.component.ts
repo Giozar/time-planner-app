@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
-import { SubActivity, WeekDay, ExecutionPlan } from '../../../core/models/activity.model';
+import { SubActivity, WeekDay, ExecutionPlan, WEEK_DAYS, EXECUTION_PLAN_TYPE_OPTIONS } from '../../../core/models/activity.model';
 import { DateUtils } from '../../../core/utils/date.utils';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 
@@ -33,11 +33,8 @@ export class StructureFormComponent implements OnInit {
   private originalProgress: number = 0;
   private originalStatus: any = 'pendiente';
 
-  weekDays: { label: string, value: WeekDay }[] = [
-    { label: 'Lun', value: 'L' }, { label: 'Mar', value: 'M' },
-    { label: 'Mié', value: 'X' }, { label: 'Jue', value: 'J' },
-    { label: 'Vie', value: 'V' }, { label: 'Sáb', value: 'S' }, { label: 'Dom', value: 'D' }
-  ];
+  readonly planTypeOptions = EXECUTION_PLAN_TYPE_OPTIONS;
+  readonly weekDays = WEEK_DAYS;
 
   form = this.fb.group({
     title: ['', Validators.required],

@@ -15,16 +15,17 @@
       <div class="form-group half">
         <label>Tipo</label>
         <select formControlName="type">
-          <option value="simple">Simple (Se ejecuta directo)</option>
-          <option value="compuesta">Compuesta (Requiere pasos)</option>
+          @for (opt of typeOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+          }
         </select>
       </div>
       <div class="form-group half">
         <label>Nivel</label>
         <select formControlName="level">
-          <option value="urgente_directo">Urgente Directo</option>
-          <option value="progreso">Progreso</option>
-          <option value="sistema">Sistema</option>
+          @for (opt of levelOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+          }
         </select>
       </div>
     </div>
@@ -37,73 +38,68 @@
     <hr class="divider">
 
     @if (isSimple) {
-      <div class="plan-section fade-in">
-        <h3>Plan de Ejecución</h3>
-        
-        <div class="form-group">
-          <label>Duración por Sesión (min)</label>
-          <input type="number" formControlName="duration">
-        </div>
+    <div class="plan-section fade-in">
+      <h3>Plan de Ejecución</h3>
 
-        <div class="form-group">
-          <label>Estrategia</label>
-          <div class="radio-group">
-            <label>
-              <input type="radio" formControlName="planType" value="patron_repetitivo">
-              Patrón Repetitivo (Días fijos hasta deadline)
-            </label>
-            <label>
-              <input type="radio" formControlName="planType" value="fechas_especificas">
-              Fechas Específicas (Días sueltos)
-            </label>
-          </div>
-        </div>
-
-        @if (isPattern) {
-          <div class="form-group pattern-box">
-            <label>Selecciona los días:</label>
-            <div class="week-grid">
-              @for (day of weekDays; track day.value) {
-                <label class="day-check">
-                  <input 
-                    type="checkbox" 
-                    [value]="day.value" 
-                    [checked]="isDayChecked(day.value)"
-                    (change)="onDayChange($event)"
-                  >
-                  <span>{{ day.label }}</span>
-                </label>
-              }
-            </div>
-            <p class="hint">Se generarán todas las sesiones automáticamente.</p>
-          </div>
-        }
-
-        @if (!isPattern) {
-          <div class="form-group dates-box">
-            <label>Añadir Fecha</label>
-            <div class="date-adder">
-              <input type="date" #dateInput [min]="minDate">
-              <button type="button" (click)="addSpecificDate(dateInput)">+</button>
-            </div>
-            
-            <div class="selected-dates">
-              @for (date of specificDatesArray.value; track $index) {
-                <span class="date-tag">
-                  {{ date }} 
-                  <span class="remove" (click)="removeSpecificDate($index)">×</span>
-                </span>
-              } @empty {
-                <span class="empty-hint">Sin fechas añadidas</span>
-              }
-            </div>
-          </div>
-        }
+      <div class="form-group">
+        <label>Duración por Sesión (min)</label>
+        <input type="number" formControlName="duration">
       </div>
+
+      <div class="form-group">
+        <label>Estrategia</label>
+        <div class="radio-group">
+          @for (opt of planTypeOptions; track opt.value) {
+          <label>
+            <input type="radio" formControlName="planType" [value]="opt.value">
+            {{ opt.label }}
+          </label>
+          }
+        </div>
+      </div>
+
+      @if (isPattern) {
+      <div class="form-group pattern-box">
+        <label>Selecciona los días:</label>
+        <div class="week-grid">
+          @for (day of weekDays; track day.value) {
+          <label class="day-check">
+            <input type="checkbox" [value]="day.value" [checked]="isDayChecked(day.value)"
+              (change)="onDayChange($event)">
+            <span>{{ day.label }}</span>
+          </label>
+          }
+        </div>
+        <p class="hint">Se generarán todas las sesiones automáticamente.</p>
+      </div>
+      }
+
+      @if (!isPattern) {
+      <div class="form-group dates-box">
+        <label>Añadir Fecha</label>
+        <div class="date-adder">
+          <input type="date" #dateInput [min]="minDate">
+          <button type="button" (click)="addSpecificDate(dateInput)">+</button>
+        </div>
+
+        <div class="selected-dates">
+          @for (date of specificDatesArray.value; track $index) {
+          <span class="date-tag">
+            {{ date }}
+            <span class="remove" (click)="removeSpecificDate($index)">×</span>
+          </span>
+          } @empty {
+          <span class="empty-hint">Sin fechas añadidas</span>
+          }
+        </div>
+      </div>
+      }
+    </div>
     } @else {
-      <div class="info-box fade-in">
-        <p><strong>Actividad Compuesta:</strong> No defines tiempos ahora. Crearás subactividades (pasos) después, y cada paso tendrá su propio plan de ejecución.</p>
-      </div>
+    <div class="info-box fade-in">
+      <p><strong>Actividad Compuesta:</strong> No defines tiempos ahora. Crearás subactividades (pasos) después, y cada
+        paso tendrá su propio plan de ejecución.</p>
+    </div>
     }
 
     <div class="actions">

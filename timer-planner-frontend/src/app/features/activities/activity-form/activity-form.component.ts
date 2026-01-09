@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
-import { Activity, WeekDay, ExecutionPlan, ActivityStatus } from '../../../core/models/activity.model';
+import { Activity, WeekDay, ExecutionPlan, ActivityStatus, WEEK_DAYS, ACTIVITY_LEVEL_OPTIONS, ACTIVITY_TYPE_OPTIONS, EXECUTION_PLAN_TYPE_OPTIONS } from '../../../core/models/activity.model';
 import { DateUtils } from '../../../core/utils/date.utils';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 
@@ -31,11 +31,10 @@ export class ActivityFormComponent implements OnInit {
   private originalProgress: number = 0;
   private originalStatus: ActivityStatus = 'pendiente';
   private originalType: 'simple' | 'compuesta' = 'simple';
-  weekDays: { label: string, value: WeekDay }[] = [
-    { label: 'Lun', value: 'L' }, { label: 'Mar', value: 'M' },
-    { label: 'Mié', value: 'X' }, { label: 'Jue', value: 'J' },
-    { label: 'Vie', value: 'V' }, { label: 'Sáb', value: 'S' }, { label: 'Dom', value: 'D' }
-  ];
+  readonly levelOptions = ACTIVITY_LEVEL_OPTIONS;
+  readonly typeOptions = ACTIVITY_TYPE_OPTIONS;
+  readonly planTypeOptions = EXECUTION_PLAN_TYPE_OPTIONS;
+  readonly weekDays = WEEK_DAYS;
 
   activityForm = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
