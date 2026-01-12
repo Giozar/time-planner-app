@@ -26,7 +26,8 @@ label {
   color: #34495e;
 }
 
-input, select {
+input,
+select {
   width: 100%;
   padding: 0.8rem;
   border: 1px solid #ced6e0;
@@ -37,7 +38,8 @@ input, select {
   transition: border-color 0.2s;
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   outline: none;
   border-color: #3498db;
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
@@ -95,26 +97,6 @@ button {
   cursor: not-allowed;
 }
 
-
-
-.required {
-  color: #e74c3c;
-  margin-left: 4px;
-}
-
-.info-text p {
-  margin: 0;
-  padding: 0.8rem;
-  background-color: #f8f9fa;
-  border: 1px dashed #bdc3c7;
-  border-radius: 8px;
-  color: #7f8c8d;
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-
-
 .plan-section {
   background: #f8f9fa;
   padding: 1.5rem;
@@ -130,25 +112,11 @@ button {
   margin-bottom: 1rem;
 }
 
-.radio-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
 /* Week Grid */
 .week-grid {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.day-check {
-  cursor: pointer;
-}
-
-.day-check input {
-  display: none; /* Ocultar checkbox nativo */
 }
 
 .day-check span {
@@ -165,51 +133,10 @@ button {
   transition: all 0.2s;
 }
 
-.day-check input:checked + span {
+.day-check input:checked+span {
   background-color: #3498db;
   color: white;
   border-color: #3498db;
-}
-
-/* Specific Dates */
-.date-adder {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.date-adder button {
-  padding: 0 1rem;
-  background: #2c3e50;
-  color: white;
-  border-radius: 4px;
-}
-
-.selected-dates {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.date-tag {
-  background: #e3f2fd;
-  color: #1565c0;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.remove {
-  cursor: pointer;
-  font-weight: bold;
-  color: #1565c0;
-}
-
-.remove:hover {
-  color: #d32f2f;
 }
 
 .info-box {
@@ -219,14 +146,4 @@ button {
   border-left: 4px solid #ff9800;
   margin-bottom: 1.5rem;
   color: #ef6c00;
-}
-
-/* Animación suave al cambiar tipo */
-.fade-in {
-  animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
 }

@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 import { Goal } from '../models/goal.model';
+import { Objective } from '../models/objective.model';
 import { Activity, SubActivity } from '../models/activity.model';
 import { DailyRecord } from '../models/daily-record.model';
 
@@ -7,6 +8,10 @@ export abstract class DataProvider {
   // Metas
   abstract getGoals(): Observable<Goal[]>;
   abstract saveGoals(goals: Goal[]): Observable<void>;
+
+  // Objetivos
+  abstract getObjectives(): Observable<Objective[]>;
+  abstract saveObjectives(objectives: Objective[]): Observable<void>;
 
   // Actividades
   abstract getActivities(): Observable<Activity[]>;

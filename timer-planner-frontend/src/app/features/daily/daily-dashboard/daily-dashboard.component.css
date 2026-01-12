@@ -71,7 +71,7 @@ h1 {
 }
 
 .task-item:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* Checkbox Customization */
@@ -102,11 +102,11 @@ h1 {
   transition: all 0.2s;
 }
 
-.checkbox-wrapper:hover input ~ .checkmark {
+.checkbox-wrapper:hover input~.checkmark {
   border-color: #3498db;
 }
 
-.checkbox-wrapper input:checked ~ .checkmark {
+.checkbox-wrapper input:checked~.checkmark {
   background-color: #3498db;
   border-color: #3498db;
 }
@@ -117,7 +117,7 @@ h1 {
   display: none;
 }
 
-.checkbox-wrapper input:checked ~ .checkmark:after {
+.checkbox-wrapper input:checked~.checkmark:after {
   display: block;
 }
 
@@ -131,7 +131,6 @@ h1 {
   transform: rotate(45deg);
 }
 
-/* Task Content */
 .task-content {
   flex: 1;
 }
@@ -155,7 +154,6 @@ h1 {
   border-radius: 4px;
 }
 
-/* Completed State */
 .task-item.completed {
   background-color: #fafafa;
   border-color: #eee;
@@ -166,8 +164,6 @@ h1 {
   color: #bdc3c7;
 }
 
-
-/* Footer */
 .dashboard-footer {
   margin-top: 2rem;
   display: flex;

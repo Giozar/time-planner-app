@@ -1,15 +1,10 @@
-export type ActivityLevel = 'urgente_directo' | 'urgente_sistemico' | 'progreso' | 'sistema' | 'creativa';
 export type ActivityType = 'simple' | 'compuesta';
 export type ActivityStatus = 'pendiente' | 'en_progreso' | 'completada' | 'pausada';
+export type ActivityPriority = 'alta' | 'media' | 'baja';
+export type ActivityCriticality = 'vital' | 'esencial_recurrente' | 'flexible';
+export type ActivityComplexity = 'baja' | 'media' | 'alta';
+export type ActivityRecurrence = 'unica' | 'patron_semanal' | 'fechas_especificas';
 export type SubActivityStatus = 'pendiente' | 'en_progreso' | 'completada';
-
-export const ACTIVITY_LEVEL_OPTIONS: { value: ActivityLevel; label: string }[] = [
-  { value: 'urgente_directo', label: 'Urgente Directo' },
-  { value: 'urgente_sistemico', label: 'Urgente Sistémico' },
-  { value: 'progreso', label: 'Progreso' },
-  { value: 'sistema', label: 'Sistema' },
-  { value: 'creativa', label: 'Creativa' },
-];
 
 export const ACTIVITY_TYPE_OPTIONS: { value: ActivityType; label: string }[] = [
   { value: 'simple', label: 'Simple (Se ejecuta directo)' },
@@ -21,6 +16,30 @@ export const ACTIVITY_STATUS_OPTIONS: { value: ActivityStatus; label: string }[]
   { value: 'en_progreso', label: 'En Progreso' },
   { value: 'completada', label: 'Completada' },
   { value: 'pausada', label: 'Pausada' },
+];
+
+export const ACTIVITY_PRIORITY_OPTIONS: { value: ActivityPriority; label: string }[] = [
+  { value: 'alta', label: 'Alta' },
+  { value: 'media', label: 'Media' },
+  { value: 'baja', label: 'Baja' },
+];
+
+export const ACTIVITY_CRITICALITY_OPTIONS: { value: ActivityCriticality; label: string }[] = [
+  { value: 'vital', label: 'Vital' },
+  { value: 'esencial_recurrente', label: 'Esencial Recurrente' },
+  { value: 'flexible', label: 'Flexible' },
+];
+
+export const ACTIVITY_COMPLEXITY_OPTIONS: { value: ActivityComplexity; label: string }[] = [
+  { value: 'baja', label: 'Baja' },
+  { value: 'media', label: 'Media' },
+  { value: 'alta', label: 'Alta' },
+];
+
+export const ACTIVITY_RECURRENCE_OPTIONS: { value: ActivityRecurrence; label: string }[] = [
+  { value: 'unica', label: 'Única' },
+  { value: 'patron_semanal', label: 'Patrón Semanal' },
+  { value: 'fechas_especificas', label: 'Fechas Específicas' },
 ];
 
 export const SUBACTIVITY_STATUS_OPTIONS: { value: SubActivityStatus; label: string }[] = [
@@ -39,7 +58,7 @@ export const WEEK_DAYS: { label: string; value: WeekDay }[] = [
   { label: 'Dom', value: 'D' },
 ];
 
-// --- NUEVOS TIPOS PARA EJECUCIÓN ---
+// --- TIPOS PARA EJECUCIÓN ---
 export type ExecutionPlanType = 'fechas_especificas' | 'patron_repetitivo';
 export type WeekDay = 'L' | 'M' | 'X' | 'J' | 'V' | 'S' | 'D';
 
@@ -48,51 +67,49 @@ export const EXECUTION_PLAN_TYPE_OPTIONS: { value: ExecutionPlanType; label: str
   { value: 'fechas_especificas', label: 'Fechas Específicas (Días sueltos)' },
 ];
 
-// Contrato de Ejecución (Lo que define cuándo y cuánto se trabaja)
+// Contrato de Ejecución
 export interface ExecutionPlan {
   type: ExecutionPlanType;
-  
-  // Opción A: Lista manual de fechas (ISO 'YYYY-MM-DD')
-  dates?: string[]; 
-
-  // Opción B: Patrón (Días de la semana)
+  dates?: string[]; // ISO 'YYYY-MM-DD'
   patternDays?: WeekDay[]; 
-  
-  // Datos de tiempo
   durationPerExecutionMin: number;
-  
-  // ESTADO: Lista de fechas (ISO) que ya se marcaron como completadas
-  completedDates: string[]; 
+  completedDates: string[]; // ISO
 }
 
+/**
+ * Representa una TAREA en el sistema V2.
+ */
 export interface Activity {
   id: string;
-  goalId: string;
+  objectiveId: string; // V2: Cuelga de Objetivo
   title: string;
-  level: ActivityLevel;
   type: ActivityType;
+  priority: ActivityPriority;
+  criticality: ActivityCriticality;
+  complexity: ActivityComplexity;
+  recurrence: ActivityRecurrence;
   deadline: string; // 'YYYY-MM-DD'
 
   // Si es SIMPLE: Tiene plan propio
-  // Si es COMPUESTA: Es undefined (depende de sus hijos)
   executionPlan?: ExecutionPlan; 
 
-  // Si es COMPUESTA: Suma de sus hijos
   totalTimeRequiredMin?: number;
-
-  progress: number; // Calculado matemáticamente (0-100)
+  progress: number; 
   status: ActivityStatus;
 }
 
+/**
+ * Representa un PASO en el sistema V2.
+ */
 export interface SubActivity {
   id: string;
   activityId: string;
   title: string;
   deadline: string; // 'YYYY-MM-DD'
+  complexity: ActivityComplexity;
+  status: SubActivityStatus;
 
   // SIEMPRE tiene plan (es la unidad ejecutable de la compuesta)
   executionPlan: ExecutionPlan;
-
   progress: number;
-  status: SubActivityStatus;
 }

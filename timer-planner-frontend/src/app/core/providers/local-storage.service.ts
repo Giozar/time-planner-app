@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { Observable, of } from 'rxjs';
 import { DataProvider } from './data.provider';
 import { Goal } from '../models/goal.model';
+import { Objective } from '../models/objective.model';
 import { Activity, SubActivity } from '../models/activity.model';
 import { DailyRecord } from '../models/daily-record.model';
 
@@ -13,6 +14,7 @@ export class LocalStorageService extends DataProvider {
 
   private readonly KEYS = {
     GOALS: 'planner_goals',
+    OBJECTIVES: 'planner_objectives',
     ACTIVITIES: 'planner_activities',
     SUB_ACTIVITIES: 'planner_sub_activities',
     RECORDS: 'planner_records'
@@ -42,7 +44,7 @@ export class LocalStorageService extends DataProvider {
     }
   }
 
-  // --- Implementación del Contrato (Igual que antes) ---
+  // --- Implementación del Contrato ---
 
   // Metas
   getGoals(): Observable<Goal[]> {
@@ -51,6 +53,16 @@ export class LocalStorageService extends DataProvider {
   
   saveGoals(goals: Goal[]): Observable<void> {
     this.save(this.KEYS.GOALS, goals);
+    return of(void 0);
+  }
+
+  // Objetivos
+  getObjectives(): Observable<Objective[]> {
+    return of(this.load<Objective>(this.KEYS.OBJECTIVES));
+  }
+
+  saveObjectives(objectives: Objective[]): Observable<void> {
+    this.save(this.KEYS.OBJECTIVES, objectives);
     return of(void 0);
   }
 

@@ -1,0 +1,32 @@
+<div class="form-container">
+    <header>
+        <h1>{{ isEditMode ? 'Editar Objetivo' : 'Nuevo Objetivo' }}</h1>
+        <p>{{ isEditMode ? 'Modifica la naturaleza de tu objetivo.' : 'Define un área específica para tu meta.' }}</p>
+    </header>
+
+    <form [formGroup]="objectiveForm" (ngSubmit)="onSubmit()">
+
+        <div class="form-group">
+            <label for="title">Título del Objetivo</label>
+            <input id="title" type="text" formControlName="title"
+                [class.invalid]="objectiveForm.get('title')?.invalid && objectiveForm.get('title')?.touched">
+        </div>
+
+        <div class="form-group">
+            <label for="nature">Naturaleza</label>
+            <select id="nature" formControlName="nature">
+                @for (opt of natureOptions; track opt.value) {
+                <option [value]="opt.value">{{ opt.label }}</option>
+                }
+            </select>
+        </div>
+
+        <div class="actions">
+            <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>
+            <button type="submit" class="btn-save" [disabled]="objectiveForm.invalid">
+                {{ isEditMode ? 'Guardar Cambios' : 'Crear Objetivo' }}
+            </button>
+        </div>
+
+    </form>
+</div>

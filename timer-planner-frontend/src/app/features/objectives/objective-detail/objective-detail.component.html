@@ -1,0 +1,153 @@
+@if (objective(); as currentObj) {
+<div class="detail-container">
+
+    <header class="goal-header">
+        <div class="header-top">
+            @if (goal(); as g) {
+            <a [routerLink]="['/goals', g.id]" class="back-link">← Volver a {{ g.title }}</a>
+            }
+            <div class="header-actions">
+                <a [routerLink]="['/goals', currentObj.goalId, 'objectives', currentObj.id, 'edit']"
+                    class="btn-icon-edit" title="Editar Objetivo">
+                    <mat-icon>edit</mat-icon>
+                </a>
+            </div>
+        </div>
+        <span class="badge">{{ currentObj.nature | titlecase }}</span>
+        <h1>{{ currentObj.title }}</h1>
+
+        <div class="progress-container">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" [style.width.%]="currentObj.progress"></div>
+            </div>
+            <span class="progress-text">{{ currentObj.progress }}% Completado</span>
+        </div>
+    </header>
+
+    <hr class="divider">
+
+    <section class="activities-section">
+        <div class="section-header">
+            <h2>Tareas Planificadas</h2>
+            <a [routerLink]="['/objectives', currentObj.id, 'activities', 'new']" class="btn-add">
+                + Nueva Tarea
+            </a>
+        </div>
+
+        <div class="activities-list">
+            @for (activity of activities(); track activity.id) {
+
+            <div class="activity-card">
+
+                <div class="card-main">
+                    <div class="card-header-row">
+                        <div class="title-group">
+                            <h3>{{ activity.title }}</h3>
+                            <a [routerLink]="['/objectives', currentObj.id, 'activities', activity.id, 'edit']"
+                                class="icon-btn-small">
+                                <mat-icon>edit</mat-icon>
+                            </a>
+                            <button class="icon-btn-small-danger" (click)="onDeleteActivity(activity)"
+                                title="Eliminar Tarea">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </div>
+                        <span class="deadline-tag">
+                            <mat-icon fontIcon="calendar_today" class="icon-inline"></mat-icon>
+                            {{ activity.deadline | date:'mediumDate' }}</span>
+                    </div>
+
+                    <div class="tags">
+                        <span class="tag-priority" [class]="activity.priority">{{ activity.priority | titlecase
+                            }}</span>
+                        <span class="tag-criticality" [class]="activity.criticality">{{
+                            activity.criticality.replace('_', ' ') | titlecase }}</span>
+                        <span class="tag-complexity" [class]="activity.complexity">{{ activity.complexity | titlecase
+                            }}</span>
+                    </div>
+
+                    <div class="activity-meta">
+                        <div class="meta-top">
+                            <span class="recurrence-tag">
+                                <mat-icon fontIcon="repeat" class="icon-inline"></mat-icon>
+                                {{ activity.recurrence.replace('_', ' ') | titlecase }}
+                            </span>
+                            <span class="status {{ activity.status }}">{{ activity.status.replace('_', ' ') | titlecase
+                                }}</span>
+                        </div>
+
+                        <div class="meta-progress">
+                            <div class="progress-bar-bg-small">
+                                <div class="progress-bar-fill-small" [style.width.%]="activity.progress"
+                                    [class.completed]="activity.progress === 100">
+                                </div>
+                            </div>
+                            <span class="percentage-text">{{ activity.progress }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if (activity.type === 'compuesta') {
+                <div class="subtasks-container">
+                    <div class="subtasks-header">
+                        <h4>Pasos (Steps)</h4>
+                        <a [routerLink]="['/objectives', currentObj.id, 'activities', activity.id, 'add-step']"
+                            class="btn-small-add">
+                            + Añadir Paso
+                        </a>
+                    </div>
+
+                    <ul class="subtasks-list">
+                        @for (sub of getSubtasks(activity.id); track sub.id) {
+                        <li class="subtask-item">
+                            <div class="sub-info">
+                                <span class="sub-name">{{ sub.title }}</span>
+
+                                <div class="sub-right-content">
+
+                                    <a [routerLink]="['/objectives', currentObj.id, 'activities', activity.id, 'steps', sub.id, 'edit']"
+                                        class="action-icon-btn" title="Editar Paso">
+                                        <mat-icon>edit</mat-icon>
+                                    </a>
+
+                                    <button class="action-icon-btn-danger" (click)="onDeleteSubActivity(sub)"
+                                        title="Eliminar Paso">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+
+                                    <span class="sub-details">
+                                        <span class="mini-complexity {{ sub.complexity }}">{{ sub.complexity | titlecase
+                                            }}</span>
+                                        <span class="sub-progress-text">
+                                            ({{ sub.executionPlan.completedDates.length }} / {{
+                                            sub.executionPlan.dates?.length }})
+                                        </span>
+                                    </span>
+
+                                </div>
+                            </div>
+
+                            <div class="mini-progress">
+                                <div class="mini-bar" [style.width.%]="sub.progress"></div>
+                            </div>
+                        </li>
+                        } @empty {
+                        <li class="empty-subtasks">No hay pasos definidos aún.</li>
+                        }
+                    </ul>
+                </div>
+                }
+
+            </div>
+            } @empty {
+            <div class="empty-activities">
+                <p>No hay tareas creadas para este objetivo.</p>
+                <a [routerLink]="['/objectives', currentObj.id, 'activities', 'new']" class="btn-link">Crear primera
+                    tarea</a>
+            </div>
+            }
+        </div>
+    </section>
+
+</div>
+}

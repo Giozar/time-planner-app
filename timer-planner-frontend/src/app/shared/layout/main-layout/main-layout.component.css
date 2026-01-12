@@ -1,13 +1,15 @@
 :host {
   display: block;
   height: 100vh;
-  overflow: hidden; /* Evita scroll en el body, scroll interno en main */
+  overflow: hidden;
+  /* Evita scroll en el body, scroll interno en main */
 }
 
 .app-container {
   display: flex;
   height: 100%;
-  background-color: #f4f6f8; /* Color de fondo general */
+  background-color: #f4f6f8;
+  /* Color de fondo general */
 }
 
 /* --- SIDEBAR --- */
@@ -17,7 +19,8 @@
   border-right: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0; /* No se encoge */
+  flex-shrink: 0;
+  /* No se encoge */
 }
 
 .brand {
@@ -35,7 +38,8 @@
 .brand-name {
   font-weight: 800;
   font-size: 1.2rem;
-  color: #2c3e50;
+  color: #1a2a3a;
+  /* Oscuro para contraste */
   letter-spacing: -0.5px;
 }
 
@@ -85,7 +89,10 @@
 
 /* --- CONTENT AREA --- */
 .content-area {
-  flex: 1; /* Ocupa el resto */
-  overflow-y: auto; /* Scroll independiente */
-  padding: 0; /* El padding lo maneja cada componente hijo */
+  flex: 1;
+  /* Ocupa el resto */
+  overflow-y: auto;
+  /* Scroll independiente */
+  padding: 0;
+  /* El padding lo maneja cada componente hijo */
 }

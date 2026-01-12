@@ -8,7 +8,6 @@
         <mat-icon>edit</mat-icon>
       </a>
     </div>
-    <span class="badge {{ currentGoal.type }}">{{ currentGoal.type | titlecase }}</span>
     <h1>{{ currentGoal.title }}</h1>
 
     <div class="meta-info">
@@ -28,116 +27,53 @@
 
   <section class="activities-section">
     <div class="section-header">
-      <h2>Plan de Acción</h2>
-      <a [routerLink]="['/goals', currentGoal.id, 'activities', 'new']" class="btn-add">
-        + Nueva Actividad
+      <h2>Objetivos (Naturaleza)</h2>
+      <a [routerLink]="['/goals', currentGoal.id, 'objectives', 'new']" class="btn-add">
+        + Nuevo Objetivo
       </a>
     </div>
 
     <div class="activities-list">
-      @for (activity of activities(); track activity.id) {
+      @for (objective of objectives(); track objective.id) {
 
-      <div class="activity-card">
+      <div class="activity-card" [routerLink]="['/objectives', objective.id]" style="cursor: pointer;">
 
         <div class="card-main">
           <div class="card-header-row">
             <div class="title-group">
-              <h3>{{ activity.title }}</h3>
-              <a [routerLink]="['/goals', currentGoal.id, 'activities', activity.id, 'edit']" class="icon-btn-small">
+              <h3>{{ objective.title }}</h3>
+              <a [routerLink]="['/goals', currentGoal.id, 'objectives', objective.id, 'edit']" class="icon-btn-small"
+                (click)="$event.stopPropagation()">
                 <mat-icon>edit</mat-icon>
               </a>
-              <button class="icon-btn-small-danger" (click)="onDeleteActivity(activity)" title="Eliminar Actividad">
+              <button class="icon-btn-small-danger" (click)="onDeleteObjective(objective); $event.stopPropagation()"
+                title="Eliminar Objetivo">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
-            <span class="deadline-tag">
-              <mat-icon fontIcon="calendar_today" class="icon-inline"></mat-icon>
-              {{ activity.deadline | date:'mediumDate' }}</span>
           </div>
 
           <div class="tags">
-            <span class="tag-level">{{ activity.level.replace('_', ' ') | titlecase }}</span>
-            <span class="tag-type">{{ activity.type | titlecase }}</span>
+            <span class="tag-level">{{ objective.nature | titlecase }}</span>
+            <span class="tag-type">{{ objective.status | titlecase }}</span>
           </div>
 
           <div class="activity-meta">
-            <div class="meta-top">
-              <span class="time-badge">
-                <mat-icon fontIcon="schedule" class="icon-inline"></mat-icon>
-                {{ activity.totalTimeRequiredMin }} min totales
-              </span>
-              <span class="status {{ activity.status }}">{{ activity.status.replace('_', ' ') | titlecase }}</span>
-            </div>
-
             <div class="meta-progress">
               <div class="progress-bar-bg-small">
-                <div class="progress-bar-fill-small" [style.width.%]="activity.progress"
-                  [class.completed]="activity.progress === 100">
+                <div class="progress-bar-fill-small" [style.width.%]="objective.progress"
+                  [class.completed]="objective.progress === 100">
                 </div>
               </div>
-              <span class="percentage-text">{{ activity.progress }}%</span>
+              <span class="percentage-text">{{ objective.progress }}%</span>
             </div>
           </div>
         </div>
-
-        @if (activity.type === 'compuesta') {
-        <div class="subtasks-container">
-          <div class="subtasks-header">
-            <h4>Estructura (Pasos)</h4>
-            <a [routerLink]="['/goals', currentGoal.id, 'activities', activity.id, 'add-step']" class="btn-small-add">
-              + Añadir Paso
-            </a>
-          </div>
-
-          <ul class="subtasks-list">
-            @for (sub of getSubtasks(activity.id); track sub.id) {
-            <li class="subtask-item">
-              <div class="sub-info">
-                <span class="sub-name">{{ sub.title }}</span>
-
-                <div class="sub-right-content">
-
-                  <a [routerLink]="['/goals', currentGoal.id, 'activities', activity.id, 'steps', sub.id, 'edit']"
-                    class="action-icon-btn" title="Editar Paso">
-                    <mat-icon>edit</mat-icon>
-                  </a>
-
-                  <button class="action-icon-btn-danger" (click)="onDeleteSubActivity(sub)" title="Eliminar Paso">
-                    <mat-icon>delete</mat-icon>
-                  </button>
-
-                  <span class="sub-details">
-                    <mat-icon fontIcon="schedule" class="icon-inline"></mat-icon>
-                    {{ sub.executionPlan.durationPerExecutionMin }} min
-                    <span class="sub-progress-text">
-                      ({{ sub.executionPlan.completedDates.length }} / {{ sub.executionPlan.dates?.length }})
-                    </span>
-                  </span>
-
-                </div>
-              </div>
-
-              <div class="mini-progress">
-                <div class="mini-bar" [style.width.%]="sub.progress"></div>
-              </div>
-            </li>
-            } @empty {
-            <li class="empty-subtasks">No hay pasos definidos aún.</li>
-            }
-          </ul>
-        </div>
-        }
-
-        @if (activity.type === 'simple') {
-        <div class="simple-actions">
-        </div>
-        }
-
       </div>
       } @empty {
       <div class="empty-activities">
-        <p>No hay actividades creadas para esta meta.</p>
-        <a [routerLink]="['/goals', currentGoal.id, 'activities', 'new']" class="btn-link">Crear primera actividad</a>
+        <p>No hay objetivos creados para esta meta.</p>
+        <a [routerLink]="['/goals', currentGoal.id, 'objectives', 'new']" class="btn-link">Crear primer objetivo</a>
       </div>
       }
     </div>

@@ -12,14 +12,6 @@
         [class.invalid]="goalForm.get('title')?.invalid && goalForm.get('title')?.touched">
     </div>
 
-    <div class="form-group">
-      <label for="type">Tipo de Objetivo</label>
-      <select id="type" formControlName="type">
-        @for (opt of typeOptions; track opt.value) {
-        <option [value]="opt.value">{{ opt.label }}</option>
-        }
-      </select>
-    </div>
 
     <div class="form-group">
       <label for="horizon">Horizonte</label>
