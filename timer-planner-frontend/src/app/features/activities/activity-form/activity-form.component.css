@@ -1,7 +1,7 @@
 :host {
   display: block;
   padding: 2rem;
-  max-width: 600px;
+  max-width: 650px;
   margin: 0 auto;
 }
 
@@ -13,10 +13,26 @@ header {
 h1 {
   color: #2c3e50;
   margin-bottom: 0.5rem;
+  font-size: 1.8rem;
+}
+
+header p {
+  color: #7f8c8d;
+  font-size: 0.95rem;
 }
 
 .form-group {
   margin-bottom: 1.5rem;
+}
+
+.row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.half {
+  flex: 1;
 }
 
 label {
@@ -24,6 +40,7 @@ label {
   margin-bottom: 0.5rem;
   font-weight: 600;
   color: #34495e;
+  font-size: 0.9rem;
 }
 
 input,
@@ -35,7 +52,7 @@ select {
   font-size: 1rem;
   background-color: white;
   box-sizing: border-box;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input:focus,
@@ -45,16 +62,158 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
-/* Error visual */
-input.invalid {
-  border-color: #e74c3c;
+.divider {
+  border: 0;
+  height: 1px;
+  background: #eee;
+  margin: 2rem 0;
 }
 
-.error-msg {
-  display: block;
-  margin-top: 0.4rem;
-  color: #e74c3c;
+/* --- PLAN DE EJECUCIÓN --- */
+.plan-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 2rem;
+}
+
+.plan-section h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.radio-group input[type="radio"] {
+  width: auto;
+}
+
+/* Week Grid & Day Check */
+.week-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.day-check {
+  cursor: pointer;
+}
+
+.day-check input {
+  display: none;
+  /* Ocultar checkbox real */
+}
+
+.day-check span {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid #ced6e0;
+  color: #7f8c8d;
+  font-weight: 700;
   font-size: 0.85rem;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.day-check:hover span {
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.day-check input:checked+span {
+  background-color: #3498db;
+  border-color: #3498db;
+  color: white;
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* Date Adder & Tags */
+.date-adder {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.date-adder input {
+  flex: 1;
+}
+
+.date-adder button {
+  padding: 0 1.2rem;
+  background: #3498db;
+  color: white;
+  border-radius: 8px;
+  font-size: 1.5rem;
+}
+
+.selected-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.date-tag {
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-tag .remove {
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.date-tag .remove:hover {
+  color: #c0392b;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #95a5a6;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Info Box */
+.info-box {
+  background: #fff3e0;
+  padding: 1.2rem;
+  border-radius: 12px;
+  border-left: 5px solid #ff9800;
+  margin-bottom: 2rem;
+  color: #ef6c00;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 /* Actions */
@@ -63,15 +222,18 @@ input.invalid {
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
 }
 
 button {
-  padding: 0.8rem 1.5rem;
+  padding: 0.8rem 1.8rem;
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
   border: none;
-  font-weight: 600;
+  font-weight: 700;
+  transition: all 0.2s;
 }
 
 .btn-cancel {
@@ -81,6 +243,7 @@ button {
 
 .btn-cancel:hover {
   background: #f1f2f6;
+  color: #2c3e50;
 }
 
 .btn-save {
@@ -88,8 +251,10 @@ button {
   color: white;
 }
 
-.btn-save:hover {
+.btn-save:hover:not(:disabled) {
   background: #34495e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .btn-save:disabled {
@@ -97,53 +262,18 @@ button {
   cursor: not-allowed;
 }
 
-.plan-section {
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-  margin-bottom: 1.5rem;
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
 }
 
-.plan-section h3 {
-  margin-top: 0;
-  font-size: 1.1rem;
-  color: #2c3e50;
-  margin-bottom: 1rem;
-}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
 
-/* Week Grid */
-.week-grid {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.day-check span {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid #bdc3c7;
-  color: #7f8c8d;
-  font-weight: bold;
-  font-size: 0.8rem;
-  transition: all 0.2s;
-}
-
-.day-check input:checked+span {
-  background-color: #3498db;
-  color: white;
-  border-color: #3498db;
-}
-
-.info-box {
-  background: #fff3e0;
-  padding: 1rem;
-  border-radius: 8px;
-  border-left: 4px solid #ff9800;
-  margin-bottom: 1.5rem;
-  color: #ef6c00;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
