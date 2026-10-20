@@ -117,7 +117,7 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 | `priority`             | `ActivityPriority`    | Sí | Default `media`. |
 | `criticality`          | `ActivityCriticality` | Sí | Default `flexible`. |
 | `complexity`           | `ActivityComplexity`  | Sí | Default `media`. |
-| `recurrence`           | `ActivityRecurrence`  | Sí | Informativo (ver §7, bug de default). |
+| `recurrence`           | `ActivityRecurrence`  | Sí | Calculado desde `executionPlan` (RN-47). `null` en compuestas. |
 | `deadline`             | `string` `YYYY-MM-DD` | Sí | En UI no puede ser anterior a hoy. |
 | `executionPlan`        | `ExecutionPlan`       | Condicional | **Solo si `type = simple`**. `undefined` si es compuesta. |
 | `totalTimeRequiredMin` | `number`              | No | Solo simple: `dates.length × durationPerExecutionMin`. |
@@ -234,7 +234,7 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 |----|-------|
 | RN-12 | Título de Meta, Objetivo y Tarea: requerido, **mínimo 3 caracteres**. [UI] |
 | RN-13 | Título de Paso: requerido (sin mínimo). [UI] → *recomendado unificar a mínimo 3.* |
-| RN-14 | `deadline` es obligatorio en Tarea y Paso, y **no puede ser anterior a hoy** al crear/editar. [UI `min=today`] |
+| RN-14 | `deadline` es **obligatorio** en Tarea. En Paso es opcional: si se omite, **hereda el deadline efectivo de su tarea padre**. Ningún deadline puede ser anterior a hoy al crear o editar. [UI `min=today`] |
 | RN-15 | `durationPerExecutionMin` ≥ **5** minutos. Requerido en pasos y en tareas simples. [UI] |
 | RN-16 | Duración por defecto: **60 min** (tarea simple), **45 min** (paso). |
 | RN-17 | Si el plan es `patron_repetitivo`, se debe seleccionar **al menos un día** de la semana. ("Selecciona al menos un día.") |
@@ -266,8 +266,8 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 | ID | Regla |
 |----|-------|
 | RN-30 | **Progreso de ítem ejecutable** (tarea simple / paso) = `min(100, round(completedDates.length / dates.length × 100))`; 0 si `dates` está vacío. [SVC `calculateProgress`] |
-| RN-31 | **Estado de ítem ejecutable tras un toggle:** `completada` si progreso ≥ 100, en otro caso `en_progreso`. (Nunca regresa a `pendiente`.) |
-| RN-32 | **Progreso de tarea compuesta** = promedio simple (redondeado) del progreso de sus pasos; 0 si no tiene pasos. Estado: `completada` si ≥ 100, si no `en_progreso`. |
+| RN-31 | **Estado de ítem ejecutable:** `pendiente` si progreso = 0, `completada` si progreso = 100 y `en_progreso` en otro caso. Se recalcula en cada cambio. |
+| RN-32 | **Progreso de tarea compuesta** = promedio simple (redondeado) del progreso de sus pasos; 0 si no tiene pasos. Estado: `pendiente` si progreso = 0, `completada` si es 100 y `en_progreso` en otro caso. |
 | RN-33 | **Progreso de objetivo** = promedio simple del progreso de sus tareas; 0 si no tiene. |
 | RN-34 | **Progreso de meta** = promedio simple del progreso de sus objetivos; 0 si no tiene. |
 | RN-35 | Los promedios son **no ponderados**: no consideran duración, complejidad, prioridad ni número de sesiones. |
@@ -280,7 +280,7 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 | ID | Regla |
 |----|-------|
 | RN-39 | **Compuesta → Simple:** si la tarea tiene pasos, se pide confirmación ("Al convertirla en simple, estos pasos se eliminarán"). Si se confirma, se **eliminan todos los pasos** y se crea el plan propio. Si se cancela, no se guarda nada. |
-| RN-40 | **Simple → Compuesta:** se elimina el `executionPlan` (y con él `completedDates`), sin confirmación. El progreso se conserva hasta el siguiente recálculo. |
+| RN-40 | **Simple → Compuesta:** `executionPlan` y `recurrence` pasan a `null`. Si el plan tenía fechas o sesiones completadas, se requiere confirmación previa porque se pierde esa información. Sin datos asociados, no hace falta confirmar. |
 
 ### 5.8 Cierre del día
 
@@ -288,7 +288,7 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 |----|-------|
 | RN-41 | Al "Cerrar Día y Guardar" se crea un `DailyRecord` con las métricas actuales de la agenda de hoy y las notas opcionales. |
 | RN-42 | `plannedTimeMin` = Σ duración de todos los ítems de hoy; `executedTimeMin` = Σ duración de los completados. |
-| RN-43 | No hay restricción de unicidad: se pueden registrar **varios cierres para la misma fecha**. |
+| RN-43 | **Un registro por fecha.** Cerrar un día que ya tiene registro reemplaza ese registro (upsert por `userId` + `date`). El historial conserva una sola fila por día con el cierre más reciente. |
 | RN-44 | Cerrar el día no bloquea ni modifica las tareas (se pueden seguir marcando después). |
 
 ### 5.9 Migración V1 → V2 (legado)
@@ -309,6 +309,32 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 `executionPlan.type` → `recurrence`: `patron_repetitivo` → `patron_semanal`, `fechas_especificas` → `fechas_especificas`, otro → `unica`. `complexity` faltante → `media`.
 
 > **Nota:** RN-45 se ejecuta también en datos V2: cualquier meta que quede sin objetivos (p. ej. al borrar el último) recibe un objetivo "General" en la siguiente recarga. **No replicar en el backend**; solo relevante para un endpoint de importación de datos locales.
+
+---
+
+### 5.10 Recurrencia, planificación y deadlines (actualizadas)
+
+Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla principal: **el plan define cuándo se trabaja, la recurrencia clasifica esa programación y el deadline fija el límite de todas las ejecuciones.**
+
+| ID | Regla |
+|----|-------|
+| RN-47 | **Recurrencia calculada, no elegida.** Se deriva del `executionPlan`: plan con `patternDays` → `patron_semanal`; plan de fechas específicas con **1** fecha → `unica`; con **2 o más** fechas → `fechas_especificas`. Se recalcula en cada escritura. En compuestas es `null`. |
+| RN-48 | **Límite de deadlines.** Toda ejecución debe ser ≤ `deadline` de su tarea. Un paso puede tener deadline propio, que nunca puede superar el de su tarea padre; cada ejecución de un paso debe ser ≤ su deadline efectivo. |
+| RN-49 | **Cambio de deadline.** Al modificar el deadline de una tarea o de un paso se validan todas las ejecuciones y pasos afectados. Si alguno incumple, el guardado se rechaza y se listan las fechas en conflicto. No se recortan fechas en silencio. Un paso con deadline heredado no entra en conflicto: su deadline efectivo es el de la tarea y se actualiza solo. |
+| RN-50 | **Tarea compuesta.** `executionPlan` y `recurrence` son `null`. Su progreso sale de sus pasos (RN-32). Cada paso tiene su propio plan obligatorio, con programación independiente de los demás pasos. |
+| RN-51 | **Editar un plan.** Las sesiones con fecha anterior a hoy se conservan, estén completadas o no. Solo se regeneran las sesiones futuras. El historial no se pierde. |
+| RN-52 | **Historial protegido.** Un elemento completado (tarea, paso u objetivo) no se borra desde la app. Para empezar de nuevo, el usuario cierra ese elemento y crea uno nuevo. |
+| RN-53 | **Agregar hijos.** Se pueden agregar pasos, tareas u objetivos a un padre existente, aunque ya tenga progreso. El progreso del padre se recalcula sobre todos sus hijos, así que puede bajar. |
+| RN-54 | **Borrar hijos no completados.** Es posible borrar un elemento que no está completado. Solo se recalcula el progreso de sus ancestros. |
+| RN-55 | **Idea.** Una meta puede existir en estado `idea`: sin tareas programadas, sin agenda y sin horizonte obligatorio. Pasa a `activa` cuando se le asigna horizonte y se crean sus tareas con deadline. |
+| RN-56 | **Fecha objetivo de meta.** `fechaObjetivo` es un campo opcional e informativo. No genera sesiones ni bloquea nada. Los deadlines que obligan siguen siendo los de las tareas (RN-14, RN-48). |
+| RN-57 | **Pausa de meta.** Pausar una meta cambia solo su estado a `pausada`. Se oculta su agenda, pero no se modifican deadlines, sesiones ni progreso de sus hijos. |
+| RN-58 | **Tareas vencidas.** Una tarea no completada con deadline ya pasado se muestra como `vencida`. Es un estado derivado, no se almacena. Al reanudar la meta, el usuario replanifica esas tareas. |
+| RN-59 | **Pausa de tarea (MVP).** Igual que la pausa de meta: solo oculta la tarea de la agenda. No cambia su deadline, sus sesiones ni su progreso. |
+| RN-60 | **Postergar sin penalización.** El usuario puede editar el deadline de cualquier elemento no completado sin restricciones. Postergar no reduce el progreso ni borra historial. Las tareas `vencida` son solo una etiqueta visual. |
+| RN-61 | **Historial para estadísticas.** Los elementos no completados, pausados o vencidos se conservan. Esto permitirá analizar a futuro qué metas se terminaron y cuáles no (fuera del MVP). |
+
+> **Nota:** la clasificación depende del tipo de plan y no del número de fechas generadas. Un patrón semanal que produce una sola fecha sigue siendo `patron_semanal`.
 
 ---
 
@@ -410,26 +436,26 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 
 ---
 
-## 7. Inconsistencias y bugs detectados
+## 7. Inconsistencias y bugs — estado de resolución
 
-Estos puntos deben resolverse (o decidirse explícitamente) al implementar el backend, para no trasladar errores a la BD.
+Los hallazgos se resuelven con las reglas actualizadas (§5.10) o con decisiones de arquitectura. Los **pendientes** dependen de decisiones de negocio que se aclaran con las preguntas de la sección 10.
 
-| # | Severidad | Hallazgo | Ubicación | Recomendación |
-|---|-----------|----------|-----------|---------------|
-| B-01 | **Alta** | **Desfase de un día en el patrón** en zonas horarias negativas (p. ej. México, UTC-6). `new Date('YYYY-MM-DD')` se interpreta en UTC y luego `setHours(12)` en local, retrocediendo un día: se incluye **ayer** y se excluye el **deadline**. Como ayer no puede marcarse (RN-27), esas tareas **nunca llegan a 100%**. | `date.utils.ts` `generateDatesFromPattern` | Generar fechas en el backend con aritmética de fechas pura (sin horas), p. ej. `date-fns` o `Temporal.PlainDate`. |
-| B-02 | Media | Valor por defecto de `recurrence` es `'especifica'`, que **no existe** en el enum. Si el usuario no lo cambia se guarda un valor inválido. | `activity-form.component.ts` | Validar con `@IsEnum` en backend; default `unica`. |
-| B-03 | Media | `recurrence` es **redundante** con `executionPlan.type` y ambos se eligen de forma independiente (puede quedar `unica` con un patrón semanal). | Modelo `Activity` | Derivar `recurrence` del plan o eliminarla (ver §10). |
-| B-04 | Media | Al editar un plan se regenera `dates` desde hoy pero se conservan `completedDates`: las sesiones pasadas desaparecen del denominador y el progreso se distorsiona; pueden quedar `completedDates` que no están en `dates` (se oculta con `min(100, …)`). | `activity-form`, `structure-form` | Modelar sesiones como filas (§8) y al regenerar **conservar las pasadas** y reemplazar solo las futuras. |
-| B-05 | Media | Al editar una tarea/paso se conserva el progreso original aunque cambie el número de sesiones; no se recalcula hasta el próximo toggle. | `updateActivity`, `updateSubActivity` | Recalcular siempre en el backend tras cualquier escritura. |
-| B-06 | Media | Las fechas específicas no se validan contra el `deadline` (se puede agendar después del límite). El deadline del paso no se valida contra el de la tarea padre. | Formularios | Validar `fecha ≤ deadline` y `paso.deadline ≤ tarea.deadline` (a decidir). |
-| B-07 | Baja | El resumen del día muestra "Tiempo Estimado" como `completados × 45` (constante), distinto de `executedTimeMin` que sí se guarda. | `daily-summary.component.html` | Exponer `executedTimeMin` real desde el backend. |
-| B-08 | Baja | Se pueden crear varios `DailyRecord` para la misma fecha. | `closeDay` | Restricción única `(userId, date)` con *upsert* (ver §10). |
-| B-09 | Baja | Estados nunca asignables: Meta `pausada/archivada`, Objetivo `pausada/completada`, Tarea `pausada`. La agenda tampoco los respeta. | Modelos / UI | Definir reglas (ver §10). |
-| B-10 | Baja | Un ítem que se desmarca a 0% queda `en_progreso` (nunca vuelve a `pendiente`). Una compuesta a la que se le borra el último paso queda `en_progreso` con 0%. | `toggleTaskExecution`, `updateActivityProgress` | `pendiente` si progreso = 0. |
-| B-11 | Baja | En la agenda, la clase `completed` usa `task.status`, que no existe en el objeto (debería ser `isCompleted`). | `daily-dashboard.component.html` | Corregir en frontend. |
-| B-12 | Baja | Validador de duración en tarea simple solo se activa al cambiar el tipo; al crear sin tocar el tipo no aplica `min(5)`. | `activity-form.component.ts` | Validar en backend `@Min(5)`. |
-| B-13 | Info | La migración crea un objetivo "General" para **cualquier** meta sin objetivos en cada carga, no solo para datos V1. | `checkAndMigrate` | No replicar en backend. |
-| B-14 | Info | `totalTimeRequiredMin` no se calcula para compuestas (podría ser Σ de sus pasos). | `activity-form` | Calcularlo en backend para ambos tipos. |
+| # | Sev. | Hallazgo | Resolución | Estado |
+|---|------|----------|------------|--------|
+| B-01 | Alta | Desfase de un día en zonas horarias negativas. Verificado en `America/Mexico_City` con hoy 17-oct y deadline 24-oct: genera del 16 al 23, incluye ayer y excluye el deadline. | Fechas de calendario como `DATE`, generadas en el backend con aritmética sin hora (§8.2, punto 6). | ✅ Resuelto |
+| B-02 | Media | `recurrence` tiene default `'especifica'`, valor inexistente en el enum. | `recurrence` ya no se elige: se calcula desde el plan (RN-47). Desaparece el default. | ✅ Resuelto |
+| B-03 | Media | `recurrence` es redundante con `executionPlan.type`. | Derivada del plan (RN-47). No es entrada del usuario, así que no puede contradecirlo. | ✅ Resuelto |
+| B-04 | Media | Al editar un plan se regeneran `dates` desde hoy pero se conservan `completedDates`, lo que distorsiona el progreso. | Se conservan las sesiones pasadas y solo se regeneran las futuras (RN-51). | ✅ Resuelto |
+| B-05 | Media | El progreso no se recalcula al editar sesiones o fechas. | El backend recalcula la cascada (RN-36) en cada escritura. | ✅ Resuelto |
+| B-06 | Media | Fechas y deadlines no se validan entre sí. | RN-48 y RN-49: toda ejecución ≤ deadline de la tarea o del paso; paso ≤ tarea; un cambio de deadline revalida y bloquea el guardado si hay conflicto. | ✅ Resuelto |
+| B-07 | Baja | El resumen muestra `completados × 45` en lugar del tiempo real. | El resumen usa `executedTimeMin` del backend. | ✅ Resuelto |
+| B-08 | Baja | Se pueden crear varios `DailyRecord` para la misma fecha. | Un registro por fecha con upsert (RN-43). Coincide con el índice único `(user_id, date)` de §8.3. | ✅ Resuelto |
+| B-09 | Baja | Los estados `pausada`, `archivada` y `completada` nunca se asignan y la agenda no los respeta. | Estados manuales: `idea` y `pausada` en metas (RN-55, RN-57). `completada` en objetivos al llegar a 100%. La agenda excluye metas pausadas e ideas. | ✅ Resuelto |
+| B-10 | Baja | Un ítem desmarcado a 0% queda `en_progreso`. | Progreso 0 → `pendiente`; 1–99 → `en_progreso`; 100 → `completada` (RN-31 y RN-32). | ✅ Resuelto |
+| B-11 | Baja | La agenda usa `task.status` para la clase `completed`, pero ese campo no existe en el objeto. | El frontend usa `task.isCompleted`. | ✅ Resuelto |
+| B-12 | Baja | `min(5)` en la duración solo se aplica si el usuario cambia el tipo. | `@Min(5)` siempre en el backend (RN-15). | ✅ Resuelto |
+| B-13 | Info | La migración crea un objetivo "General" en cada carga, no solo para datos V1. | No se replica en el backend. | ✅ Resuelto |
+| B-14 | Info | `totalTimeRequiredMin` no existe para compuestas. | Simple: `dates × duración`. Compuesta: Σ de los pasos. Lo calcula el backend y no es entrada del usuario. | ✅ Resuelto |
 
 ---
 
@@ -489,7 +515,7 @@ erDiagram
         activity_priority priority
         activity_criticality criticality
         activity_complexity complexity
-        activity_recurrence recurrence
+        activity_recurrence recurrence "nullable, derivada del plan"
         date deadline
         int total_time_required_min "calculado"
         smallint progress
@@ -614,7 +640,7 @@ Rutas anidadas solo para **creación/listado** por padre; operaciones sobre un r
 | GET | `/objectives/:objectiveId/activities` | CU-07 |
 | POST | `/objectives/:objectiveId/activities` | CU-10 / CU-11 |
 | GET | `/activities/:id` | — |
-| PATCH | `/activities/:id` | CU-12 (si compuesta→simple con pasos, exigir `confirmDeleteSteps: true` o responder `409`) |
+| PATCH | `/activities/:id` | CU-12. Si hay pérdida de datos (compuesta→simple con pasos, o simple→compuesta con sesiones), exige `confirmDataLoss: true` o responde `409` (RN-39, RN-40). |
 | DELETE | `/activities/:id` | CU-13 |
 
 Ejemplo de cuerpo (tarea simple):
@@ -625,7 +651,6 @@ Ejemplo de cuerpo (tarea simple):
   "priority": "alta",
   "criticality": "esencial_recurrente",
   "complexity": "media",
-  "recurrence": "patron_semanal",
   "deadline": "2026-12-31",
   "executionPlan": {
     "type": "patron_repetitivo",
@@ -634,7 +659,7 @@ Ejemplo de cuerpo (tarea simple):
   }
 }
 ```
-> El cliente **no** envía `dates`, `completedDates`, `progress`, `status` ni `totalTimeRequiredMin`: los calcula el servidor. Para `fechas_especificas` se envía `executionPlan.dates`.
+> El cliente **no** envía `dates`, `completedDates`, `progress`, `status` ni `totalTimeRequiredMin` ni `recurrence`: los calcula el servidor. Para `fechas_especificas` se envía `executionPlan.dates`.
 
 ### Pasos
 | Método | Ruta | Caso de uso |
@@ -673,7 +698,7 @@ Puntos que el código actual no define y que conviene decidir antes de implement
 
 1. **Autenticación / multiusuario.** ¿Se implementa desde el inicio (JWT) o se arranca monousuario?
 2. **Motor de base de datos y ORM.** Recomendado PostgreSQL + TypeORM o Prisma.
-3. **`recurrence` vs `executionPlan.type`** (B-03): ¿derivar, eliminar o mantener como etiqueta libre? ¿Qué significa `recurrence` en una tarea compuesta?
+3. ~~**`recurrence` vs `executionPlan.type`** (B-03)~~ **Resuelto:** la recurrencia se deriva del plan (RN-47).
 4. **Estados manuales** (B-09): ¿el usuario puede pausar/archivar metas y objetivos? ¿Una meta pausada oculta sus tareas de la agenda? ¿Un objetivo pasa a `completada` automáticamente al llegar a 100%?
 5. **Progreso ponderado** (RN-35): ¿mantener promedio simple o ponderar por número de sesiones / minutos totales?
 6. **Marcar días pasados** (RN-27): ¿permitir registrar retroactivamente una sesión no marcada?
