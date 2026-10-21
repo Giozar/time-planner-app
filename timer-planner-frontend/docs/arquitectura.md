@@ -39,6 +39,17 @@ shared/
 └── pipes/     pipe `label` para mostrar las etiquetas en las plantillas
 ```
 
+### Estado de implementación (2026-10-21)
+
+| Elemento | Existe | Lo crea |
+|----------|--------|---------|
+| `core/i18n` | No | Fase 1 |
+| `shared/pipes` | No | Fase 1 |
+| `core/rules` | No | Fase 2 |
+| `Agents/` (en la raíz del frontend) | No | Fase 0 |
+
+Cuando una fase crea o mueve carpetas, esta tabla y la sección "Estructura actual" se actualizan en el mismo cambio.
+
 ## Capas y responsabilidades
 
 | Capa | Carpeta | Responsabilidad | Puede depender de |

@@ -48,3 +48,7 @@ El código y los datos manejan el valor en inglés. El español aparece solo al 
 - Las reglas de `core/rules` se prueban como funciones, sin `TestBed`.
 - Las fechas se prueban también con otra zona horaria, por ejemplo `TZ=America/Mexico_City pnpm ng test`.
 - Cada regla de negocio relevante debería tener al menos una prueba que cite su identificador (`RN-xx`).
+
+## Documentación al día
+
+Cambiar el código y cambiar su documentación es un solo trabajo. Qué documento corresponde a cada cambio está en la sección "Mantenimiento de la documentación" de [README.md](README.md). Una fase de un plan no se da por terminada hasta cumplirlo.
