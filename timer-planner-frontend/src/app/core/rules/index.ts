@@ -1,3 +1,4 @@
+export * from './calendar-view.rules';
 export * from './calendar.rules';
 export * from './deadline.rules';
 export * from './objective.rules';

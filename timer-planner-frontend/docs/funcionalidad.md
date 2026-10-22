@@ -11,7 +11,7 @@ Mapa de qué reglas y casos de uso corresponden a cada parte del frontend. **No 
 | Tareas | `features/activities` (`activity-form`) | CU-10 a CU-13, CU-24 | RN-03, RN-04, RN-14 a RN-20, RN-39, RN-40, RN-47 a RN-51, RN-58 a RN-60 | 🔄 Alineado en código, en revisión | 1 a 4, 4b |
 | Pasos | `features/activities` (`structure-form`) | CU-14 a CU-16 | RN-05, RN-13, RN-48, RN-49 | 🔄 Alineado en código, en revisión | 1 a 4, 4b |
 | Agenda diaria | `features/daily` (`daily-dashboard`) | CU-17, CU-18 | RN-25 a RN-29 | 🔄 Alineado en código, en revisión | 3, 4 |
-| Calendario | `features/calendar` (por crear) | CU-26 | RN-25, RN-26, RN-29, RN-48, RN-66 | ⏳ Planificado (plan [02](planes/02-calendario.md)) | 1 a 3 del plan 02 |
+| Calendario | `features/calendar` (por crear) | CU-26 | RN-25, RN-26, RN-29, RN-48, RN-66 | 🔄 Reglas y modelo listos (Fase 1 del plan [02](planes/02-calendario.md), en revisión); faltan servicio y pantalla | 1 a 3 del plan 02 |
 | Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44 | 🔄 Alineado en código, en revisión | 3, 4 |
 
 **Estado:** ⏳ Por alinear · 🔄 En curso · ✅ Alineado con las reglas. Última revisión: 2026-10-22. Fases 1 a 4 hechas; la 4b (deadline del objetivo) está en revisión y falta el recorrido manual en el navegador y las pruebas (Fase 5). "Fases" son las del plan [01](planes/01-alinear-frontend-con-reglas-de-negocio.md).

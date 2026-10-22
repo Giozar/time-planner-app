@@ -120,3 +120,9 @@ export const DEADLINE_CONFLICT_LABELS: Record<DeadlineConflictKind, string> = {
   [DeadlineConflictKind.STEP_DEADLINE]: 'Deadline del paso',
   [DeadlineConflictKind.STEP_DATES]: 'Sesiones del paso',
 };
+
+/** Meses en español; el índice es `mes - 1`. */
+export const MONTH_LABELS: readonly string[] = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];

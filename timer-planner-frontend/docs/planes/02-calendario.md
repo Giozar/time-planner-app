@@ -19,7 +19,7 @@ Estados: ⏳ Pendiente · 🔄 En curso · ✅ Completada.
 | Fase | Alcance | Estado | Última actualización |
 |------|---------|--------|----------------------|
 | Plan | Definición y registro de RN-66 / CU-26 | ✅ Completada | 2026-10-22 |
-| 1 | Reglas puras de calendario y modelo `CalendarEntry` | ⏳ Pendiente | — |
+| 1 | Reglas puras de calendario y modelo `CalendarEntry` | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
 | 2 | Servicio: sesiones por fecha | ⏳ Pendiente | — |
 | 3 | Pantalla, ruta y menú | ⏳ Pendiente | — |
 
@@ -75,3 +75,4 @@ Archivo: `core/services/planner.service.ts`.
 | Fecha | Cambio |
 |-------|--------|
 | 2026-10-22 | Plan creado. Se registran RN-66 y CU-26 en `../../docs/analisis-reglas-de-negocio.md`. Ninguna fase iniciada. |
+| 2026-10-22 | Fase 1 implementada, a la espera de validación. `core/rules/calendar-view.rules.ts` (`daysInMonth`, `buildMonthGrid` de 42 celdas con semana desde el lunes, `shiftMonth`, `shiftYear`), exportado en `core/rules/index.ts`; `core/models/calendar-entry.model.ts`; `MONTH_LABELS` en `core/i18n/labels.ts`. `tsc` pasa. Script temporal de 20 comprobaciones (febrero bisiesto y 2100, meses que empiezan en domingo y lunes, cruce de año, saltos de varios meses) pasa con `TZ=America/Mexico_City` y `Pacific/Auckland`; las pruebas formales van en la Fase 5 del plan 01. |

@@ -12,8 +12,8 @@ Estado verificado en `src/app`:
 src/app/
 ├── core/
 │   ├── i18n/          labels.ts (etiquetas en español por enum)
-│   ├── models/        activity, goal, objective, daily-record, agenda-item, deletion-impact (enums en inglés)
-│   ├── rules/         calendar, progress, recurrence, deadline, session, objective (funciones puras)
+│   ├── models/        activity, goal, objective, daily-record, agenda-item, deletion-impact, calendar-entry (enums en inglés)
+│   ├── rules/         calendar, calendar-view, progress, recurrence, deadline, session, objective (funciones puras)
 │   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves planner_v4_*)
 │   ├── services/      planner.service.ts, native-dialog.service.ts
 │   └── utils/         date.utils.ts
