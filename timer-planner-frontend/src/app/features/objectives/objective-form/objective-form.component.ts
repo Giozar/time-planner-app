@@ -2,13 +2,17 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
+import { NativeDialogService } from '../../../core/services/native-dialog.service';
+import { DateUtils } from '../../../core/utils/date.utils';
 import { PlannerService } from '../../../core/services/planner.service';
-import { Objective, OBJECTIVE_NATURE_OPTIONS } from '../../../core/models/objective.model';
+import { Objective, ObjectiveNature, ObjectiveStatus } from '../../../core/models/objective.model';
+import { OBJECTIVE_NATURE_LABELS } from '../../../core/i18n/labels';
+import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-objective-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, LabelPipe],
   templateUrl: './objective-form.component.html',
   styleUrl: './objective-form.component.css'
 })
@@ -17,8 +21,13 @@ export class ObjectiveFormComponent implements OnInit {
   private plannerService = inject(PlannerService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private dialog = inject(NativeDialogService);
 
-  readonly natureOptions = OBJECTIVE_NATURE_OPTIONS;
+  minDate = DateUtils.getTodayISO();
+  private originalDeadline = '';
+
+  readonly natures = Object.values(ObjectiveNature);
+  readonly natureLabels = OBJECTIVE_NATURE_LABELS;
 
   isEditMode = false;
   objectiveId: string | null = null;
@@ -26,11 +35,12 @@ export class ObjectiveFormComponent implements OnInit {
 
   private originalCreatedAt: Date = new Date();
   private originalProgress: number = 0;
-  private originalStatus: any = 'activa';
+  private originalStatus: ObjectiveStatus = ObjectiveStatus.ACTIVE;
 
   objectiveForm = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
-    nature: ['otro', Validators.required]
+    nature: [ObjectiveNature.OTHER, Validators.required],
+    deadline: ['', Validators.required] // RN-65: obligatorio, tope de sus tareas y pasos
   });
 
   ngOnInit() {
@@ -48,12 +58,14 @@ export class ObjectiveFormComponent implements OnInit {
     if (objective) {
       this.objectiveForm.patchValue({
         title: objective.title,
-        nature: objective.nature as any
+        nature: objective.nature,
+        deadline: objective.deadline
       });
       this.goalId = objective.goalId;
       this.originalCreatedAt = objective.createdAt;
       this.originalProgress = objective.progress;
       this.originalStatus = objective.status;
+      this.originalDeadline = objective.deadline;
     } else {
       this.router.navigate(['/goals']);
     }
@@ -62,27 +74,42 @@ export class ObjectiveFormComponent implements OnInit {
   onSubmit() {
     if (this.objectiveForm.valid && this.goalId) {
       const formValue = this.objectiveForm.value;
+      const deadline = formValue.deadline!;
+
+      // RN-14: un deadline nuevo o modificado no puede ser anterior a hoy.
+      if (deadline < this.minDate && (!this.isEditMode || deadline !== this.originalDeadline)) {
+        this.dialog.alert('Atención', 'El deadline no puede ser anterior a hoy.');
+        return;
+      }
 
       if (this.isEditMode && this.objectiveId) {
         const updated: Objective = {
           id: this.objectiveId,
           goalId: this.goalId,
           title: formValue.title!,
-          nature: formValue.nature as any,
+          nature: formValue.nature!,
           progress: this.originalProgress,
           status: this.originalStatus,
+          deadline,
           createdAt: this.originalCreatedAt
         };
-        this.plannerService.updateObjective(updated);
+
+        // RN-49: si el nuevo límite deja hijos fuera, se rechaza y se listan las fechas.
+        const conflicts = this.plannerService.updateObjective(updated);
+        if (conflicts.length > 0) {
+          this.dialog.alertDeadlineConflicts(conflicts);
+          return;
+        }
         this.router.navigate(['/goals', this.goalId]);
       } else {
         const newObjective: Objective = {
           id: crypto.randomUUID(),
           goalId: this.goalId,
           title: formValue.title!,
-          nature: formValue.nature as any,
+          nature: formValue.nature!,
           progress: 0,
-          status: 'activa',
+          status: ObjectiveStatus.ACTIVE,
+          deadline,
           createdAt: new Date()
         };
         this.plannerService.addObjective(newObjective);

@@ -15,16 +15,16 @@
       <div class="form-group half">
         <label>Tipo de Tarea</label>
         <select formControlName="type">
-          @for (opt of typeOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
+          @for (t of types; track t) {
+          <option [value]="t">{{ t | label: typeLabels }}</option>
           }
         </select>
       </div>
       <div class="form-group half">
         <label>Prioridad</label>
         <select formControlName="priority">
-          @for (opt of priorityOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
+          @for (p of priorities; track p) {
+          <option [value]="p">{{ p | label: priorityLabels }}</option>
           }
         </select>
       </div>
@@ -34,16 +34,16 @@
       <div class="form-group half">
         <label>Criticidad</label>
         <select formControlName="criticality">
-          @for (opt of criticalityOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
+          @for (c of criticalities; track c) {
+          <option [value]="c">{{ c | label: criticalityLabels }}</option>
           }
         </select>
       </div>
       <div class="form-group half">
         <label>Complejidad</label>
         <select formControlName="complexity">
-          @for (opt of complexityOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
+          @for (c of complexities; track c) {
+          <option [value]="c">{{ c | label: complexityLabels }}</option>
           }
         </select>
       </div>
@@ -51,16 +51,8 @@
 
     <div class="row">
       <div class="form-group half">
-        <label>Recurrencia Planificada</label>
-        <select formControlName="recurrence">
-          @for (opt of recurrenceOptions; track opt.value) {
-          <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
-      <div class="form-group half">
-        <label>Fecha Límite (Deadline) <span class="req">*</span></label>
-        <input type="date" formControlName="deadline" [min]="minDate">
+        <label>Fecha Límite (opcional, hereda la del objetivo: {{ objectiveDeadline }})</label>
+        <input type="date" formControlName="deadline" [min]="minDate" [max]="objectiveDeadline || null">
       </div>
     </div>
 
@@ -71,17 +63,17 @@
       <h3>Plan de Ejecución</h3>
 
       <div class="form-group">
-        <label>Duración por Sesión (min)</label>
-        <input type="number" formControlName="duration">
+        <label>Duración por Sesión (min, mínimo 5)</label>
+        <input type="number" formControlName="duration" min="5">
       </div>
 
       <div class="form-group">
         <label>Estrategia de Calendario</label>
         <div class="radio-group">
-          @for (opt of planTypeOptions; track opt.value) {
+          @for (t of planTypes; track t) {
           <label>
-            <input type="radio" formControlName="planType" [value]="opt.value">
-            {{ opt.label }}
+            <input type="radio" formControlName="planType" [value]="t">
+            {{ t | label: planTypeLabels }}
           </label>
           }
         </div>
@@ -91,11 +83,11 @@
       <div class="form-group pattern-box">
         <label>Selecciona los días:</label>
         <div class="week-grid">
-          @for (day of weekDays; track day.value) {
+          @for (day of weekDays; track day) {
           <label class="day-check">
-            <input type="checkbox" [value]="day.value" [checked]="isDayChecked(day.value)"
+            <input type="checkbox" [value]="day" [checked]="isDayChecked(day)"
               (change)="onDayChange($event)">
-            <span>{{ day.label }}</span>
+            <span>{{ day | label: weekDayLabels }}</span>
           </label>
           }
         </div>
@@ -107,7 +99,7 @@
       <div class="form-group dates-box">
         <label>Añadir Fecha Específica</label>
         <div class="date-adder">
-          <input type="date" #dateInput [min]="minDate">
+          <input type="date" #dateInput [min]="minDate" [max]="deadlineValue || null">
           <button type="button" (click)="addSpecificDate(dateInput)">+</button>
         </div>
 
@@ -127,7 +119,7 @@
     } @else {
     <div class="info-box fade-in">
       <p><strong>Tarea Compuesta:</strong> No defines tiempos ahora. Crearás sub-actividades (Pasos) después, cada una
-        con su propio plan.</p>
+        con su propio plan. La recurrencia se calcula sola a partir del plan.</p>
     </div>
     }
 

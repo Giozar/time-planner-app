@@ -195,45 +195,45 @@ h3 {
     text-transform: uppercase;
 }
 
-.tag-priority.alta {
+.tag-priority.HIGH {
     color: #c0392b;
     background: #fadbd8;
 }
 
-.tag-priority.media {
+.tag-priority.MEDIUM {
     color: #d35400;
     background: #fae5d3;
 }
 
-.tag-priority.baja {
+.tag-priority.LOW {
     color: #2980b9;
     background: #d6eaf8;
 }
 
-.tag-criticality.vital {
+.tag-criticality.VITAL {
     color: #7b241c;
     background: #f2d7d5;
 }
 
-.tag-criticality.esencial_recurrente {
+.tag-criticality.ESSENTIAL_RECURRING {
     color: #154360;
     background: #d4e6f1;
 }
 
-.tag-criticality.flexible {
+.tag-criticality.FLEXIBLE {
     color: #145a32;
     background: #d4efdf;
 }
 
-.tag-complexity.alta {
+.tag-complexity.HIGH {
     color: #641e16;
 }
 
-.tag-complexity.media {
+.tag-complexity.MEDIUM {
     color: #7d6608;
 }
 
-.tag-complexity.baja {
+.tag-complexity.LOW {
     color: #186a3b;
 }
 
@@ -264,17 +264,17 @@ h3 {
     font-weight: 700;
 }
 
-.status.pendiente {
+.status.PENDING {
     background: #f2f3f4;
     color: #7f8c8d;
 }
 
-.status.en_progreso {
+.status.IN_PROGRESS {
     background: #e3f2fd;
     color: #1565c0;
 }
 
-.status.completada {
+.status.COMPLETED {
     background: #e8f5e9;
     color: #2e7d32;
 }
@@ -437,4 +437,40 @@ h4 {
     padding: 2rem;
     color: #bdc3c7;
     font-style: italic;
+}
+.btn-close-objective {
+    padding: 0.4rem 0.9rem;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.btn-close-objective:hover {
+    background: #229954;
+}
+
+.badge-status {
+    margin-left: 0.4rem;
+    background: #f2f3f4;
+    color: #7f8c8d;
+}
+
+.status.PAUSED {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.status.OVERDUE {
+    background: #fdecea;
+    color: #c0392b;
+}
+
+.objective-deadline {
+    margin: 0 0 1rem;
+    color: #7f8c8d;
+    font-size: 0.9rem;
 }

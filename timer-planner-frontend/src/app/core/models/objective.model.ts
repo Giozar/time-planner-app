@@ -25,5 +25,6 @@ export interface Objective {
   nature: ObjectiveNature;
   progress: number;
   status: ObjectiveStatus;
+  deadline: string; // 'YYYY-MM-DD'; obligatorio, tope de sus tareas y pasos (RN-65)
   createdAt: Date;
 }

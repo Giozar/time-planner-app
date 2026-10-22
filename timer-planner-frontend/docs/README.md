@@ -27,9 +27,9 @@ El objetivo del momento es alinear la funcionalidad del frontend con las reglas 
 | Área | Estado |
 |------|--------|
 | Documentación base (`docs/`) | ✅ Completada |
-| Código del frontend | Modelos, enums, etiquetas y pipe `label` (Fase 1) motor de reglas puro `core/rules` (Fase 2) y `PlannerService` reescrito (Fase 3). La app **no compila** hasta la Fase 4: los formularios y `daily-dashboard` aún usan los valores y métodos viejos |
+| Código del frontend | Modelos y etiquetas (Fase 1), motor de reglas `core/rules` (Fase 2), `PlannerService` (Fase 3) y formularios, pantallas y diálogo (Fase 4) y deadline del objetivo (Fase 4b, en revisión). La app compila; falta el recorrido manual y las pruebas formales (Fase 5) |
 | Agentes (`Agents/`) | ✅ Estructura creada, con el agente planificador (Fase 0) |
-| Plan 01 | Fases 0 a 2 completadas. Fase 3 en revisión. Fases 4 y 5 pendientes |
+| Plan 01 | Fases 0 a 3 completadas. Fases 4 y 4b (deadline del objetivo) en revisión. Fase 5 pendiente |
 
 El avance detallado por fase está en [planes/01-alinear-frontend-con-reglas-de-negocio.md](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
@@ -58,3 +58,5 @@ Cada actualización se anota en el historial de abajo.
 | 2026-10-22 | Fase 1 (completada): enums en inglés, `core/i18n`, `shared/pipes`, claves `planner_v3_*`. Se actualizan plan 01, `arquitectura.md` y `funcionalidad.md`. |
 | 2026-10-22 | Fase 2 (en revisión): `core/rules` con las reglas puras y `DateUtils` sin `generateDatesFromPattern`. Se actualizan plan 01, `arquitectura.md` y `funcionalidad.md`. |
 | 2026-10-22 | Fase 3 (en revisión): `PlannerService` reescrito sobre `core/rules`; nuevos modelos `agenda-item` y `deletion-impact`. Se actualizan plan 01, `arquitectura.md` y `funcionalidad.md`. |
+| 2026-10-22 | Fase 4 (en revisión): formularios, pantallas y diálogo con confirmación escrita alineados a las reglas. |
+| 2026-10-22 | Fase 4b (en revisión): cambio de regla — la meta no tiene fecha y el objetivo tiene deadline obligatorio (RN-65). Se actualiza también `../../docs/analisis-reglas-de-negocio.md`, plan 01 y `funcionalidad.md`. |

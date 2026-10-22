@@ -122,7 +122,9 @@ export class PlannerService {
     const total = tasks.length;
     const completed = tasks.filter(t => t.isCompleted).length;
     const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
-    return { total, completed, percentage, remaining: total - completed };
+    const plannedTimeMin = tasks.reduce((acc, t) => acc + t.estimatedDurationMin, 0);
+    const executedTimeMin = tasks.filter(t => t.isCompleted).reduce((acc, t) => acc + t.estimatedDurationMin, 0);
+    return { total, completed, percentage, remaining: total - completed, plannedTimeMin, executedTimeMin };
   });
 
   // --- METAS ---
@@ -160,9 +162,14 @@ export class PlannerService {
     this.commit();
   }
 
-  updateObjective(updated: Objective) {
+  /** Devuelve los conflictos de deadline (RN-49); si hay alguno, no se guarda. */
+  updateObjective(updated: Objective): DeadlineConflict[] {
+    const conflicts = this.conflictsFor(updated.id, { objective: updated });
+    if (conflicts.length > 0) return conflicts;
+
     this.objectivesSignal.update(obs => obs.map(o => o.id === updated.id ? updated : o));
     this.commit();
+    return [];
   }
 
   /** Cierra el objetivo solo si está activo y al 100% (RN-63). Devuelve si se cerró. */
@@ -186,7 +193,7 @@ export class PlannerService {
   /** Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda. */
   addActivity(activity: Activity): DeadlineConflict[] {
     const candidate = this.normalizeActivity(activity);
-    const conflicts = validateDeadlines(candidate, []);
+    const conflicts = this.conflictsFor(candidate.objectiveId, { activity: candidate });
     if (conflicts.length > 0) return conflicts;
 
     this.activitiesSignal.update(a => [...a, candidate]);
@@ -202,9 +209,11 @@ export class PlannerService {
   updateActivity(updated: Activity): DeadlineConflict[] {
     const candidate = this.normalizeActivity(updated);
     const keepsSteps = candidate.type === ActivityType.COMPOSITE;
-    const steps = keepsSteps ? this.stepsOf(candidate.id) : [];
 
-    const conflicts = validateDeadlines(candidate, steps);
+    const conflicts = this.conflictsFor(candidate.objectiveId, {
+      activity: candidate,
+      dropStepsOf: keepsSteps ? undefined : candidate.id, // pasar a simple elimina sus pasos
+    });
     if (conflicts.length > 0) return conflicts;
 
     if (!keepsSteps) {
@@ -346,7 +355,6 @@ export class PlannerService {
   /** Cierra el día. Un registro por fecha: si ya existe, se reemplaza (RN-43). */
   closeDay(notes: string): DailyRecord {
     const metrics = this.todaysMetrics();
-    const tasks = this.todaysTasks();
     const date = DateUtils.getTodayISO();
     const existing = this.recordsSignal().find(r => r.date === date);
 
@@ -356,8 +364,8 @@ export class PlannerService {
       plannedItems: metrics.total,
       completedItems: metrics.completed,
       executionPercentage: metrics.percentage,
-      plannedTimeMin: tasks.reduce((acc, t) => acc + t.estimatedDurationMin, 0),
-      executedTimeMin: tasks.filter(t => t.isCompleted).reduce((acc, t) => acc + t.estimatedDurationMin, 0),
+      plannedTimeMin: metrics.plannedTimeMin,
+      executedTimeMin: metrics.executedTimeMin,
       notes,
       createdAt: new Date(),
     };
@@ -393,12 +401,34 @@ export class PlannerService {
     return { ...activity, executionPlan: plan, recurrence: deriveRecurrence(activity.type, plan) };
   }
 
+  /**
+   * Valida los deadlines del objetivo con el cambio candidato aplicado (RN-48, RN-49, RN-65).
+   * `dropStepsOf`: tarea cuyos pasos se van a eliminar y no deben validarse.
+   */
+  private conflictsFor(
+    objectiveId: string,
+    change: { objective?: Objective; activity?: Activity; step?: SubActivity; dropStepsOf?: string },
+  ): DeadlineConflict[] {
+    const objective = change.objective ?? this.objectivesSignal().find(o => o.id === objectiveId);
+    if (!objective) return [];
+
+    const activities = this.activitiesSignal()
+      .filter(a => a.objectiveId === objectiveId && a.id !== change.activity?.id);
+    if (change.activity) activities.push(change.activity);
+
+    const ids = activities.map(a => a.id);
+    const steps = this.subActivitiesSignal()
+      .filter(s => ids.includes(s.activityId) && s.activityId !== change.dropStepsOf && s.id !== change.step?.id);
+    if (change.step) steps.push(change.step);
+
+    return validateDeadlines(objective, activities, steps);
+  }
+
   private saveSubActivity(sub: SubActivity, apply: (subs: SubActivity[]) => SubActivity[]): DeadlineConflict[] {
     const parent = this.activitiesSignal().find(a => a.id === sub.activityId);
     if (!parent) return [];
 
-    const others = this.stepsOf(parent.id).filter(s => s.id !== sub.id);
-    const conflicts = validateDeadlines(parent, [...others, sub]);
+    const conflicts = this.conflictsFor(parent.objectiveId, { step: sub });
     if (conflicts.length > 0) return conflicts;
 
     this.subActivitiesSignal.update(apply);

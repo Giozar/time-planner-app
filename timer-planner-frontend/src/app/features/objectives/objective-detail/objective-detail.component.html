@@ -7,14 +7,21 @@
             <a [routerLink]="['/goals', g.id]" class="back-link">← Volver a {{ g.title }}</a>
             }
             <div class="header-actions">
+                @if (canClose()) {
+                <button type="button" class="btn-close-objective" (click)="closeObjective()">
+                    Cerrar objetivo
+                </button>
+                }
                 <a [routerLink]="['/goals', currentObj.goalId, 'objectives', currentObj.id, 'edit']"
                     class="btn-icon-edit" title="Editar Objetivo">
                     <mat-icon>edit</mat-icon>
                 </a>
             </div>
         </div>
-        <span class="badge">{{ currentObj.nature | titlecase }}</span>
+        <span class="badge">{{ currentObj.nature | label: natureLabels }}</span>
+        <span class="badge badge-status">{{ currentObj.status | label: objectiveStatusLabels }}</span>
         <h1>{{ currentObj.title }}</h1>
+        <p class="objective-deadline">Fecha límite del objetivo: <strong>{{ currentObj.deadline | date:'mediumDate' }}</strong></p>
 
         <div class="progress-container">
             <div class="progress-bar-bg">
@@ -47,6 +54,10 @@
                                 class="icon-btn-small">
                                 <mat-icon>edit</mat-icon>
                             </a>
+                            <button class="icon-btn-small-danger" (click)="togglePause(activity)"
+                                [title]="activity.status === ActivityStatus.PAUSED ? 'Reanudar Tarea' : 'Pausar Tarea'">
+                                <mat-icon>{{ activity.status === ActivityStatus.PAUSED ? 'play_arrow' : 'pause' }}</mat-icon>
+                            </button>
                             <button class="icon-btn-small-danger" (click)="onDeleteActivity(activity)"
                                 title="Eliminar Tarea">
                                 <mat-icon>delete</mat-icon>
@@ -54,25 +65,27 @@
                         </div>
                         <span class="deadline-tag">
                             <mat-icon fontIcon="calendar_today" class="icon-inline"></mat-icon>
-                            {{ activity.deadline | date:'mediumDate' }}</span>
+                            {{ deadlineOf(activity) | date:'mediumDate' }}@if (!activity.deadline) { (del objetivo) }</span>
                     </div>
 
                     <div class="tags">
-                        <span class="tag-priority" [class]="activity.priority">{{ activity.priority | titlecase
+                        <span class="tag-priority" [class]="activity.priority">{{ activity.priority | label: priorityLabels
                             }}</span>
                         <span class="tag-criticality" [class]="activity.criticality">{{
-                            activity.criticality.replace('_', ' ') | titlecase }}</span>
-                        <span class="tag-complexity" [class]="activity.complexity">{{ activity.complexity | titlecase
+                            activity.criticality | label: criticalityLabels }}</span>
+                        <span class="tag-complexity" [class]="activity.complexity">{{ activity.complexity | label: complexityLabels
                             }}</span>
                     </div>
 
                     <div class="activity-meta">
                         <div class="meta-top">
+                            @if (activity.recurrence) {
                             <span class="recurrence-tag">
                                 <mat-icon fontIcon="repeat" class="icon-inline"></mat-icon>
-                                {{ activity.recurrence.replace('_', ' ') | titlecase }}
+                                {{ activity.recurrence | label: recurrenceLabels }}
                             </span>
-                            <span class="status {{ activity.status }}">{{ activity.status.replace('_', ' ') | titlecase
+                            }
+                            <span class="status {{ displayStatus(activity) }}">{{ displayStatus(activity) | label: statusLabels
                                 }}</span>
                         </div>
 
@@ -87,7 +100,7 @@
                     </div>
                 </div>
 
-                @if (activity.type === 'compuesta') {
+                @if (activity.type === ActivityType.COMPOSITE) {
                 <div class="subtasks-container">
                     <div class="subtasks-header">
                         <h4>Pasos (Steps)</h4>
@@ -116,7 +129,7 @@
                                     </button>
 
                                     <span class="sub-details">
-                                        <span class="mini-complexity {{ sub.complexity }}">{{ sub.complexity | titlecase
+                                        <span class="mini-complexity {{ sub.complexity }}">{{ sub.complexity | label: complexityLabels
                                             }}</span>
                                         <span class="sub-progress-text">
                                             ({{ sub.executionPlan.completedDates.length }} / {{

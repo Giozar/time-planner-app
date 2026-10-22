@@ -2,11 +2,11 @@ import { Activity, ActivityStatus } from '../models/activity.model';
 import { Objective, ObjectiveStatus } from '../models/objective.model';
 
 /**
- * Tarea vencida: no completada y con deadline anterior a hoy (RN-58).
- * Estado derivado: se calcula al mostrar, nunca se almacena.
+ * Tarea vencida: no completada y con deadline efectivo anterior a hoy (RN-58).
+ * Recibe el deadline efectivo (el propio o el del objetivo). Estado derivado: nunca se almacena.
  */
-export function isOverdue(activity: Pick<Activity, 'status' | 'deadline'>, today: string): boolean {
-  return activity.status !== ActivityStatus.COMPLETED && activity.deadline < today;
+export function isOverdue(activity: Pick<Activity, 'status'>, effectiveDeadline: string, today: string): boolean {
+  return activity.status !== ActivityStatus.COMPLETED && effectiveDeadline < today;
 }
 
 /** El usuario solo puede cerrar un objetivo activo con progreso 100% (RN-63). */

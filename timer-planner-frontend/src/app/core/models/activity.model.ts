@@ -94,7 +94,7 @@ export interface Activity {
   criticality: ActivityCriticality;
   complexity: ActivityComplexity;
   recurrence: ActivityRecurrence | null; // null en compuestas (RN-47)
-  deadline: string; // 'YYYY-MM-DD'
+  deadline?: string; // 'YYYY-MM-DD'; si falta hereda el del objetivo (RN-14, RN-48)
 
   // Solo SIMPLE tiene plan propio; null en compuestas
   executionPlan: ExecutionPlan | null;
@@ -111,7 +111,7 @@ export interface SubActivity {
   id: string;
   activityId: string;
   title: string;
-  deadline?: string; // 'YYYY-MM-DD'; si falta hereda el efectivo de la tarea (RN-48)
+  deadline?: string; // 'YYYY-MM-DD'; si falta hereda el efectivo de su tarea (RN-48)
   complexity: ActivityComplexity;
   status: SubActivityStatus;
 

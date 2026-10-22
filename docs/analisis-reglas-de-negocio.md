@@ -4,7 +4,7 @@
 >
 > **Fuente analizada:** `timer-planner-frontend/src/app` (modelos, `PlannerService`, `DateUtils`, formularios y vistas).
 > **Estado del backend:** proyecto base de NestJS 11 sin módulos, sin ORM y sin base de datos.
-> **Fecha del análisis:** 2026-10-17 · Última revisión: 2026-10-20 · Versión de la app analizada: "Planner V2" (`v2.0.0`).
+> **Fecha del análisis:** 2026-10-17 · Última revisión: 2026-10-22 · Versión de la app analizada: "Planner V2" (`v2.0.0`).
 
 ---
 
@@ -88,8 +88,7 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 | `progress`  | `number` 0–100 | Sí | **Calculado** (promedio de objetivos). Inicia en 0. |
 | `status`    | `GoalStatus`  | Sí | Inicia en `ACTIVE` o `IDEA`. Cambia con pausa (RN-55, RN-57). |
 | `createdAt` | `Date`        | Sí | Fecha de creación; se preserva al editar. |
-| `targetDate` | `string` `YYYY-MM-DD` | No | Fecha objetivo informativa. No genera sesiones (RN-56). |
-| `type`      | `string`      | No | **Legacy V1**. Solo se conserva al editar. |
+| —           | —             | — | **La meta no tiene fecha límite** (RN-56): solo se clasifica por `horizon`. |
 
 ### 3.2 Objective (Objetivo)
 
@@ -103,6 +102,7 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 | `nature`    | `ObjectiveNature` | Sí | Default `OTHER`. |
 | `progress`  | `number` 0–100    | Sí | **Calculado** (promedio de tareas). |
 | `status`    | `ObjectiveStatus` | Sí | Inicia en `ACTIVE`. Pasa a `COMPLETED` solo por cierre manual con progreso 100% (RN-63). |
+| `deadline`  | `string` `YYYY-MM-DD` | **Sí** | Fecha límite del objetivo. Es el tope de todas sus tareas y pasos (RN-65). En UI no puede ser anterior a hoy. |
 | `createdAt` | `Date`            | Sí | Se preserva al editar. |
 
 ### 3.3 Activity (Tarea)
@@ -119,7 +119,7 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 | `criticality`          | `ActivityCriticality` | Sí | Default `FLEXIBLE`. |
 | `complexity`           | `ActivityComplexity`  | Sí | Default `MEDIUM`. |
 | `recurrence`           | `ActivityRecurrence`  | Condicional | Calculado desde `executionPlan` (RN-47). `null` en compuestas. |
-| `deadline`             | `string` `YYYY-MM-DD` | Sí | En UI no puede ser anterior a hoy. |
+| `deadline`             | `string` `YYYY-MM-DD` | No | Si se omite, hereda el deadline del objetivo (RN-14, RN-65). Nunca puede superarlo (RN-48). En UI no puede ser anterior a hoy. |
 | `executionPlan`        | `ExecutionPlan`       | Condicional | **Solo si `type = SIMPLE`**. `null` si es compuesta. |
 | `totalTimeRequiredMin` | `number`              | No | Solo simple: `dates.length × durationPerExecutionMin`. |
 | `progress`             | `number` 0–100        | Sí | Calculado (ver §5.4). |
@@ -132,7 +132,7 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 | `id`            | UUID                  | Sí | |
 | `activityId`    | UUID → Activity       | Sí | La tarea padre debe ser `COMPOSITE`. |
 | `title`         | `string`              | Sí | Mínimo 3 caracteres (RN-13). |
-| `deadline`      | `string` `YYYY-MM-DD` | No | Si se omite, hereda el deadline efectivo de la tarea padre (RN-14). No puede ser anterior a hoy. |
+| `deadline`      | `string` `YYYY-MM-DD` | No | Si se omite, hereda el deadline efectivo de la tarea padre (RN-14), que a su vez puede heredar el del objetivo. No puede ser anterior a hoy. |
 | `complexity`    | `ActivityComplexity`  | Sí | Default `MEDIUM`. |
 | `status`        | `SubActivityStatus`   | Sí | Inicia `PENDING`; luego derivado del progreso. |
 | `executionPlan` | `ExecutionPlan`       | **Siempre** | Unidad ejecutable de la compuesta. |
@@ -187,7 +187,7 @@ Proyección calculada por `todaysTasks`:
 | Elemento | Convención | Ejemplo |
 |----------|------------|---------|
 | Clases, tipos y enums | PascalCase, en inglés | `ActivityStatus` |
-| Campos, variables y funciones | camelCase, en inglés | `completedDates`, `targetDate` |
+| Campos, variables y funciones | camelCase, en inglés | `completedDates`, `executionPlan` |
 | Valores de enum (código, API, BD) | UPPER_SNAKE_CASE, en inglés | `IN_PROGRESS` |
 | Columnas y tablas de BD | snake_case, en inglés | `completed_at` |
 | Textos de interfaz | Español, fuera del código | `"En progreso"` |
@@ -292,7 +292,7 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 |----|-------|
 | RN-12 | Título de Meta, Objetivo y Tarea: requerido, **mínimo 3 caracteres**. [UI] |
 | RN-13 | Título de Paso: requerido, **mínimo 3 caracteres** (unificado con el resto). [UI] |
-| RN-14 | `deadline` es **obligatorio** en Tarea. En Paso es opcional: si se omite, **hereda el deadline efectivo de su tarea padre**. Ningún deadline puede ser anterior a hoy al crear o editar. [UI `min=today`] |
+| RN-14 | `deadline` es **obligatorio en el Objetivo** (RN-65). En Tarea y en Paso es opcional: la tarea, si se omite, **hereda el deadline del objetivo**; el paso, el **efectivo de su tarea**. Ningún deadline puede ser anterior a hoy al crear o editar un valor nuevo. [UI `min=today`] |
 | RN-15 | `durationPerExecutionMin` ≥ **5** minutos. Requerido en pasos y en tareas simples. [UI] |
 | RN-16 | Duración por defecto: **60 min** (tarea simple), **45 min** (paso). |
 | RN-17 | Si el plan es `WEEKLY_PATTERN`, se debe seleccionar **al menos un día** de la semana. ("Selecciona al menos un día.") |
@@ -377,23 +377,24 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 | ID | Regla |
 |----|-------|
 | RN-47 | **Recurrencia calculada, no elegida.** Se deriva del `executionPlan`: plan con `patternDays` → `WEEKLY_PATTERN`; plan de fechas específicas con **1** fecha → `SINGLE`; con **2 o más** fechas → `SPECIFIC_DATES`. Se recalcula en cada escritura. En compuestas es `null`. |
-| RN-48 | **Límite de deadlines.** Toda ejecución debe ser ≤ `deadline` de su tarea. Un paso puede tener deadline propio, que nunca puede superar el de su tarea padre; cada ejecución de un paso debe ser ≤ su deadline efectivo. |
-| RN-49 | **Cambio de deadline.** Al modificar el deadline de una tarea o de un paso se validan todas las ejecuciones y pasos afectados. Si alguno incumple, el guardado se rechaza y se listan las fechas en conflicto. No se recortan fechas en silencio. Un paso con deadline heredado no entra en conflicto: su deadline efectivo es el de la tarea y se actualiza solo. |
+| RN-48 | **Límite de deadlines.** Cadena de topes: objetivo → tarea → paso. Una tarea puede tener deadline propio, que nunca puede superar el del objetivo; toda ejecución de una tarea debe ser ≤ su deadline efectivo. Un paso puede tener deadline propio, que nunca puede superar el efectivo de su tarea; cada ejecución de un paso debe ser ≤ su deadline efectivo. |
+| RN-49 | **Cambio de deadline.** Al modificar el deadline de un objetivo, una tarea o un paso se validan todas las ejecuciones, tareas y pasos afectados. Si alguno incumple, el guardado se rechaza y se listan las fechas en conflicto. No se recortan fechas en silencio. Una tarea o un paso con deadline heredado no entra en conflicto: su deadline efectivo es el del padre y se actualiza solo. |
 | RN-50 | **Tarea compuesta.** `executionPlan` y `recurrence` son `null`. Su progreso sale de sus pasos (RN-32). Cada paso tiene su propio plan obligatorio, con programación independiente de los demás pasos. |
 | RN-51 | **Editar un plan.** Las sesiones con fecha anterior a hoy se conservan, estén completadas o no. Solo se regeneran las sesiones futuras. El historial no se pierde. |
 | RN-52 | **Borrado con historial.** Cualquier elemento (meta, objetivo, tarea o paso) se puede borrar, aunque esté completado o tenga hijos. El borrado es en cascada (RN-07 a RN-09) y exige confirmación escrita (RN-62). Los respaldos quedan fuera del MVP. |
 | RN-53 | **Agregar hijos.** Se pueden agregar pasos, tareas u objetivos a un padre existente, aunque ya tenga progreso. El progreso del padre se recalcula sobre todos sus hijos, así que puede bajar. |
 | RN-54 | **Borrar hijos no completados.** Es posible borrar un elemento que no está completado. Solo se recalcula el progreso de sus ancestros. |
 | RN-55 | **Idea.** Una meta puede existir en estado `IDEA`: sin tareas programadas, sin agenda y sin horizonte obligatorio. Pasa a `ACTIVE` cuando se le asigna horizonte y se crean sus tareas con deadline. |
-| RN-56 | **Fecha objetivo de meta.** `targetDate` es un campo opcional e informativo. No genera sesiones ni bloquea nada. Los deadlines que obligan siguen siendo los de las tareas (RN-14, RN-48). |
+| RN-56 | **La meta no tiene fecha.** Una meta no lleva deadline ni fecha objetivo; solo se clasifica por `horizon` (corto, mediano o largo plazo). Los deadlines que obligan son los del objetivo y, dentro de él, los de tareas y pasos (RN-14, RN-48, RN-65). *(Reemplaza la versión anterior, que definía un `targetDate` informativo en la meta.)* |
 | RN-57 | **Pausa de meta.** Pausar una meta cambia solo su estado a `PAUSED`. Se oculta su agenda, pero no se modifican deadlines, sesiones ni progreso de sus hijos. |
-| RN-58 | **Tareas vencidas.** Una tarea no completada con deadline ya pasado se muestra como `OVERDUE`. Es un estado derivado, no se almacena. Al reanudar la meta, el usuario replanifica esas tareas. |
+| RN-58 | **Tareas vencidas.** Una tarea no completada con deadline efectivo ya pasado se muestra como `OVERDUE`. Es un estado derivado, no se almacena. Al reanudar la meta, el usuario replanifica esas tareas. |
 | RN-59 | **Pausa de tarea (MVP).** Igual que la pausa de meta: solo oculta la tarea de la agenda. No cambia su deadline, sus sesiones ni su progreso. |
 | RN-60 | **Postergar sin penalización.** El usuario puede editar el deadline de cualquier elemento no completado sin restricciones de tiempo, salvo las de RN-48 y RN-49. Postergar no reduce el progreso ni borra historial. Las tareas `OVERDUE` son solo una etiqueta visual. |
 | RN-61 | **Historial para estadísticas.** Los elementos no completados, pausados o vencidos se conservan, salvo borrado explícito (RN-52). Esto permitirá analizar a futuro qué metas se terminaron y cuáles no (fuera del MVP). |
 | RN-63 | **Cierre de objetivo.** `COMPLETED` no es automático. El usuario decide cuándo cerrar el objetivo, y solo se permite si su progreso es 100%. Llegar a 100% no lo cierra: queda `ACTIVE` hasta que el usuario lo cierre. Un objetivo cerrado puede seguir recibiendo tareas o pasos mientras los deadlines lo permitan (RN-53). |
 | RN-64 | **Reapertura automática.** Si un objetivo `COMPLETED` baja de 100% porque recibe tareas, pasos o se borra un hijo completado, vuelve a `ACTIVE` automáticamente. Su progreso lo mantiene por debajo de 100%, así que no puede seguir cerrado. |
 | RN-62 | **Confirmación de borrado.** Borrar exige escribir el título exacto del elemento. Aplica a meta, objetivo, tarea y paso. Antes de confirmar se muestra qué se va a borrar: cuántos hijos y cuántos elementos completados. |
+| RN-65 | **Deadline del objetivo.** Cada objetivo tiene un `deadline` obligatorio, porque una meta puede tener varios objetivos y cada uno con su propio plazo. Es el tope de todas sus tareas y pasos (RN-48). Se puede postergar o adelantar sin restricciones de tiempo (RN-60), salvo que el guardado se rechaza si alguna tarea, paso o ejecución quedaría fuera del nuevo límite (RN-49). |
 
 > **Nota:** la clasificación depende del tipo de plan y no del número de fechas generadas. Un patrón semanal que produce una sola fecha sigue siendo `WEEKLY_PATTERN`.
 
@@ -430,7 +431,7 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 | CU-21 | Consultar historial | *No implementado ("Pronto")* |
 | CU-22 | Crear idea (meta sin horizonte) | `/goals/new` |
 | CU-23 | Pausar y reanudar meta o tarea | `/goals/:id`, `/objectives/:id` |
-| CU-24 | Postergar (editar deadline) | `/goals/:id/edit`, `/objectives/:id/activities/:id/edit` |
+| CU-24 | Postergar (editar deadline) | `/goals/:goalId/objectives/:id/edit`, `/objectives/:id/activities/:id/edit` |
 | CU-25 | Cerrar objetivo | `/objectives/:id` |
 
 ### Detalle de casos de uso principales
@@ -453,7 +454,8 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 - **Reglas:** RN-07, RN-11, RN-52, RN-62. Exige escribir el título de la meta.
 
 #### CU-06 / CU-08 — Crear / editar objetivo
-- **Entrada:** `title` (≥3), `nature`. El `goalId` viene de la ruta.
+- **Entrada:** `title` (≥3), `nature`, `deadline` (obligatorio, ≥ hoy). El `goalId` viene de la ruta.
+- **Reglas:** RN-65. Al editar, si el nuevo `deadline` deja tareas, pasos o ejecuciones fuera del límite, se rechaza y se listan las fechas (RN-49).
 - **Post:** se recalcula el progreso de la meta (RN-34) — al crear, el objetivo nuevo (0%) **baja** el promedio de la meta.
 - Redirige a `/goals/:goalId`.
 
@@ -461,10 +463,10 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 - Confirmación: *"Todas las tareas asociadas serán eliminadas."* → RN-08, RN-10, RN-52, RN-62. Exige escribir el título del objetivo.
 
 #### CU-10 — Crear tarea simple
-- **Entrada:** `title`, `priority`, `criticality`, `complexity`, `deadline`, `duration`, `planType`, y `patternDays` **o** `specificDates`. La recurrencia no es entrada: se calcula (RN-47).
+- **Entrada:** `title`, `priority`, `criticality`, `complexity`, `deadline` (opcional; si se omite hereda el del objetivo), `duration`, `planType`, y `patternDays` **o** `specificDates`. La recurrencia no es entrada: se calcula (RN-47).
 - **Flujo:**
   1. Valida campos (RN-12, RN-14, RN-15).
-  2. Si `WEEKLY_PATTERN`: exige ≥1 día (RN-17) y genera fechas hoy→deadline (RN-21).
+  2. Si `WEEKLY_PATTERN`: exige ≥1 día (RN-17) y genera fechas hoy→deadline efectivo (RN-21).
   3. Si `SPECIFIC_DATES`: exige ≥1 fecha (RN-18), ordena (RN-19).
   4. Si no hay fechas resultantes → error (RN-20).
   5. Crea con `status=PENDING`, `progress=0`, `completedDates=[]`, `totalTimeRequiredMin` (RN-24).
@@ -587,6 +589,7 @@ erDiagram
         varchar title
         objective_nature nature
         objective_status status
+        date deadline "obligatoria"
         smallint progress
         timestamptz created_at
         timestamptz updated_at
@@ -600,7 +603,7 @@ erDiagram
         activity_criticality criticality
         activity_complexity complexity
         activity_recurrence recurrence "nullable, derivada del plan"
-        date deadline
+        date deadline "nullable, hereda del objetivo"
         int total_time_required_min "calculado"
         smallint progress
         activity_status status
@@ -612,7 +615,7 @@ erDiagram
         uuid activity_id FK
         varchar title
         activity_complexity complexity
-        date deadline "nullable, hereda de la tarea"
+        date deadline "nullable, hereda de la tarea o del objetivo"
         smallint progress
         sub_activity_status status
         timestamptz created_at
@@ -706,16 +709,16 @@ Rutas anidadas solo para **creación/listado** por padre; operaciones sobre un r
 | GET | `/goals` | CU-01 | Lista con `progress`, `status`. |
 | POST | `/goals` | CU-02, CU-22 | `{ title, horizon?, status? }`. Sin horizonte se crea como `IDEA`. |
 | GET | `/goals/:id` | CU-03 | Incluye objetivos (o usar endpoint de abajo). |
-| PATCH | `/goals/:id` | CU-04, CU-23, CU-24 | `{ title?, horizon?, status?, targetDate? }` |
+| PATCH | `/goals/:id` | CU-04, CU-23, CU-24 | `{ title?, horizon?, status? }` |
 | DELETE | `/goals/:id` | CU-05 | Cascada. |
 
 ### Objetivos
 | Método | Ruta | Caso de uso |
 |--------|------|-------------|
 | GET | `/goals/:goalId/objectives` | CU-03 |
-| POST | `/goals/:goalId/objectives` | CU-06 — `{ title, nature }` |
+| POST | `/goals/:goalId/objectives` | CU-06 — `{ title, nature, deadline }` |
 | GET | `/objectives/:id` | CU-07 — incluye tareas y pasos |
-| PATCH | `/objectives/:id` | CU-08 |
+| PATCH | `/objectives/:id` | CU-08, CU-24 — si `deadline` deja hijos fuera del límite, responde con la lista de fechas en conflicto (RN-49) |
 | DELETE | `/objectives/:id` | CU-09 |
 
 ### Tareas
@@ -773,7 +776,7 @@ Ejemplo de cuerpo (tarea simple):
 - `durationPerExecutionMin`: `@IsInt() @Min(5)`
 - `patternDays`: `@ArrayMinSize(1)` cuando `type = WEEKLY_PATTERN` (`@ValidateIf`).
 - `dates`: `@ArrayMinSize(1) @ArrayUnique()` cuando `type = SPECIFIC_DATES`.
-- `deadline` de paso: `@IsOptional()`. Si se envía, debe ser ≤ deadline de la tarea (RN-48).
+- `deadline` de objetivo: obligatorio. `deadline` de tarea y de paso: `@IsOptional()`; si se envía, debe ser ≤ el efectivo de su padre (RN-48).
 
 ---
 
@@ -790,6 +793,7 @@ Puntos que el código actual no define y que conviene decidir antes de implement
 6. **Marcar días pasados** (RN-27): ¿permitir registrar retroactivamente una sesión no marcada?
 7. **Detalle del cierre:** ¿guardar qué ítems se planificaron o completaron ese día, o solo las métricas? (El registro por fecha ya está resuelto, RN-43.)
 8. ~~**Borrar con historial**~~ **Resuelto:** se puede borrar en cascada, incluso con elementos completados, con confirmación escrita (RN-52, RN-62).
+9. **Objetivo vencido.** Con RN-65 cada objetivo tiene deadline: ¿un objetivo no cerrado cuyo deadline pasó se marca como vencido (derivado, como RN-58) o solo se ven sus tareas `OVERDUE`? Hoy solo las tareas se marcan.
 9. **Mínimo de título de paso** (RN-13): ¿unificar a 3 caracteres como el resto?
 10. **Respaldos y soft delete:** fuera del MVP. Se decidirá cuando se quiera recuperar datos borrados.
 11. **Orden manual** de objetivos, tareas y pasos (hoy: orden de inserción). ¿Agregar columna `position`?

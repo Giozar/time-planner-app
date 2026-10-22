@@ -12,12 +12,12 @@ export enum GoalStatus {
 
 /**
  * Representa una META (o una IDEA si no tiene horizonte, RN-55).
+ * La meta no tiene fecha límite: solo se clasifica por horizonte (RN-56).
  */
 export interface Goal {
   id: string;
   title: string;
   horizon: GoalHorizon | null; // null mientras sea IDEA
-  targetDate?: string; // 'YYYY-MM-DD'
   progress: number;
   status: GoalStatus;
   createdAt: Date;

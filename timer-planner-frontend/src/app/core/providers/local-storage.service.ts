@@ -13,11 +13,11 @@ import { DailyRecord } from '../models/daily-record.model';
 export class LocalStorageService extends DataProvider {
 
   private readonly KEYS = {
-    GOALS: 'planner_v3_goals',
-    OBJECTIVES: 'planner_v3_objectives',
-    ACTIVITIES: 'planner_v3_activities',
-    SUB_ACTIVITIES: 'planner_v3_sub_activities',
-    RECORDS: 'planner_v3_records'
+    GOALS: 'planner_v4_goals',
+    OBJECTIVES: 'planner_v4_objectives',
+    ACTIVITIES: 'planner_v4_activities',
+    SUB_ACTIVITIES: 'planner_v4_sub_activities',
+    RECORDS: 'planner_v4_records'
   };
 
   // Inyectamos el ID de la plataforma para saber si estamos en Server o Browser

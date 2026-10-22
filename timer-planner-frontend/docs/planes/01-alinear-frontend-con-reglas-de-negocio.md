@@ -23,8 +23,9 @@ Se actualiza al terminar cada fase. Estados: ⏳ Pendiente · 🔄 En curso · �
 | 0 | Agente planificador (`Agents/funcionalidad/Agents-planner.md`) | ✅ Completada | 2026-10-21 |
 | 1 | Modelos, enums y etiquetas | ✅ Completada (commit `5cfb234`) | 2026-10-22 |
 | 2 | Motor de reglas puro (`core/rules`) | ✅ Completada (commit `0b550f4`) | 2026-10-22 |
-| 3 | Reescribir `PlannerService` | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
-| 4 | Formularios, pantallas y diálogo | ⏳ Pendiente | — |
+| 3 | Reescribir `PlannerService` | ✅ Completada (commit `242b792`) | 2026-10-22 |
+| 4 | Formularios, pantallas y diálogo | 🔄 En revisión (pendiente de validación y commit) | 2026-10-22 |
+| 4b | Deadline del objetivo (cambio de regla RN-65) | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
 | 5 | Pruebas y verificación | ⏳ Pendiente | — |
 
 **Regla:** una fase no se da por terminada hasta que su documentación esté al día (ver "Al terminar" en cada fase y `docs/README.md`).
@@ -47,10 +48,10 @@ Crear la estructura `timer-planner-frontend/Agents/` (orquestador `Agents.md` y 
 Archivos: `src/app/core/models/{goal,objective,activity,daily-record}.model.ts`.
 - Enums en inglés `UPPER_SNAKE_CASE` según la tabla 4.2 del documento (`SHORT_TERM`, `IN_PROGRESS`, `WEEKLY_PATTERN`, `MONDAY`…). Agregar `TaskSourceType` (`ACTIVITY` | `SUBACTIVITY`).
 - Eliminar los arreglos `*_OPTIONS` (valor + etiqueta). Crear `src/app/core/i18n/labels.ts` con diccionarios `Record<Enum, string>` en español, y un pipe `label` en `src/app/shared/pipes/` para usarlos en plantillas.
-- `Goal`: `horizon` nullable, `status` `IDEA|ACTIVE|PAUSED`, `targetDate` opcional, quitar `type` legacy.
+- `Goal`: `horizon` nullable, `status` `IDEA|ACTIVE|PAUSED`, quitar `type` legacy. *(La `targetDate` prevista aquí se descartó en la Fase 4b: la meta no tiene fecha, RN-56.)*
 - `Activity`: `recurrence` y `executionPlan` `null` en compuestas; `status` incluye `PAUSED`; `OVERDUE` solo derivado.
 - `SubActivity`: `deadline` opcional (hereda el efectivo de la tarea).
-- Claves de `localStorage` nuevas (`planner_v3_*`) en `LocalStorageService` para ignorar los datos viejos.
+- Claves de `localStorage` nuevas (`planner_v3_*`; subieron a `planner_v4_*` en la Fase 4b) en `LocalStorageService` para ignorar los datos viejos.
 
 **Al terminar:** `docs/arquitectura.md` (estructura actual: `core/i18n`, `shared/pipes`), `docs/funcionalidad.md` (estado) y la tabla de Estado de avance de este plan.
 
@@ -77,7 +78,7 @@ Archivo: `src/app/core/services/planner.service.ts` (se mantiene `DataProvider`)
 ## Fase 4 — Formularios, pantallas y diálogo
 
 - `NativeDialogService` y `global-dialog`: agregar opción `requireText` para confirmación escrita del título (RN-62), con conteo de hijos y completados a borrar.
-- `goals-form`: horizonte opcional (crea `IDEA`), `targetDate`. Listado y detalle con botones pausar/reanudar.
+- `goals-form`: horizonte opcional (crea `IDEA`). Listado y detalle con botones pausar/reanudar.
 - `objective-form` / `objective-detail`: botón "Cerrar objetivo" (solo con 100%), etiqueta `OVERDUE`.
 - `activity-form`: quitar el selector de recurrencia (B-02), validar duración mínima siempre (B-12), fechas específicas ≤ deadline, bloqueo con lista de fechas en conflicto (RN-49), confirmación según RN-39/RN-40.
 - `structure-form`: título mínimo 3 (RN-13), deadline opcional con herencia y tope en el de la tarea (RN-48).
@@ -86,10 +87,23 @@ Archivo: `src/app/core/services/planner.service.ts` (se mantiene `DataProvider`)
 
 **Al terminar:** `docs/funcionalidad.md` (estado por feature) y la tabla de Estado de avance de este plan.
 
+## Fase 4b — Deadline del objetivo (cambio de regla)
+
+Surge de una aclaración del usuario durante la revisión de la Fase 4: **la meta no tiene fecha**, solo horizonte; el **objetivo** lleva un deadline obligatorio y es el tope de sus tareas y pasos. Se registra primero en `../docs/analisis-reglas-de-negocio.md` (autorizado por el usuario) y luego en el código.
+
+- **Regla nueva RN-65** y cambios en RN-14, RN-48, RN-49, RN-56, modelo (§3), casos de uso (CU-06/08, CU-24), ERD y API.
+- **Modelos:** `Objective.deadline` obligatorio; `Activity.deadline` opcional (hereda el del objetivo); se quita `Goal.targetDate`.
+- **Reglas:** `effectiveDeadline`, `effectiveActivityDeadline` y `validateDeadlines(objective, activities, steps)` validan la cadena objetivo → tarea → paso; `isOverdue` recibe el deadline efectivo.
+- **Servicio:** `updateObjective` devuelve conflictos; `addActivity`, `updateActivity`, `addSubActivity` y `updateSubActivity` validan contra el objetivo.
+- **Pantallas:** `objective-form` con deadline obligatorio; `activity-form` con deadline opcional; `structure-form` con tope en el efectivo de la tarea; el detalle del objetivo muestra su fecha y el deadline efectivo de cada tarea; `goals-form` y detalle de meta sin fecha.
+- Claves de `localStorage` suben a `planner_v4_*` para ignorar datos guardados sin deadline de objetivo.
+
+**Al terminar:** `docs/funcionalidad.md`, `docs/README.md`, `docs/arquitectura.md` y esta tabla. Cambio de regla en `../docs/analisis-reglas-de-negocio.md`.
+
 ## Fase 5 — Pruebas y verificación
 
 - Reemplazar `src/app/app.spec.ts`: su prueba espera el texto "Hello, timer-planner-frontend", que la app ya no muestra.
-- Pruebas unitarias del motor de reglas (Vitest, vía `ng test`): recurrencia, progreso, estados, deadlines, sesiones futuras, y la regresión de B-01 ejecutada con `TZ=America/Mexico_City`.
+- Pruebas unitarias del motor de reglas (Vitest, vía `ng test`): recurrencia, progreso, estados, deadlines (incluida la cadena objetivo → tarea → paso), sesiones futuras, y la regresión de B-01 ejecutada con `TZ=America/Mexico_City`.
 - Pruebas del `PlannerService`: cascada de borrado, reapertura automática, upsert de cierre.
 
 **Al terminar:** `docs/buenas-practicas.md` (si cambió el flujo de pruebas), `docs/README.md` (estado general) y la tabla de Estado de avance de este plan.
@@ -121,3 +135,7 @@ Archivo: `src/app/core/services/planner.service.ts` (se mantiene `DataProvider`)
 | 2026-10-22 | Fase 3 implementada, a la espera de validación. `PlannerService` reescrito: se quitan `checkAndMigrate`, los `setTimeout` y las funciones de progreso sueltas; una sola `cascade()` + `commit()` tras cada mutación. Agenda sin metas `PAUSED`/`IDEA` ni tareas `PAUSED`. Acciones nuevas: `pauseGoal`/`resumeGoal`, `pauseActivity`/`resumeActivity`, `closeObjective`, reapertura automática, `deletionImpact` (datos para la confirmación escrita, Fase 4) y `typeChangeImpact` (RN-39/40). `addActivity`, `updateActivity`, `addSubActivity` y `updateSubActivity` ahora devuelven los conflictos de deadline y no guardan si hay alguno. `closeDay` hace upsert por fecha. Modelos nuevos: `agenda-item.model.ts` y `deletion-impact.model.ts`. Se elimina `deleteSubActivitiesByActivityId` (el servicio borra los pasos al pasar a simple). Verificado con un script temporal de 16 comprobaciones; `tsc` ya no falla en `core/`, solo en los formularios y `daily-dashboard` (Fase 4). |
 
 Decisiones de la Fase 3 no explícitas en las reglas: `cascade()` pasa una meta `IDEA` a `ACTIVE` cuando tiene horizonte y al menos una tarea (RN-55); `resumeActivity` solo actúa sobre tareas `PAUSED` y el estado se deriva del progreso; `totalTimeRequiredMin` se recalcula en cada cascada (RN-24, B-14).
+| 2026-10-22 | Fase 3 validada y confirmada con commit `242b792`. |
+| 2026-10-22 | Fase 4 implementada, a la espera de validación. **Diálogo:** `requireText` en `NativeDialogService`/`global-dialog` (confirmación escrita, RN-62), `confirmDelete` (resumen de lo que se borra) y `alertDeadlineConflicts` (RN-49). **Metas:** horizonte opcional (crea `IDEA`), `targetDate`, pausar/reanudar en lista y detalle. **Objetivos:** botón "Cerrar objetivo" (solo al 100%), estado `OVERDUE` derivado, pausar/reanudar tareas. **Tareas:** se quita el selector de recurrencia (B-02), duración mínima siempre validada (B-12), fechas específicas con tope en el deadline, plan con `regenerateFutureSessions`, confirmación de cambio de tipo solo si hay datos que perder (RN-39/40), bloqueo con lista de conflictos (RN-49). **Pasos:** título mínimo 3 (RN-13), deadline opcional con herencia y tope en el de la tarea (RN-48). **Agenda y cierre:** clase `completed` usa `isCompleted` (B-11); el resumen muestra tiempo ejecutado/planeado real (B-07, `todaysMetrics` ahora incluye `plannedTimeMin` y `executedTimeMin`). Todo texto de enum pasa por `label` y `core/i18n`; las clases CSS usan los valores nuevos. `tsc` y `pnpm ng build` pasan (con un aviso de presupuesto de CSS en `objective-detail`). Falta el recorrido manual en el navegador. |
+| 2026-10-22 | Aclaración: la Fase 4 sigue sin commit; se revisa junto con la Fase 4b. |
+| 2026-10-22 | **Fase 4b** (en revisión). Cambio de regla pedido por el usuario: la meta no tiene fecha; el objetivo tiene deadline obligatorio y topa a tareas y pasos (RN-65). Se edita `../docs/analisis-reglas-de-negocio.md` con autorización del usuario (RN-14, RN-48, RN-49, RN-56, nueva RN-65, §3, CU-06/08/24, ERD, API y decisión pendiente nº 9: objetivo vencido). Código: `Objective.deadline`, `Activity.deadline` opcional, se quita `Goal.targetDate`, `validateDeadlines` sobre la cadena objetivo → tarea → paso, `updateObjective` devuelve conflictos, formularios y detalle ajustados, claves `planner_v4_*`. `tsc` y `pnpm ng build` pasan; script temporal de 23 comprobaciones del servicio pasa con `TZ=America/Mexico_City`. **Interpretación confirmada por el usuario:** tarea y paso heredan el deadline de su padre si no tienen uno propio, y pueden tener uno más corto, nunca más largo. El deadline del padre es el máximo del hijo. |

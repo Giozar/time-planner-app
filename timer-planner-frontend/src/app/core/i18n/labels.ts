@@ -1,4 +1,6 @@
 import { GoalHorizon, GoalStatus } from '../models/goal.model';
+import { DeletableType } from '../models/deletion-impact.model';
+import { DeadlineConflictKind } from '../rules/deadline.rules';
 import { ObjectiveNature, ObjectiveStatus } from '../models/objective.model';
 import {
   ActivityComplexity,
@@ -103,4 +105,18 @@ export const WEEK_DAY_LABELS: Record<WeekDay, string> = {
 export const TASK_SOURCE_TYPE_LABELS: Record<TaskSourceType, string> = {
   [TaskSourceType.ACTIVITY]: 'Tarea',
   [TaskSourceType.SUBACTIVITY]: 'Paso',
+};
+
+export const DELETABLE_TYPE_LABELS: Record<DeletableType, string> = {
+  [DeletableType.GOAL]: 'meta',
+  [DeletableType.OBJECTIVE]: 'objetivo',
+  [DeletableType.ACTIVITY]: 'tarea',
+  [DeletableType.STEP]: 'paso',
+};
+
+export const DEADLINE_CONFLICT_LABELS: Record<DeadlineConflictKind, string> = {
+  [DeadlineConflictKind.ACTIVITY_DEADLINE]: 'Deadline de la tarea',
+  [DeadlineConflictKind.ACTIVITY_DATES]: 'Sesiones de la tarea',
+  [DeadlineConflictKind.STEP_DEADLINE]: 'Deadline del paso',
+  [DeadlineConflictKind.STEP_DATES]: 'Sesiones del paso',
 };

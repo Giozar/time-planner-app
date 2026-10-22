@@ -14,7 +14,7 @@ src/app/
 │   ├── i18n/          labels.ts (etiquetas en español por enum)
 │   ├── models/        activity, goal, objective, daily-record, agenda-item, deletion-impact (enums en inglés)
 │   ├── rules/         calendar, progress, recurrence, deadline, session, objective (funciones puras)
-│   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves planner_v3_*)
+│   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves planner_v4_*)
 │   ├── services/      planner.service.ts, native-dialog.service.ts
 │   └── utils/         date.utils.ts
 ├── features/

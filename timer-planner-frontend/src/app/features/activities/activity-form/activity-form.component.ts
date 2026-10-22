@@ -3,19 +3,23 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
-import { 
-  Activity, WeekDay, ExecutionPlan, ActivityStatus, WEEK_DAYS, 
-  ACTIVITY_TYPE_OPTIONS, EXECUTION_PLAN_TYPE_OPTIONS,
-  ACTIVITY_PRIORITY_OPTIONS, ACTIVITY_CRITICALITY_OPTIONS, 
-  ACTIVITY_COMPLEXITY_OPTIONS, ACTIVITY_RECURRENCE_OPTIONS
+import {
+  Activity, ActivityComplexity, ActivityCriticality, ActivityPriority, ActivityStatus, ActivityType,
+  ExecutionPlan, ExecutionPlanType, WeekDay, WEEK_DAYS_ORDER
 } from '../../../core/models/activity.model';
 import { DateUtils } from '../../../core/utils/date.utils';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
+import { effectiveDeadline, regenerateFutureSessions } from '../../../core/rules';
+import {
+  ACTIVITY_COMPLEXITY_LABELS, ACTIVITY_CRITICALITY_LABELS, ACTIVITY_PRIORITY_LABELS,
+  ACTIVITY_TYPE_LABELS, EXECUTION_PLAN_TYPE_LABELS, WEEK_DAY_LABELS
+} from '../../../core/i18n/labels';
+import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-activity-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, LabelPipe],
   templateUrl: './activity-form.component.html',
   styleUrl: './activity-form.component.css'
 })
@@ -31,38 +35,49 @@ export class ActivityFormComponent implements OnInit {
   isEditMode = false;
   minDate = DateUtils.getTodayISO();
 
-  // Guardamos datos originales para no perder el progreso al editar
-  private originalCompletedDates: string[] = [];
-  private originalProgress: number = 0;
-  private originalStatus: ActivityStatus = 'pendiente';
-  private originalType: 'simple' | 'compuesta' = 'simple';
+  // Datos originales para no perder el progreso al editar
+  private originalPlan: ExecutionPlan | null = null;
+  private originalProgress = 0;
+  private originalStatus: ActivityStatus = ActivityStatus.PENDING;
+  private originalDeadline: string | undefined;
 
-  readonly priorityOptions = ACTIVITY_PRIORITY_OPTIONS;
-  readonly criticalityOptions = ACTIVITY_CRITICALITY_OPTIONS;
-  readonly complexityOptions = ACTIVITY_COMPLEXITY_OPTIONS;
-  readonly recurrenceOptions = ACTIVITY_RECURRENCE_OPTIONS;
-  readonly typeOptions = ACTIVITY_TYPE_OPTIONS;
-  readonly planTypeOptions = EXECUTION_PLAN_TYPE_OPTIONS;
-  readonly weekDays = WEEK_DAYS;
+  readonly types = Object.values(ActivityType);
+  readonly priorities = Object.values(ActivityPriority);
+  readonly criticalities = Object.values(ActivityCriticality);
+  readonly complexities = Object.values(ActivityComplexity);
+  readonly planTypes = Object.values(ExecutionPlanType);
+  readonly weekDays = WEEK_DAYS_ORDER;
 
+  readonly typeLabels = ACTIVITY_TYPE_LABELS;
+  readonly priorityLabels = ACTIVITY_PRIORITY_LABELS;
+  readonly criticalityLabels = ACTIVITY_CRITICALITY_LABELS;
+  readonly complexityLabels = ACTIVITY_COMPLEXITY_LABELS;
+  readonly planTypeLabels = EXECUTION_PLAN_TYPE_LABELS;
+  readonly weekDayLabels = WEEK_DAY_LABELS;
+
+  // La recurrencia no se elige: se calcula del plan (RN-47, B-02).
   activityForm = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
-    priority: ['media', Validators.required],
-    criticality: ['flexible', Validators.required],
-    complexity: ['media', Validators.required],
-    recurrence: ['especifica', Validators.required],
-    type: ['simple', Validators.required],
-    deadline: ['', Validators.required],
-    
-    planType: ['patron_repetitivo'], 
-    duration: [60], 
-    
+    priority: [ActivityPriority.MEDIUM, Validators.required],
+    criticality: [ActivityCriticality.FLEXIBLE, Validators.required],
+    complexity: [ActivityComplexity.MEDIUM, Validators.required],
+    type: [ActivityType.SIMPLE, Validators.required],
+    deadline: [''], // opcional: si se omite hereda el del objetivo (RN-14)
+
+    planType: [ExecutionPlanType.WEEKLY_PATTERN],
+    duration: [60, [Validators.required, Validators.min(5)]], // RN-15: siempre se valida (B-12)
+
     patternDays: this.fb.array([]),
     specificDates: this.fb.array([])
   });
 
-  get isSimple() { return this.activityForm.get('type')?.value === 'simple'; }
-  get isPattern() { return this.activityForm.get('planType')?.value === 'patron_repetitivo'; }
+  get isSimple() { return this.activityForm.get('type')?.value === ActivityType.SIMPLE; }
+  get isPattern() { return this.activityForm.get('planType')?.value === ExecutionPlanType.WEEKLY_PATTERN; }
+  get objectiveDeadline(): string {
+    return this.plannerService.objectives().find(o => o.id === this.objectiveId)?.deadline ?? '';
+  }
+  /** Tope de las fechas: el deadline propio o, si falta, el del objetivo (RN-48). */
+  get deadlineValue(): string { return this.activityForm.get('deadline')?.value || this.objectiveDeadline; }
   get specificDatesArray() { return this.activityForm.get('specificDates') as FormArray; }
   get patternDaysArray() { return this.activityForm.get('patternDays') as FormArray; }
 
@@ -79,19 +94,6 @@ export class ActivityFormComponent implements OnInit {
       this.isEditMode = true;
       this.loadActivityData(this.activityId);
     }
-
-    // Lógica dinámica de validaciones
-    this.activityForm.get('type')?.valueChanges.subscribe(type => {
-      if (type === 'compuesta') {
-        this.activityForm.get('duration')?.clearValidators();
-      } else {
-        this.activityForm.get('duration')?.setValidators([Validators.required, Validators.min(5)]);
-      }
-      this.activityForm.get('duration')?.updateValueAndValidity();
-    });
-
-    // Auto-update recurrence based on planType if user hasn't touched it? 
-    // Actually, let's just make it independent for now as per requirements.
   }
 
   private loadActivityData(id: string) {
@@ -101,72 +103,68 @@ export class ActivityFormComponent implements OnInit {
       this.router.navigate(['/goals']);
       return;
     }
-    this.originalType = activity.type;
     this.objectiveId = activity.objectiveId;
 
     this.originalProgress = activity.progress;
     this.originalStatus = activity.status;
-    if (activity.executionPlan) {
-      this.originalCompletedDates = activity.executionPlan.completedDates || [];
-    }
+    this.originalDeadline = activity.deadline;
+    this.originalPlan = activity.executionPlan;
 
     this.activityForm.patchValue({
       title: activity.title,
-      priority: activity.priority as any,
-      criticality: activity.criticality as any,
-      complexity: activity.complexity as any,
-      recurrence: activity.recurrence as any,
-      type: activity.type as any,
-      deadline: activity.deadline,
-      planType: activity.executionPlan?.type || 'patron_repetitivo',
-      duration: activity.executionPlan?.durationPerExecutionMin || 60
+      priority: activity.priority,
+      criticality: activity.criticality,
+      complexity: activity.complexity,
+      type: activity.type,
+      deadline: activity.deadline ?? '',
+      planType: activity.executionPlan?.type ?? ExecutionPlanType.WEEKLY_PATTERN,
+      duration: activity.executionPlan?.durationPerExecutionMin ?? 60
     });
 
-    if (activity.type === 'simple' && activity.executionPlan) {
-      if (activity.executionPlan.type === 'patron_repetitivo' && activity.executionPlan.patternDays) {
-        const checkArray = this.patternDaysArray;
-        checkArray.clear();
-        activity.executionPlan.patternDays.forEach(day => {
-          checkArray.push(new FormControl(day));
-        });
+    const plan = activity.executionPlan;
+    if (activity.type === ActivityType.SIMPLE && plan) {
+      if (plan.type === ExecutionPlanType.WEEKLY_PATTERN && plan.patternDays) {
+        plan.patternDays.forEach(day => this.patternDaysArray.push(new FormControl(day)));
       }
 
-      if (activity.executionPlan.type === 'fechas_especificas' && activity.executionPlan.dates) {
-        const datesArray = this.specificDatesArray;
-        datesArray.clear();
-        activity.executionPlan.dates.forEach(date => {
-           datesArray.push(new FormControl(date));
-        });
+      // Las sesiones pasadas se conservan solas (RN-51): el formulario solo edita las futuras.
+      if (plan.type === ExecutionPlanType.SPECIFIC_DATES && plan.dates) {
+        plan.dates
+          .filter(date => date >= this.minDate)
+          .forEach(date => this.specificDatesArray.push(new FormControl(date)));
       }
     }
   }
 
-  isDayChecked(dayValue: string): boolean {
-    return this.patternDaysArray.value.includes(dayValue);
+  isDayChecked(day: WeekDay): boolean {
+    return this.patternDaysArray.value.includes(day);
   }
 
-  onDayChange(e: any) {
-    const checkArray = this.patternDaysArray;
-    if (e.target.checked) {
-      checkArray.push(new FormControl(e.target.value));
+  onDayChange(e: Event) {
+    const input = e.target as HTMLInputElement;
+    if (input.checked) {
+      this.patternDaysArray.push(new FormControl(input.value));
     } else {
-      let i = 0;
-      checkArray.controls.forEach((item: any) => {
-        if (item.value == e.target.value) {
-          checkArray.removeAt(i);
-          return;
-        }
-        i++;
-      });
+      const index = this.patternDaysArray.value.indexOf(input.value);
+      if (index >= 0) this.patternDaysArray.removeAt(index);
     }
   }
 
   addSpecificDate(dateInput: HTMLInputElement) {
     const date = dateInput.value;
-    if (date && !this.specificDatesArray.value.includes(date)) {
-      this.specificDatesArray.push(new FormControl(date));
-      dateInput.value = '';
+    if (!date || this.specificDatesArray.value.includes(date)) return;
+
+    if (date < this.minDate) {
+      this.dialog.alert('Atención', 'La fecha no puede ser anterior a hoy.');
+      return;
     }
+    if (this.deadlineValue && date > this.deadlineValue) {
+      this.dialog.alert('Atención', 'La fecha no puede ser posterior al deadline de la tarea.');
+      return;
+    }
+
+    this.specificDatesArray.push(new FormControl(date));
+    dateInput.value = '';
   }
 
   removeSpecificDate(index: number) {
@@ -179,90 +177,93 @@ export class ActivityFormComponent implements OnInit {
 
   async saveActivity() {
     if (this.activityForm.invalid || !this.objectiveId) return;
-    
+
     const val = this.activityForm.value;
-    const newType = val.type as 'simple' | 'compuesta';
-    let finalExecutionPlan: ExecutionPlan | undefined = undefined;
+    const newType = val.type!;
+    const ownDeadline = val.deadline || undefined;
+    const deadline = effectiveDeadline({ deadline: ownDeadline }, this.objectiveDeadline);
 
-    if (newType === 'simple') {
-      let finalDates: string[] = [];
+    // RN-14: ningún deadline nuevo o modificado puede ser anterior a hoy.
+    if (ownDeadline && ownDeadline < this.minDate && (!this.isEditMode || ownDeadline !== this.originalDeadline)) {
+      this.dialog.alert('Atención', 'El deadline no puede ser anterior a hoy.');
+      return;
+    }
 
-      if (val.planType === 'patron_repetitivo') {
-        const daysSelected = val.patternDays as WeekDay[];
-        if (daysSelected.length === 0) {
-          this.dialog.alert('Atención', 'Selecciona al menos un día.');
-          return;
-        }
-        
-        finalDates = DateUtils.generateDatesFromPattern(
-          DateUtils.getTodayISO(),
-          val.deadline!,
-          daysSelected
-        );
-      } else {
-        finalDates = (val.specificDates as string[]).sort();
-        if (finalDates.length === 0) {
-          this.dialog.alert('Atención', 'Añade fechas específicas.');
-          return;
-        }
+    let executionPlan: ExecutionPlan | null = null;
+
+    if (newType === ActivityType.SIMPLE) {
+      const isPattern = val.planType === ExecutionPlanType.WEEKLY_PATTERN;
+      const patternDays = (val.patternDays ?? []) as WeekDay[];
+      const specificDates = [...((val.specificDates ?? []) as string[])].sort();
+
+      if (isPattern && patternDays.length === 0) {
+        this.dialog.alert('Atención', 'Selecciona al menos un día.');
+        return;
       }
-
-      if (finalDates.length === 0) {
-        this.dialog.alert('Atención', 'El plan no genera ninguna fecha de ejecución válida antes del deadline.');
+      if (!isPattern && specificDates.length === 0) {
+        this.dialog.alert('Atención', 'Añade fechas específicas.');
         return;
       }
 
-      finalExecutionPlan = {
-        type: val.planType as any,
-        durationPerExecutionMin: val.duration || 60,
-        dates: finalDates,
-        patternDays: val.planType === 'patron_repetitivo' ? (val.patternDays as WeekDay[]) : undefined,
-        completedDates: this.originalCompletedDates 
-      };
+      // RN-51: conserva las sesiones pasadas del plan original y regenera las futuras.
+      executionPlan = regenerateFutureSessions(
+        this.originalPlan,
+        {
+          type: val.planType!,
+          patternDays: isPattern ? patternDays : undefined,
+          dates: isPattern ? undefined : specificDates,
+          durationPerExecutionMin: val.duration!
+        },
+        this.minDate,
+        deadline
+      );
+
+      // RN-20: el plan debe generar al menos una sesión desde hoy.
+      if (!executionPlan.dates?.some(d => d >= this.minDate)) {
+        this.dialog.alert('Atención', 'El plan no genera ninguna fecha de ejecución válida antes del deadline.');
+        return;
+      }
+    }
+
+    // RN-39 / RN-40: confirmar el cambio de tipo solo si hay datos que perder.
+    if (this.isEditMode && this.activityId) {
+      const impact = this.plannerService.typeChangeImpact(this.activityId, newType);
+      if (impact.needsConfirmation) {
+        const message = newType === ActivityType.SIMPLE
+          ? `Esta tarea tiene ${impact.stepsToDelete} paso(s).\nAl convertirla en simple, estos pasos se eliminarán.\n\n¿Confirmas que deseas continuar?`
+          : `Esta tarea tiene ${impact.sessionsToLose} sesión(es) programada(s), ${impact.completedSessionsToLose} completada(s).\nAl convertirla en compuesta, el plan y las ejecuciones se perderán.\n\n¿Confirmas que deseas continuar?`;
+
+        const confirmed = await this.dialog.confirm('Cambio de Tipo Detectado', message, {
+          confirmText: 'Convertir',
+          isDanger: true
+        });
+        if (!confirmed) return;
+      }
     }
 
     const activityData: Activity = {
       id: this.activityId || crypto.randomUUID(),
       objectiveId: this.objectiveId,
       title: val.title!,
-      priority: val.priority as any,
-      criticality: val.criticality as any,
-      complexity: val.complexity as any,
-      recurrence: val.recurrence as any,
+      priority: val.priority!,
+      criticality: val.criticality!,
+      complexity: val.complexity!,
       type: newType,
-      deadline: val.deadline!,
-      status: this.isEditMode ? this.originalStatus : 'pendiente',
+      recurrence: null, // lo calcula el servicio (RN-47)
+      deadline: ownDeadline,
+      status: this.isEditMode ? this.originalStatus : ActivityStatus.PENDING,
       progress: this.isEditMode ? this.originalProgress : 0,
-      
-      executionPlan: finalExecutionPlan,
-      
-      totalTimeRequiredMin: finalExecutionPlan 
-        ? finalExecutionPlan.dates!.length * finalExecutionPlan.durationPerExecutionMin 
-        : undefined
+      executionPlan
     };
 
-    if (this.isEditMode && this.activityId && this.originalType === 'compuesta' && newType === 'simple') {
-      const stepsCount = this.plannerService.subActivities().filter(s => s.activityId === this.activityId).length;
+    const conflicts = this.isEditMode
+      ? this.plannerService.updateActivity(activityData)
+      : this.plannerService.addActivity(activityData);
 
-      if (stepsCount > 0) {
-        const confirmed = await this.dialog.confirm(
-          'Cambio de Tipo Detectado',
-          `Esta tarea tiene ${stepsCount} pasos registrados.\nAl convertirla en simple, estos pasos se eliminarán.\n\n¿Confirmas que deseas continuar?`,
-          {
-            confirmText: 'Convertir y borrar pasos',
-            isDanger: true
-          }
-        );
-
-        if (!confirmed) return;
-        this.plannerService.deleteSubActivitiesByActivityId(this.activityId);
-      }
-    }
-
-    if (this.isEditMode) {
-      this.plannerService.updateActivity(activityData);
-    } else {
-      this.plannerService.addActivity(activityData);
+    // RN-49: el guardado se rechaza y se muestran las fechas en conflicto.
+    if (conflicts.length > 0) {
+      this.dialog.alertDeadlineConflicts(conflicts);
+      return;
     }
 
     this.router.navigate(['/objectives', this.objectiveId]);
