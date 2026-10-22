@@ -28,6 +28,7 @@ src/app/
 │   ├── layout/        main-layout
 │   └── pipes/         label.pipe.ts
 ├── app.config.ts      enlaza DataProvider con LocalStorageService
+├── testing/           builders.ts e in-memory-data.provider.ts (solo para pruebas)
 └── app.routes.ts
 ```
 

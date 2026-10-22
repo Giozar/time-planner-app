@@ -21,7 +21,7 @@ Estados: ⏳ Pendiente · 🔄 En curso · ✅ Completada.
 | Plan | Definición y registro de RN-66 / CU-26 | ✅ Completada | 2026-10-22 |
 | 1 | Reglas puras de calendario y modelo `CalendarEntry` | ✅ Completada (commit confirmado por el usuario) | 2026-10-22 |
 | 2 | Servicio: sesiones por fecha | ✅ Completada (commit confirmado por el usuario) | 2026-10-22 |
-| 3 | Pantalla, ruta y menú | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
+| 3 | Pantalla, ruta y menú | ✅ Completada (commit confirmado por el usuario) | 2026-10-22 |
 
 Las pruebas unitarias se escriben en la Fase 5 del plan 01.
 
@@ -80,3 +80,4 @@ Archivo: `core/services/planner.service.ts`.
 | 2026-10-22 | Fase 2 implementada, a la espera de validación. En `PlannerService`: la visibilidad (RN-29) pasa a una sola señal privada `visibleActivityIds`, compartida por `todaysTasks` y la nueva `calendarEntries` (`Map<fecha, CalendarEntry[]>`, tareas simples y pasos con meta, objetivo, deadline del objetivo, tarea y deadline efectivo; ordenadas por título dentro del día). Comportamiento de la agenda sin cambios. `tsc` pasa. Script temporal de 35 comprobaciones del servicio (23 previas + 12 del calendario: jerarquía, deadline heredado y propio, orden, coincidencia con la agenda de hoy, completadas, pausa de tarea y de meta, idea oculta, borrado) pasa con `TZ=America/Mexico_City` y `Pacific/Auckland`; las pruebas formales van en la Fase 5 del plan 01. |
 | 2026-10-22 | Fase 2 validada y confirmada con commit por el usuario. |
 | 2026-10-22 | Fase 3 implementada, a la espera de validación. Nuevo `features/calendar/calendar-view` (cuadrícula mensual de 42 celdas, semana desde el lunes; navegación de año y mes con botones y "Hoy"; hasta 3 sesiones por celda y "+N más"; tooltip con meta › objetivo (límite) › tarea › paso (límite) al pasar el cursor o enfocar con teclado; panel con el detalle del día al elegirlo; en pantallas ≤ 700 px las sesiones son puntos y el detalle del día muestra todo). Ruta `/calendar` en `app.routes.ts` y entrada "Calendario" (`calendar_month`) en el menú, entre "Agenda Hoy" y "Mis Metas". `pnpm ng build` pasa; el CSS del componente se recortó para quedar dentro del presupuesto de 4 kB. **Falta el recorrido manual en el navegador**; las pruebas formales van en la Fase 5 del plan 01. |
+| 2026-10-22 | Fase 3 validada y confirmada con commit por el usuario. Las pruebas del calendario (reglas y servicio) se escribieron en la Fase 5 del plan 01. Queda el recorrido manual en el navegador. |

@@ -27,10 +27,10 @@ El objetivo del momento es alinear la funcionalidad del frontend con las reglas 
 | Área | Estado |
 |------|--------|
 | Documentación base (`docs/`) | ✅ Completada |
-| Código del frontend | Modelos y etiquetas (Fase 1), motor de reglas `core/rules` (Fase 2), `PlannerService` (Fase 3) y formularios, pantallas y diálogo (Fase 4) y deadline del objetivo (Fase 4b, en revisión). La app compila; falta el recorrido manual y las pruebas formales (Fase 5) |
+| Código del frontend | Plan 01 (Fases 1 a 4b) y calendario (plan 02) implementados; 101 pruebas con Vitest (Fase 5, en revisión). Falta el recorrido manual en el navegador |
 | Agentes (`Agents/`) | ✅ Estructura creada, con el agente planificador (Fase 0) |
-| Plan 01 | Fases 0 a 4b completadas. Fase 5 (pruebas) pendiente |
-| Plan 02 (calendario) | Definido y registrado como RN-66 / CU-26. Fases 1 y 2 completadas. Fase 3 (pantalla, ruta y menú) en revisión |
+| Plan 01 | Fases 0 a 4b completadas. Fase 5 (pruebas) en revisión |
+| Plan 02 (calendario) | Definido y registrado como RN-66 / CU-26. Fases 1 a 3 completadas; falta el recorrido manual |
 
 El avance detallado por fase está en [planes/01-alinear-frontend-con-reglas-de-negocio.md](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
@@ -65,3 +65,4 @@ Cada actualización se anota en el historial de abajo.
 | 2026-10-22 | Plan 02, Fase 1 (en revisión): reglas puras de calendario (`calendar-view.rules.ts`), modelo `calendar-entry` y `MONTH_LABELS`. Se actualizan plan 02, `arquitectura.md` y `funcionalidad.md`. |
 | 2026-10-22 | Plan 02, Fase 2 (en revisión): `calendarEntries` en `PlannerService` y visibilidad compartida con la agenda. Se actualizan plan 02 y `funcionalidad.md`. |
 | 2026-10-22 | Plan 02, Fase 3 (en revisión): pantalla del calendario (`features/calendar`), ruta `/calendar` y entrada en el menú. Se actualizan plan 02, `arquitectura.md` y `funcionalidad.md`. |
+| 2026-10-22 | Plan 01, Fase 5 (en revisión): 101 pruebas con Vitest (reglas, `PlannerService`, diálogo, pipe y `App`), helpers en `src/app/testing`. Se actualizan plan 01, plan 02, `buenas-practicas.md` y `arquitectura.md`. |
