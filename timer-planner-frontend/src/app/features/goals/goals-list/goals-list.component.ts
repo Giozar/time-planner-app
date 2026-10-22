@@ -5,12 +5,15 @@ import { RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
-import { Goal } from '../../../core/models/goal.model';
+import { Goal, GoalStatus } from '../../../core/models/goal.model';
+import { DeletableType } from '../../../core/models/deletion-impact.model';
+import { GOAL_HORIZON_LABELS, GOAL_STATUS_LABELS } from '../../../core/i18n/labels';
+import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-goals-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe],
   templateUrl: './goals-list.component.html',
   styleUrl: './goals-list.component.css'
 })
@@ -21,17 +24,27 @@ export class GoalsListComponent {
   // Señal de lectura del servicio
   goals = this.plannerService.goals;
 
+  readonly horizonLabels = GOAL_HORIZON_LABELS;
+  readonly statusLabels = GOAL_STATUS_LABELS;
+  readonly GoalStatus = GoalStatus;
+
   async onDeleteGoal(event: Event, goal: Goal) {
     event.stopPropagation(); // Evitar navegar al detalle
-    
-    const confirmed = await this.dialogService.confirm(
-      '¿Eliminar Meta?',
-      `Estás a punto de eliminar "${goal.title}". Esta acción eliminará TAMBIÉN todas sus actividades y pasos asociados. ¿Estás seguro?`,
-      { confirmText: 'Eliminar', isDanger: true }
-    );
 
-    if (confirmed) {
+    const impact = this.plannerService.deletionImpact(DeletableType.GOAL, goal.id);
+    if (!impact) return;
+
+    if (await this.dialogService.confirmDelete(DeletableType.GOAL, impact)) {
       this.plannerService.deleteGoal(goal.id);
+    }
+  }
+
+  onTogglePause(event: Event, goal: Goal) {
+    event.stopPropagation();
+    if (goal.status === GoalStatus.PAUSED) {
+      this.plannerService.resumeGoal(goal.id);
+    } else {
+      this.plannerService.pauseGoal(goal.id);
     }
   }
 }

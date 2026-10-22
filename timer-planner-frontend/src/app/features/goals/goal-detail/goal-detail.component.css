@@ -229,17 +229,17 @@ h3 {
   text-transform: uppercase;
 }
 
-.status.completada {
+.status.COMPLETED {
   background: #e8f5e9;
   color: #2e7d32;
 }
 
-.status.en_progreso {
+.status.IN_PROGRESS {
   background: #e3f2fd;
   color: #1565c0;
 }
 
-.status.pendiente {
+.status.PENDING {
   background: #f5f5f5;
   color: #7f8c8d;
 }
@@ -289,4 +289,15 @@ h3 {
   border-radius: 12px;
   border: 2px dashed #d6dbdf;
   color: #95a5a6;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button.btn-icon-edit {
+  background: none;
+  border: none;
+  cursor: pointer;
 }

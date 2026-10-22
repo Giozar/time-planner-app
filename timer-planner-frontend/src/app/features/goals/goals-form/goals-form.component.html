@@ -14,13 +14,15 @@
 
 
     <div class="form-group">
-      <label for="horizon">Horizonte</label>
+      <label for="horizon">Horizonte (opcional)</label>
       <select id="horizon" formControlName="horizon">
-        @for (opt of horizonOptions; track opt.value) {
-        <option [value]="opt.value">{{ opt.label }}</option>
+        <option [ngValue]="null">Sin horizonte (idea)</option>
+        @for (h of horizons; track h) {
+        <option [ngValue]="h">{{ h | label: horizonLabels }}</option>
         }
       </select>
     </div>
+
 
     <div class="actions">
       <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>

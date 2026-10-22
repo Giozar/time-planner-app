@@ -150,15 +150,15 @@ h3 {
   letter-spacing: 0.5px;
 }
 
-.status-indicator.activa {
+.status-indicator.ACTIVE {
   color: #27ae60;
 }
 
-.status-indicator.pausada {
+.status-indicator.PAUSED {
   color: #f39c12;
 }
 
-.status-indicator.archivada {
+.status-indicator.IDEA {
   color: #7f8c8d;
 }
 
@@ -176,4 +176,19 @@ h3 {
   border-radius: 12px;
   color: #bdc3c7;
   border: 2px dashed #eee;
+}
+.btn-icon-neutral {
+  background: none;
+  border: none;
+  color: #bdc3c7;
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.btn-icon-neutral:hover {
+  color: #3498db;
 }

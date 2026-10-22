@@ -4,12 +4,17 @@
         <h2 class="dialog-title">{{ d.title }}</h2>
         <div class="dialog-content">
             <p>{{ d.message }}</p>
+            @if (d.requireText) {
+            <input class="confirm-input" type="text" autocomplete="off" placeholder="Escribe el título para confirmar"
+                [value]="typedText()" (input)="typedText.set($any($event.target).value)"
+                (keydown.enter)="onConfirm()">
+            }
         </div>
         <div class="dialog-actions">
             @if (d.type === 'confirm') {
             <button class="btn-secondary" (click)="onCancel()">{{ d.cancelText }}</button>
             }
-            <button [class]="d.isDanger ? 'btn-danger' : 'btn-primary'" (click)="onConfirm()">
+            <button [class]="d.isDanger ? 'btn-danger' : 'btn-primary'" [disabled]="!canConfirm(d.requireText)" (click)="onConfirm()">
                 {{ d.confirmText }}
             </button>
         </div>

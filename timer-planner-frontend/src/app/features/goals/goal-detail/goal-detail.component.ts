@@ -5,11 +5,17 @@ import { PlannerService } from '../../../core/services/planner.service';
 import { MatIconModule } from '@angular/material/icon';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 import { Objective } from '../../../core/models/objective.model';
+import { GoalStatus } from '../../../core/models/goal.model';
+import { DeletableType } from '../../../core/models/deletion-impact.model';
+import {
+  GOAL_HORIZON_LABELS, GOAL_STATUS_LABELS, OBJECTIVE_NATURE_LABELS, OBJECTIVE_STATUS_LABELS,
+} from '../../../core/i18n/labels';
+import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-goal-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe],
   templateUrl: './goal-detail.component.html',
   styleUrl: './goal-detail.component.css',
 })
@@ -20,6 +26,12 @@ export class GoalDetailComponent implements OnInit {
   private dialogService = inject(NativeDialogService);
 
   goalId = this.route.snapshot.paramMap.get('id');
+
+  readonly horizonLabels = GOAL_HORIZON_LABELS;
+  readonly statusLabels = GOAL_STATUS_LABELS;
+  readonly natureLabels = OBJECTIVE_NATURE_LABELS;
+  readonly objectiveStatusLabels = OBJECTIVE_STATUS_LABELS;
+  readonly GoalStatus = GoalStatus;
 
   goal = computed(() => this.plannerService.goals().find((g) => g.id === this.goalId));
 
@@ -35,14 +47,19 @@ export class GoalDetailComponent implements OnInit {
   }
 
   async onDeleteObjective(objective: Objective) {
-    const confirmed = await this.dialogService.confirm(
-      '¿Eliminar Objetivo?',
-      `¿Estás seguro de que quieres eliminar el objetivo "${objective.title}"? \n\nADVERTENCIA: Todas las tareas asociadas serán eliminadas.`,
-      { confirmText: 'Eliminar', isDanger: true }
-    );
+    const impact = this.plannerService.deletionImpact(DeletableType.OBJECTIVE, objective.id);
+    if (!impact) return;
 
-    if (confirmed) {
+    if (await this.dialogService.confirmDelete(DeletableType.OBJECTIVE, impact)) {
       this.plannerService.deleteObjective(objective.id);
+    }
+  }
+
+  onTogglePause(goalId: string, status: GoalStatus) {
+    if (status === GoalStatus.PAUSED) {
+      this.plannerService.resumeGoal(goalId);
+    } else {
+      this.plannerService.pauseGoal(goalId);
     }
   }
 }

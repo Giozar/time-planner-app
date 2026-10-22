@@ -70,3 +70,17 @@ button:hover {
     background: #e74c3c;
     color: white;
 }
+.confirm-input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 
@@ -12,11 +12,21 @@ import { NativeDialogService } from '../../../core/services/native-dialog.servic
 export class GlobalDialogComponent {
   dialogService = inject(NativeDialogService);
 
+  typedText = signal('');
+
+  canConfirm(requireText?: string): boolean {
+    return !requireText || this.typedText() === requireText;
+  }
+
   onCancel() {
+    this.typedText.set('');
     this.dialogService.close(false);
   }
 
   onConfirm() {
+    const required = this.dialogService.state()?.requireText;
+    if (!this.canConfirm(required)) return;
+    this.typedText.set('');
     this.dialogService.close(true);
   }
 }

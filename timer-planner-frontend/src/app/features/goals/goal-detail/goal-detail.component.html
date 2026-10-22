@@ -4,15 +4,23 @@
   <header class="goal-header">
     <div class="header-top">
       <a routerLink="/goals" class="back-link">← Volver a Metas</a>
-      <a [routerLink]="['/goals', currentGoal.id, 'edit']" class="btn-icon-edit" title="Editar Meta">
-        <mat-icon>edit</mat-icon>
-      </a>
+      <div class="header-actions">
+        @if (currentGoal.status !== GoalStatus.IDEA) {
+        <button type="button" class="btn-icon-edit" (click)="onTogglePause(currentGoal.id, currentGoal.status)"
+          [title]="currentGoal.status === GoalStatus.PAUSED ? 'Reanudar Meta' : 'Pausar Meta'">
+          <mat-icon>{{ currentGoal.status === GoalStatus.PAUSED ? 'play_arrow' : 'pause' }}</mat-icon>
+        </button>
+        }
+        <a [routerLink]="['/goals', currentGoal.id, 'edit']" class="btn-icon-edit" title="Editar Meta">
+          <mat-icon>edit</mat-icon>
+        </a>
+      </div>
     </div>
     <h1>{{ currentGoal.title }}</h1>
 
     <div class="meta-info">
-      <span>Horizonte: <strong>{{ currentGoal.horizon | titlecase }}</strong></span>
-      <span>Estado: <strong>{{ currentGoal.status | titlecase }}</strong></span>
+      <span>Horizonte: <strong>{{ currentGoal.horizon ? (currentGoal.horizon | label: horizonLabels) : 'Sin horizonte' }}</strong></span>
+      <span>Estado: <strong>{{ currentGoal.status | label: statusLabels }}</strong></span>
     </div>
 
     <div class="progress-container">
@@ -54,8 +62,9 @@
           </div>
 
           <div class="tags">
-            <span class="tag-level">{{ objective.nature | titlecase }}</span>
-            <span class="tag-type">{{ objective.status | titlecase }}</span>
+            <span class="tag-level">{{ objective.nature | label: natureLabels }}</span>
+            <span class="tag-type">{{ objective.status | label: objectiveStatusLabels }}</span>
+            <span class="tag-type">Límite: {{ objective.deadline }}</span>
           </div>
 
           <div class="activity-meta">
