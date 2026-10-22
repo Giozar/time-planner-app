@@ -13,7 +13,7 @@ Mapa de qué reglas y casos de uso corresponden a cada parte del frontend. **No 
 | Agenda diaria | `features/daily` (`daily-dashboard`) | CU-17, CU-18 | RN-25 a RN-29 | ⏳ Por alinear | 3, 4 |
 | Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44 | ⏳ Por alinear | 3, 4 |
 
-**Estado:** ⏳ Por alinear · 🔄 En curso · ✅ Alineado con las reglas. Última revisión: 2026-10-22. La Fase 1 (modelos, enums y etiquetas) está en revisión: ninguna feature está alineada todavía y la app no compila hasta que las Fases 2 a 4 adapten el servicio y los formularios a los nuevos enums. "Fases" son las del plan [01](planes/01-alinear-frontend-con-reglas-de-negocio.md).
+**Estado:** ⏳ Por alinear · 🔄 En curso · ✅ Alineado con las reglas. Última revisión: 2026-10-22. Fases 1 (modelos, enums y etiquetas) y 2 (motor de reglas puro) hechas; la 2 está en revisión. Ninguna feature está alineada todavía y la app no compila hasta que las Fases 3 y 4 adapten el servicio y los formularios. "Fases" son las del plan [01](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
 ## Funcionalidad transversal
 
@@ -21,8 +21,8 @@ Reglas que no pertenecen a una pantalla sino a la lógica compartida.
 
 | Tema | Dónde vive hoy | Reglas | Estado | Fases |
 |------|----------------|--------|--------|-------|
-| Progreso y estados en cascada | `core/services/planner.service.ts` | RN-30 a RN-37 | ⏳ Por alinear | 2, 3 |
-| Plan de ejecución y fechas | `core/utils/date.utils.ts` y formularios | RN-21 a RN-24, RN-47 a RN-51 | ⏳ Por alinear | 2, 4 |
+| Progreso y estados en cascada | `core/rules` (reglas) y `core/services/planner.service.ts` (aplicación) | RN-30 a RN-37 | 🔄 Reglas listas (Fase 2); falta el servicio | 2, 3 |
+| Plan de ejecución y fechas | `core/rules` y formularios | RN-21 a RN-24, RN-47 a RN-51 | 🔄 Reglas listas (Fase 2); faltan los formularios | 2, 4 |
 | Borrado y confirmaciones | `core/services/native-dialog.service.ts`, `shared/components/global-dialog` | RN-07 a RN-11, RN-52, RN-62 | ⏳ Por alinear | 3, 4 |
 
 ## Notas

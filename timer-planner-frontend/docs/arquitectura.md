@@ -13,6 +13,7 @@ src/app/
 ├── core/
 │   ├── i18n/          labels.ts (etiquetas en español por enum)
 │   ├── models/        activity, goal, objective, daily-record (enums en inglés)
+│   ├── rules/         calendar, progress, recurrence, deadline, session, objective (funciones puras)
 │   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves planner_v3_*)
 │   ├── services/      planner.service.ts, native-dialog.service.ts
 │   └── utils/         date.utils.ts
@@ -35,18 +36,18 @@ Alineada con el plan [planes/01-alinear-frontend-con-reglas-de-negocio.md](plane
 
 ```
 core/
-└── rules/     funciones puras con las reglas de negocio (recurrencia, progreso, deadlines)
 ```
 
-`core/i18n` y `shared/pipes` ya existen (Fase 1).
+`core/i18n`, `shared/pipes` (Fase 1) y `core/rules` (Fase 2) ya existen.
+
 
 ### Estado de implementación (2026-10-22)
 
 | Elemento | Existe | Lo crea |
 |----------|--------|---------|
-| `core/i18n` | Sí (en revisión) | Fase 1 |
-| `shared/pipes` | Sí (en revisión) | Fase 1 |
-| `core/rules` | No | Fase 2 |
+| `core/i18n` | Sí | Fase 1 (completada 2026-10-22) |
+| `shared/pipes` | Sí | Fase 1 (completada 2026-10-22) |
+| `core/rules` | Sí (en revisión) | Fase 2 |
 | `Agents/` (en la raíz del frontend) | Sí | Fase 0 (completada 2026-10-21) |
 
 Cuando una fase crea o mueve carpetas, esta tabla y la sección "Estructura actual" se actualizan en el mismo cambio.
