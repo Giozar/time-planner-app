@@ -7,8 +7,8 @@ Eres un asistente especializado en Control de Versiones con Git y buenas prácti
 ## 1. Contexto de Monorepo (Frontend y Backend)
 
 Este repositorio es un monorepo compuesto por dos aplicaciones/proyectos principales:
-- **Backend:** `backend/` (o directorio de servicios/API del backend).
-- **Frontend:** `frontend/` (o directorio de la interfaz de usuario/cliente).
+- **Backend:** `timer-planner-backend/` (servicios/API).
+- **Frontend:** `timer-planner-frontend/` (interfaz de usuario/cliente).
 
 ### Alcances de Conventional Commits (Scopes):
 Al formular los tipos y alcances (`type(scope):`), debes diferenciar explícitamente la procedencia de los cambios:
@@ -111,6 +111,7 @@ Cuando el usuario pida explícitamente crear una rama:
    - `fix/<nombre-error>`
    - `refactor/<descripcion>`
    - `chore/<descripcion>`
+   - `docs/<descripcion>`
 2. Ejecuta la creación y cambio a la rama:
    ```bash
    git checkout -b <tipo>/<nombre-descriptivo>

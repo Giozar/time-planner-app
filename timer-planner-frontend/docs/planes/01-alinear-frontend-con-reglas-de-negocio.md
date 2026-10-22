@@ -5,7 +5,7 @@
 La app Time Planner (Angular 21, signals, standalone) hoy guarda todo en `localStorage` y su lógica de negocio vive en `PlannerService`. Ya existe un documento de reglas de negocio validado con el usuario, en la raíz del monorepo: `docs/analisis-reglas-de-negocio.md` (RN-01 a RN-64, CU-01 a CU-25, bugs B-01 a B-14). Antes de construir el backend, el usuario quiere dejar el **frontend funcional** según esas reglas, y tener un **agente planificador** en `timer-planner-frontend/Agents/` que sepa planificar por feature.
 
 Decisiones ya tomadas por el usuario:
-- Formato del agente: archivo Markdown de instrucciones (como `AGENTS-angular.md`).
+- Formato del agente: archivo Markdown de instrucciones (como `Agents-angular.md`), dentro de `Agents/funcionalidad/`.
 - Plan por fases con todas las reglas del documento.
 - Datos actuales de `localStorage`: **empezar de cero** (sin migración de valores viejos).
 - El agente lee `../docs/analisis-reglas-de-negocio.md` como **referencia de solo lectura**, declarada como excepción explícita en su archivo.
@@ -20,7 +20,7 @@ Se actualiza al terminar cada fase. Estados: ⏳ Pendiente · 🔄 En curso · �
 | Fase | Alcance | Estado | Última actualización |
 |------|---------|--------|----------------------|
 | Base | Documentación en `docs/` (README, funcionalidad, arquitectura, buenas prácticas) | ✅ Completada | 2026-10-20 |
-| 0 | Agente planificador (`Agents/planner-agent.md`) | ⏳ Pendiente | — |
+| 0 | Agente planificador (`Agents/funcionalidad/Agents-planner.md`) | ✅ Completada | 2026-10-21 |
 | 1 | Modelos, enums y etiquetas | ⏳ Pendiente | — |
 | 2 | Motor de reglas puro (`core/rules`) | ⏳ Pendiente | — |
 | 3 | Reescribir `PlannerService` | ⏳ Pendiente | — |
@@ -31,10 +31,10 @@ Se actualiza al terminar cada fase. Estados: ⏳ Pendiente · 🔄 En curso · �
 
 ## Fase 0 — Agente planificador
 
-Crear `timer-planner-frontend/Agents/planner-agent.md` con:
+Crear la estructura `timer-planner-frontend/Agents/` (orquestador `Agents.md` y carpetas `reglas/`, `tecnologia/` y `funcionalidad/`) y el agente `funcionalidad/Agents-planner.md` con:
 - **Rol:** planifica por feature cómo llevar el frontend a cumplir las reglas del documento; no implementa salvo que se le pida.
-- **Fuente de verdad:** `../docs/analisis-reglas-de-negocio.md`, solo lectura. Declara la excepción al "entorno cerrado" de `AGENTS-angular.md`.
-- **Restricciones heredadas de `AGENTS-angular.md`:** trabajar dentro del frontend, usar `pnpm`/`ng`, mostrar comandos `ng generate` con su atajo, pedir permiso y explicar brevemente antes de ejecutar comandos, respuestas breves.
+- **Fuente de verdad:** `../docs/analisis-reglas-de-negocio.md`, solo lectura. Declara la excepción al "entorno cerrado" en `Agents/reglas/Agents-alcance.md`.
+- **Restricciones heredadas de `Agents/reglas/Agents-alcance.md` y `Agents/tecnologia/Agents-angular.md`:** trabajar dentro del frontend, usar `pnpm`/`ng`, mostrar comandos `ng generate` con su atajo, pedir permiso y explicar brevemente antes de ejecutar comandos, respuestas breves.
 - **Mapa de features:** parte de `docs/funcionalidad.md`, con las RN/CU que le aplican a cada feature.
 - **Formato de salida de un plan:** contexto, RN/CU cubiertas, archivos a tocar, pasos ordenados, verificación.
 - **Arquitectura:** se basa en `docs/arquitectura.md` y `docs/buenas-practicas.md`. El agente no inventa decisiones de arquitectura fuera de ellos.
@@ -96,7 +96,7 @@ Archivo: `src/app/core/services/planner.service.ts` (se mantiene `DataProvider`)
 
 ## Archivos críticos
 
-- Nuevo: `timer-planner-frontend/Agents/planner-agent.md`, `src/app/core/rules/*`, `src/app/core/i18n/labels.ts`, `src/app/shared/pipes/label.pipe.ts`.
+- Nuevo: `timer-planner-frontend/Agents/funcionalidad/Agents-planner.md`, `src/app/core/rules/*`, `src/app/core/i18n/labels.ts`, `src/app/shared/pipes/label.pipe.ts`.
 - Modificados: `core/models/*.ts`, `core/services/planner.service.ts`, `core/services/native-dialog.service.ts`, `core/providers/local-storage.service.ts`, `core/utils/date.utils.ts`, `shared/components/global-dialog/*`, y los formularios y detalles de `features/{goals,objectives,activities,daily}`.
 
 ## Verificación
@@ -113,3 +113,4 @@ Archivo: `src/app/core/services/planner.service.ts` (se mantiene `DataProvider`)
 |-------|--------|
 | 2026-10-20 | Plan aprobado. Documentación base creada en `docs/`. |
 | 2026-10-21 | Se agregan el Estado de avance, las líneas "Al terminar" por fase y la regla de mantenimiento. Ninguna fase iniciada. |
+| 2026-10-21 | Fase 0 completada en la rama `chore/organize-agents-structure`: estructura `Agents/` con orquestador, reglas, tecnología y el agente planificador. `AGENTS-angular.md` se movió a `Agents/tecnologia/Agents-angular.md`. |

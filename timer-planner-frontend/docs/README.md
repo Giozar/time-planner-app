@@ -15,8 +15,8 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 
 - **Reglas de negocio (fuente de verdad):** `../../docs/analisis-reglas-de-negocio.md`, en la raíz del monorepo. Los documentos de esta carpeta la **referencian**; no la copian, para que no haya dos versiones que se desincronicen.
 - **Planes de trabajo:** [planes/](planes/). Cada plan describe un bloque de trabajo concreto, como alinear el frontend con las reglas de negocio.
-- **Agente planificador:** `../Agents/`. Todavía no existe; está previsto en el plan `planes/01-alinear-frontend-con-reglas-de-negocio.md`.
-- **Instrucciones de trabajo:** `../AGENTS-angular.md`.
+- **Agentes:** `../Agents/`. Empieza por el orquestador `../Agents/Agents.md`; el agente planificador está en `../Agents/funcionalidad/Agents-planner.md`.
+- **Reglas de trabajo de los agentes:** `../Agents/reglas/Agents-alcance.md` y `../Agents/tecnologia/Agents-angular.md`.
 
 ## Alcance actual
 
@@ -28,8 +28,8 @@ El objetivo del momento es alinear la funcionalidad del frontend con las reglas 
 |------|--------|
 | Documentación base (`docs/`) | ✅ Completada |
 | Código del frontend | Sin cambios: sigue con las reglas y valores anteriores |
-| Agente planificador (`Agents/`) | ⏳ Pendiente (Fase 0) |
-| Plan 01 | Aprobado. Ninguna fase iniciada |
+| Agentes (`Agents/`) | ✅ Estructura creada, con el agente planificador (Fase 0) |
+| Plan 01 | Fase 0 completada. Fases 1 a 5 pendientes |
 
 El avance detallado por fase está en [planes/01-alinear-frontend-con-reglas-de-negocio.md](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
@@ -44,6 +44,7 @@ El avance detallado por fase está en [planes/01-alinear-frontend-con-reglas-de-
 | La estructura de carpetas o capas | `arquitectura.md` (estructura actual y estado de implementación) |
 | Una regla de negocio | `../../docs/analisis-reglas-de-negocio.md` (fuente de verdad) y, si cambia el mapa, `funcionalidad.md` |
 | Una convención o práctica | `buenas-practicas.md` |
+| Un agente nuevo, movido o modificado | La tabla de delegación de `../Agents/Agents.md` y el historial de este README |
 
 Cada actualización se anota en el historial de abajo.
 
@@ -53,3 +54,4 @@ Cada actualización se anota en el historial de abajo.
 |-------|--------|
 | 2026-10-20 | Se crea la documentación base y el plan 01. |
 | 2026-10-21 | El plan pasa a `planes/` con nombre claro. Se agregan estado de avance, regla de mantenimiento y columnas de estado. |
+| 2026-10-21 | Se organiza `Agents/` (orquestador, reglas, tecnología, funcionalidad). `AGENTS-angular.md` pasa a `Agents/tecnologia/Agents-angular.md`. Se crea el agente planificador. |

@@ -46,7 +46,7 @@ shared/
 | `core/i18n` | No | Fase 1 |
 | `shared/pipes` | No | Fase 1 |
 | `core/rules` | No | Fase 2 |
-| `Agents/` (en la raíz del frontend) | No | Fase 0 |
+| `Agents/` (en la raíz del frontend) | Sí | Fase 0 (completada 2026-10-21) |
 
 Cuando una fase crea o mueve carpetas, esta tabla y la sección "Estructura actual" se actualizan en el mismo cambio.
 
