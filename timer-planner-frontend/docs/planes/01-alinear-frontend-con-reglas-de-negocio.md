@@ -22,8 +22,8 @@ Se actualiza al terminar cada fase. Estados: ⏳ Pendiente · 🔄 En curso · �
 | Base | Documentación en `docs/` (README, funcionalidad, arquitectura, buenas prácticas) | ✅ Completada | 2026-10-20 |
 | 0 | Agente planificador (`Agents/funcionalidad/Agents-planner.md`) | ✅ Completada | 2026-10-21 |
 | 1 | Modelos, enums y etiquetas | ✅ Completada (commit `5cfb234`) | 2026-10-22 |
-| 2 | Motor de reglas puro (`core/rules`) | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
-| 3 | Reescribir `PlannerService` | ⏳ Pendiente | — |
+| 2 | Motor de reglas puro (`core/rules`) | ✅ Completada (commit `0b550f4`) | 2026-10-22 |
+| 3 | Reescribir `PlannerService` | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
 | 4 | Formularios, pantallas y diálogo | ⏳ Pendiente | — |
 | 5 | Pruebas y verificación | ⏳ Pendiente | — |
 
@@ -117,3 +117,7 @@ Archivo: `src/app/core/services/planner.service.ts` (se mantiene `DataProvider`)
 | 2026-10-22 | Fase 1 implementada en la rama `feat/align-frontend-business-rules`, a la espera de validación. Enums en inglés (`enum` de TypeScript) en los 3 modelos, `TaskSourceType`, `core/i18n/labels.ts`, `shared/pipes/label.pipe.ts` y claves `planner_v3_*`. Se eliminan los `*_OPTIONS` y `WEEK_DAYS`. `daily-record.model.ts` no necesitó cambios. **Estado de compilación:** `tsc` falla a propósito en `planner.service.ts`, `date.utils.ts` y los formularios (usan valores viejos); se corrige en las Fases 2 a 4. |
 | 2026-10-22 | Fase 1 validada y confirmada con commit `5cfb234`. |
 | 2026-10-22 | Fase 2 implementada, a la espera de validación. Nueva carpeta `core/rules` (`calendar`, `progress`, `recurrence`, `deadline`, `session`, `objective` + `index.ts`). `DateUtils.generateDatesFromPattern` se elimina (reemplazada por la versión sin `new Date(string)`, corrige B-01); `getTodayISO` y `calculateProgress` se conservan. Verificado con un script temporal (25 comprobaciones) bajo `TZ=America/Mexico_City` y `Pacific/Auckland`; las pruebas formales van en la Fase 5. `tsc` sigue fallando solo en `planner.service.ts` y los formularios. |
+| 2026-10-22 | Fase 2 validada y confirmada con commit `0b550f4`. |
+| 2026-10-22 | Fase 3 implementada, a la espera de validación. `PlannerService` reescrito: se quitan `checkAndMigrate`, los `setTimeout` y las funciones de progreso sueltas; una sola `cascade()` + `commit()` tras cada mutación. Agenda sin metas `PAUSED`/`IDEA` ni tareas `PAUSED`. Acciones nuevas: `pauseGoal`/`resumeGoal`, `pauseActivity`/`resumeActivity`, `closeObjective`, reapertura automática, `deletionImpact` (datos para la confirmación escrita, Fase 4) y `typeChangeImpact` (RN-39/40). `addActivity`, `updateActivity`, `addSubActivity` y `updateSubActivity` ahora devuelven los conflictos de deadline y no guardan si hay alguno. `closeDay` hace upsert por fecha. Modelos nuevos: `agenda-item.model.ts` y `deletion-impact.model.ts`. Se elimina `deleteSubActivitiesByActivityId` (el servicio borra los pasos al pasar a simple). Verificado con un script temporal de 16 comprobaciones; `tsc` ya no falla en `core/`, solo en los formularios y `daily-dashboard` (Fase 4). |
+
+Decisiones de la Fase 3 no explícitas en las reglas: `cascade()` pasa una meta `IDEA` a `ACTIVE` cuando tiene horizonte y al menos una tarea (RN-55); `resumeActivity` solo actúa sobre tareas `PAUSED` y el estado se deriva del progreso; `totalTimeRequiredMin` se recalcula en cada cascada (RN-24, B-14).

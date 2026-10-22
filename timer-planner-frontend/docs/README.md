@@ -27,9 +27,9 @@ El objetivo del momento es alinear la funcionalidad del frontend con las reglas 
 | Área | Estado |
 |------|--------|
 | Documentación base (`docs/`) | ✅ Completada |
-| Código del frontend | Modelos, enums, etiquetas y pipe `label` (Fase 1) y motor de reglas puro `core/rules` (Fase 2). La app **no compila** hasta las Fases 3 y 4: servicio y formularios aún usan los valores viejos |
+| Código del frontend | Modelos, enums, etiquetas y pipe `label` (Fase 1) motor de reglas puro `core/rules` (Fase 2) y `PlannerService` reescrito (Fase 3). La app **no compila** hasta la Fase 4: los formularios y `daily-dashboard` aún usan los valores y métodos viejos |
 | Agentes (`Agents/`) | ✅ Estructura creada, con el agente planificador (Fase 0) |
-| Plan 01 | Fases 0 y 1 completadas. Fase 2 en revisión. Fases 3 a 5 pendientes |
+| Plan 01 | Fases 0 a 2 completadas. Fase 3 en revisión. Fases 4 y 5 pendientes |
 
 El avance detallado por fase está en [planes/01-alinear-frontend-con-reglas-de-negocio.md](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
@@ -57,3 +57,4 @@ Cada actualización se anota en el historial de abajo.
 | 2026-10-21 | Se organiza `Agents/` (orquestador, reglas, tecnología, funcionalidad). `AGENTS-angular.md` pasa a `Agents/tecnologia/Agents-angular.md`. Se crea el agente planificador. |
 | 2026-10-22 | Fase 1 (completada): enums en inglés, `core/i18n`, `shared/pipes`, claves `planner_v3_*`. Se actualizan plan 01, `arquitectura.md` y `funcionalidad.md`. |
 | 2026-10-22 | Fase 2 (en revisión): `core/rules` con las reglas puras y `DateUtils` sin `generateDatesFromPattern`. Se actualizan plan 01, `arquitectura.md` y `funcionalidad.md`. |
+| 2026-10-22 | Fase 3 (en revisión): `PlannerService` reescrito sobre `core/rules`; nuevos modelos `agenda-item` y `deletion-impact`. Se actualizan plan 01, `arquitectura.md` y `funcionalidad.md`. |
