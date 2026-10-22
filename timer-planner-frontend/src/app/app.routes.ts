@@ -11,6 +11,7 @@ import { ActivityFormComponent } from './features/activities/activity-form/activ
 import { StructureFormComponent } from './features/activities/structure-form/structure-form.component';
 import { DailyDashboardComponent } from './features/daily/daily-dashboard/daily-dashboard.component';
 import { DailySummaryComponent } from './features/daily/daily-summary/daily-summary.component';
+import { CalendarViewComponent } from './features/calendar/calendar-view/calendar-view.component';
 
 export const routes: Routes = [
   {
@@ -20,6 +21,9 @@ export const routes: Routes = [
       // RUTAS DEL DÍA
       { path: 'daily', component: DailyDashboardComponent },
       { path: 'daily/summary', component: DailySummaryComponent },
+
+      // CALENDARIO
+      { path: 'calendar', component: CalendarViewComponent },
       
       // RUTAS DE METAS (GOALS)
       { path: 'goals', component: GoalsListComponent },

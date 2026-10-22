@@ -1,0 +1,360 @@
+:host {
+  display: block;
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: #2c3e50;
+}
+
+.subtitle {
+  margin: 0.4rem 0 0;
+  color: #7f8c8d;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.month-title {
+  min-width: 11rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #2c3e50;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid #dfe4ea;
+  border-radius: 8px;
+  background: white;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+.btn-today {
+  margin-left: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: #2c3e50;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Cuadrícula */
+.weekdays,
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekdays span {
+  padding: 0.4rem 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #7f8c8d;
+}
+
+.month-grid {
+  border-top: 1px solid #e5e8ec;
+  border-left: 1px solid #e5e8ec;
+}
+
+.day-cell {
+  position: relative;
+  min-height: 6.5rem;
+  padding: 0.3rem;
+  border-right: 1px solid #e5e8ec;
+  border-bottom: 1px solid #e5e8ec;
+  background: white;
+}
+
+.day-cell.other-month {
+  background: #f8f9fa;
+}
+
+.day-cell.other-month .day-number {
+  color: #b2bec3;
+}
+
+.day-cell.selected {
+  background: #eef6fd;
+}
+
+.day-cell.today .day-number {
+  background: #3498db;
+  color: white;
+}
+
+.day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  padding: 0 0.3rem;
+  border: none;
+  border-radius: 50px;
+  background: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+.day-number:hover {
+  background: #e5e8ec;
+}
+
+/* Sesiones dentro de la celda */
+.entries {
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.entry-item {
+  position: relative;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.15rem 0.3rem;
+  border: none;
+  border-radius: 4px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 0.72rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.entry.step {
+  background: #f3e5f5;
+  color: #6a1b9a;
+}
+
+.entry.completed {
+  opacity: 0.6;
+}
+
+.entry.completed .entry-title {
+  text-decoration: line-through;
+}
+
+.entry-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.entry-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.more {
+  padding: 0.1rem 0.3rem;
+  border: none;
+  background: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #7f8c8d;
+  cursor: pointer;
+}
+
+.more:hover {
+  color: #2c3e50;
+  text-decoration: underline;
+}
+
+/* Tooltip: pasar el cursor, enfocar con teclado o tocar */
+.tooltip {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  width: 17rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  background: #2c3e50;
+  color: white;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.entry-item:hover .tooltip,
+.entry-item:focus-within .tooltip {
+  display: block;
+}
+
+.tip-right .tooltip {
+  left: auto;
+  right: 0;
+}
+
+.tip-up .tooltip {
+  top: auto;
+  bottom: 100%;
+}
+
+.tooltip p {
+  margin: 0;
+}
+
+.tip-type {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #aab7c4;
+}
+
+.tip-title {
+  margin: 0.15rem 0 0.4rem !important;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.tooltip dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.6rem;
+}
+
+.tooltip dt {
+  color: #aab7c4;
+}
+
+.tooltip dd {
+  margin: 0;
+}
+
+.tooltip small {
+  color: #f8c471;
+}
+
+/* Detalle del día */
+.day-detail {
+  margin-top: 1.5rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid #e5e8ec;
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
+.day-detail h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.1rem;
+  color: #2c3e50;
+}
+
+.detail-item {
+  padding: 0.6rem 0;
+  border-top: 1px solid #e5e8ec;
+}
+
+.detail-item.completed strong {
+  text-decoration: line-through;
+  color: #7f8c8d;
+}
+
+.detail-main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.detail-type {
+  padding: 0.1rem 0.5rem;
+  border-radius: 50px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.detail-time,
+.detail-path {
+  color: #7f8c8d;
+  font-size: 0.85rem;
+}
+
+.detail-done {
+  color: #2e7d32;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.detail-path {
+  margin: 0.3rem 0 0;
+}
+
+.empty {
+  margin: 0;
+  color: #7f8c8d;
+}
+
+/* Pantallas pequeñas: puntos en lugar de texto; el detalle del día muestra todo */
+@media (max-width: 700px) {
+  :host {
+    padding: 1rem;
+  }
+
+  .day-cell {
+    min-height: 3.6rem;
+  }
+
+  .entry-title,
+  .tooltip {
+    display: none !important;
+  }
+
+  .entries {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .entry {
+    width: auto;
+    padding: 0.2rem;
+  }
+}

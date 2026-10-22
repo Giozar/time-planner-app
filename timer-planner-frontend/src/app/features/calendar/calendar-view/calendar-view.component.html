@@ -1,0 +1,116 @@
+<div class="calendar-container">
+
+  <header class="calendar-header">
+    <div>
+      <h1>Calendario</h1>
+      <p class="subtitle">Sesiones programadas de tus tareas y pasos.</p>
+    </div>
+
+    <nav class="calendar-nav" aria-label="Navegación del calendario">
+      <button type="button" class="nav-btn" (click)="previousYear()" title="Año anterior" aria-label="Año anterior">
+        <mat-icon>keyboard_double_arrow_left</mat-icon>
+      </button>
+      <button type="button" class="nav-btn" (click)="previousMonth()" title="Mes anterior" aria-label="Mes anterior">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span class="month-title" aria-live="polite">{{ title() }}</span>
+      <button type="button" class="nav-btn" (click)="nextMonth()" title="Mes siguiente" aria-label="Mes siguiente">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+      <button type="button" class="nav-btn" (click)="nextYear()" title="Año siguiente" aria-label="Año siguiente">
+        <mat-icon>keyboard_double_arrow_right</mat-icon>
+      </button>
+      <button type="button" class="btn-today" (click)="goToToday()">Hoy</button>
+    </nav>
+  </header>
+
+  <div class="weekdays" aria-hidden="true">
+    @for (day of weekDays; track day) {
+    <span>{{ day | label: weekDayLabels }}</span>
+    }
+  </div>
+
+  <div class="month-grid">
+    @for (cell of grid(); track cell.date; let i = $index) {
+    <div class="day-cell" [class.other-month]="!cell.inMonth" [class.today]="cell.date === today"
+      [class.selected]="cell.date === selectedDate()" [class.tip-right]="i % 7 >= 4" [class.tip-up]="i >= 21">
+
+      <button type="button" class="day-number" (click)="selectDay(cell.date)"
+        [attr.aria-label]="'Ver sesiones del ' + (cell.date | date:'dd/MM/yyyy')">
+        {{ +cell.date.slice(8, 10) }}
+      </button>
+
+      @let entries = entriesOf(cell.date);
+      <ul class="entries">
+        @for (entry of entries.slice(0, maxVisible); track entry.id) {
+        <li class="entry-item">
+          <button type="button" class="entry" [class.completed]="entry.isCompleted"
+            [class.step]="entry.sourceType === TaskSourceType.SUBACTIVITY" (click)="selectDay(cell.date)">
+            <span class="entry-dot"></span>
+            <span class="entry-title">{{ entry.title }}</span>
+          </button>
+
+          <div class="tooltip" role="tooltip">
+            <p class="tip-type">{{ entry.sourceType | label: sourceTypeLabels }} · {{ entry.durationMin }} min
+              @if (entry.isCompleted) { · Completada }</p>
+            <p class="tip-title">{{ entry.title }}</p>
+            <dl>
+              <dt>Meta</dt>
+              <dd>{{ entry.goalTitle }}</dd>
+              <dt>Objetivo</dt>
+              <dd>{{ entry.objectiveTitle }} <small>(límite {{ entry.objectiveDeadline | date:'dd/MM/yyyy' }})</small></dd>
+              @if (entry.sourceType === TaskSourceType.SUBACTIVITY) {
+              <dt>Tarea</dt>
+              <dd>{{ entry.activityTitle }}</dd>
+              <dt>Paso</dt>
+              <dd>{{ entry.title }} <small>(límite {{ entry.effectiveDeadline | date:'dd/MM/yyyy' }})</small></dd>
+              } @else {
+              <dt>Tarea</dt>
+              <dd>{{ entry.title }} <small>(límite {{ entry.effectiveDeadline | date:'dd/MM/yyyy' }})</small></dd>
+              }
+            </dl>
+          </div>
+        </li>
+        }
+        @if (entries.length > maxVisible) {
+        <li>
+          <button type="button" class="more" (click)="selectDay(cell.date)">
+            +{{ entries.length - maxVisible }} más
+          </button>
+        </li>
+        }
+      </ul>
+    </div>
+    }
+  </div>
+
+  @if (selectedDate(); as date) {
+  <section class="day-detail" aria-live="polite">
+    <h2>{{ date | date:'dd/MM/yyyy' }}</h2>
+
+    @for (entry of selectedEntries(); track entry.id) {
+    <article class="detail-item" [class.completed]="entry.isCompleted">
+      <div class="detail-main">
+        <span class="detail-type">{{ entry.sourceType | label: sourceTypeLabels }}</span>
+        <strong>{{ entry.title }}</strong>
+        <span class="detail-time">{{ entry.durationMin }} min</span>
+        @if (entry.isCompleted) { <span class="detail-done">Completada</span> }
+      </div>
+      <p class="detail-path">
+        {{ entry.goalTitle }} › {{ entry.objectiveTitle }}
+        <small>(límite {{ entry.objectiveDeadline | date:'dd/MM/yyyy' }})</small>
+        @if (entry.sourceType === TaskSourceType.SUBACTIVITY) {
+        › {{ entry.activityTitle }} › {{ entry.title }}
+        } @else {
+        › {{ entry.title }}
+        }
+        <small>(límite {{ entry.effectiveDeadline | date:'dd/MM/yyyy' }})</small>
+      </p>
+    </article>
+    } @empty {
+    <p class="empty">No hay sesiones programadas este día.</p>
+    }
+  </section>
+  }
+
+</div>

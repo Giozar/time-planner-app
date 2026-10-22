@@ -19,6 +19,7 @@ src/app/
 │   └── utils/         date.utils.ts
 ├── features/
 │   ├── activities/    activity-form, structure-form
+│   ├── calendar/      calendar-view
 │   ├── daily/         daily-dashboard, daily-summary
 │   ├── goals/         goals-list, goals-form, goal-detail
 │   └── objectives/    objective-form, objective-detail
@@ -49,6 +50,7 @@ core/
 | `shared/pipes` | Sí | Fase 1 (completada 2026-10-22) |
 | `core/rules` | Sí | Fase 2 (completada 2026-10-22) |
 | `Agents/` (en la raíz del frontend) | Sí | Fase 0 (completada 2026-10-21) |
+| `features/calendar` | Sí (en revisión) | Plan 02, Fase 3 |
 
 Cuando una fase crea o mueve carpetas, esta tabla y la sección "Estructura actual" se actualizan en el mismo cambio.
 
