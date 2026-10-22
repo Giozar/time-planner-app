@@ -395,6 +395,7 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 | RN-64 | **Reapertura automática.** Si un objetivo `COMPLETED` baja de 100% porque recibe tareas, pasos o se borra un hijo completado, vuelve a `ACTIVE` automáticamente. Su progreso lo mantiene por debajo de 100%, así que no puede seguir cerrado. |
 | RN-62 | **Confirmación de borrado.** Borrar exige escribir el título exacto del elemento. Aplica a meta, objetivo, tarea y paso. Antes de confirmar se muestra qué se va a borrar: cuántos hijos y cuántos elementos completados. |
 | RN-65 | **Deadline del objetivo.** Cada objetivo tiene un `deadline` obligatorio, porque una meta puede tener varios objetivos y cada uno con su propio plazo. Es el tope de todas sus tareas y pasos (RN-48). Se puede postergar o adelantar sin restricciones de tiempo (RN-60), salvo que el guardado se rechaza si alguna tarea, paso o ejecución quedaría fuera del nuevo límite (RN-49). |
+| RN-66 | **Calendario.** La vista de calendario muestra, por día, las sesiones programadas (`executionPlan.dates`) de tareas simples y de pasos, incluidas las de días pasados y futuras. Aplica la misma visibilidad que la agenda (RN-29): excluye ítems de metas `PAUSED`/`IDEA` y de tareas `PAUSED`. Es solo de consulta: no se marca ejecución desde el calendario (RN-27). Al pasar el cursor (o enfocar/tocar) una sesión se muestra su jerarquía —meta, objetivo, tarea y, si aplica, paso— con el deadline del objetivo y el deadline efectivo de la tarea o del paso (RN-48). El calendario permite navegar por mes y por año sin límite. |
 
 > **Nota:** la clasificación depende del tipo de plan y no del número de fechas generadas. Un patrón semanal que produce una sola fecha sigue siendo `WEEKLY_PATTERN`.
 
@@ -433,6 +434,7 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 | CU-23 | Pausar y reanudar meta o tarea | `/goals/:id`, `/objectives/:id` |
 | CU-24 | Postergar (editar deadline) | `/goals/:goalId/objectives/:id/edit`, `/objectives/:id/activities/:id/edit` |
 | CU-25 | Cerrar objetivo | `/objectives/:id` |
+| CU-26 | Ver calendario | `/calendar` |
 
 ### Detalle de casos de uso principales
 
@@ -518,6 +520,11 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 
 #### CU-24 — Postergar
 - Editar el deadline de un elemento no completado. No reduce progreso ni borra historial (RN-60). Respetan RN-48 y RN-49.
+
+#### CU-26 — Ver calendario
+- **Entrada:** mes y año a mostrar (por defecto el actual). Navegación: mes anterior/siguiente, año anterior/siguiente y "Hoy".
+- **Flujo:** muestra la cuadrícula del mes (semana desde el lunes) con las sesiones de cada día (tareas simples y pasos). Al pasar el cursor, enfocar o tocar una sesión se ve su detalle: meta, objetivo (con su deadline), tarea y paso, con el deadline efectivo de la tarea o del paso. Al elegir un día se lista el detalle de todas sus sesiones.
+- **Reglas:** RN-25, RN-26, RN-29, RN-48, RN-66. Solo consulta.
 
 ---
 

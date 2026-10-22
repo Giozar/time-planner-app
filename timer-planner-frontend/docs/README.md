@@ -9,7 +9,7 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 | [funcionalidad.md](funcionalidad.md) | Mapa de features: qué casos de uso y reglas de negocio aplican a cada carpeta. |
 | [arquitectura.md](arquitectura.md) | Cómo está organizado el código, qué responsabilidad tiene cada capa y cómo evolucionará. |
 | [buenas-practicas.md](buenas-practicas.md) | SOLID y Clean Code aplicados de forma ligera, convención de nombres y pruebas. |
-| [planes/](planes/) | Planes de trabajo numerados. Hoy: `01-alinear-frontend-con-reglas-de-negocio.md`. |
+| [planes/](planes/) | Planes de trabajo numerados. Hoy: `01-alinear-frontend-con-reglas-de-negocio.md` y `02-calendario.md`. |
 
 ## Cómo se relaciona con el resto del repositorio
 
@@ -29,7 +29,8 @@ El objetivo del momento es alinear la funcionalidad del frontend con las reglas 
 | Documentación base (`docs/`) | ✅ Completada |
 | Código del frontend | Modelos y etiquetas (Fase 1), motor de reglas `core/rules` (Fase 2), `PlannerService` (Fase 3) y formularios, pantallas y diálogo (Fase 4) y deadline del objetivo (Fase 4b, en revisión). La app compila; falta el recorrido manual y las pruebas formales (Fase 5) |
 | Agentes (`Agents/`) | ✅ Estructura creada, con el agente planificador (Fase 0) |
-| Plan 01 | Fases 0 a 3 completadas. Fases 4 y 4b (deadline del objetivo) en revisión. Fase 5 pendiente |
+| Plan 01 | Fases 0 a 4b completadas. Fase 5 (pruebas) pendiente |
+| Plan 02 (calendario) | Definido y registrado como RN-66 / CU-26. Fases 1 a 3 pendientes |
 
 El avance detallado por fase está en [planes/01-alinear-frontend-con-reglas-de-negocio.md](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
@@ -60,3 +61,4 @@ Cada actualización se anota en el historial de abajo.
 | 2026-10-22 | Fase 3 (en revisión): `PlannerService` reescrito sobre `core/rules`; nuevos modelos `agenda-item` y `deletion-impact`. Se actualizan plan 01, `arquitectura.md` y `funcionalidad.md`. |
 | 2026-10-22 | Fase 4 (en revisión): formularios, pantallas y diálogo con confirmación escrita alineados a las reglas. |
 | 2026-10-22 | Fase 4b (en revisión): cambio de regla — la meta no tiene fecha y el objetivo tiene deadline obligatorio (RN-65). Se actualiza también `../../docs/analisis-reglas-de-negocio.md`, plan 01 y `funcionalidad.md`. |
+| 2026-10-22 | Se define el plan 02 (calendario) y se registran RN-66 y CU-26 en `../../docs/analisis-reglas-de-negocio.md`. Fases 4 y 4b del plan 01 confirmadas con commit. |
