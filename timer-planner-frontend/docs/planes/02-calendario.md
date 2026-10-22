@@ -19,8 +19,8 @@ Estados: ⏳ Pendiente · 🔄 En curso · ✅ Completada.
 | Fase | Alcance | Estado | Última actualización |
 |------|---------|--------|----------------------|
 | Plan | Definición y registro de RN-66 / CU-26 | ✅ Completada | 2026-10-22 |
-| 1 | Reglas puras de calendario y modelo `CalendarEntry` | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
-| 2 | Servicio: sesiones por fecha | ⏳ Pendiente | — |
+| 1 | Reglas puras de calendario y modelo `CalendarEntry` | ✅ Completada (commit confirmado por el usuario) | 2026-10-22 |
+| 2 | Servicio: sesiones por fecha | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
 | 3 | Pantalla, ruta y menú | ⏳ Pendiente | — |
 
 Las pruebas unitarias se escriben en la Fase 5 del plan 01.
@@ -76,3 +76,5 @@ Archivo: `core/services/planner.service.ts`.
 |-------|--------|
 | 2026-10-22 | Plan creado. Se registran RN-66 y CU-26 en `../../docs/analisis-reglas-de-negocio.md`. Ninguna fase iniciada. |
 | 2026-10-22 | Fase 1 implementada, a la espera de validación. `core/rules/calendar-view.rules.ts` (`daysInMonth`, `buildMonthGrid` de 42 celdas con semana desde el lunes, `shiftMonth`, `shiftYear`), exportado en `core/rules/index.ts`; `core/models/calendar-entry.model.ts`; `MONTH_LABELS` en `core/i18n/labels.ts`. `tsc` pasa. Script temporal de 20 comprobaciones (febrero bisiesto y 2100, meses que empiezan en domingo y lunes, cruce de año, saltos de varios meses) pasa con `TZ=America/Mexico_City` y `Pacific/Auckland`; las pruebas formales van en la Fase 5 del plan 01. |
+| 2026-10-22 | Fase 1 validada y confirmada con commit por el usuario. |
+| 2026-10-22 | Fase 2 implementada, a la espera de validación. En `PlannerService`: la visibilidad (RN-29) pasa a una sola señal privada `visibleActivityIds`, compartida por `todaysTasks` y la nueva `calendarEntries` (`Map<fecha, CalendarEntry[]>`, tareas simples y pasos con meta, objetivo, deadline del objetivo, tarea y deadline efectivo; ordenadas por título dentro del día). Comportamiento de la agenda sin cambios. `tsc` pasa. Script temporal de 35 comprobaciones del servicio (23 previas + 12 del calendario: jerarquía, deadline heredado y propio, orden, coincidencia con la agenda de hoy, completadas, pausa de tarea y de meta, idea oculta, borrado) pasa con `TZ=America/Mexico_City` y `Pacific/Auckland`; las pruebas formales van en la Fase 5 del plan 01. |

@@ -13,12 +13,15 @@ import {
 } from '../models/activity.model';
 import { DailyRecord } from '../models/daily-record.model';
 import { AgendaItem } from '../models/agenda-item.model';
+import { CalendarEntry } from '../models/calendar-entry.model';
 import { DeletableType, DeletionImpact, TypeChangeImpact } from '../models/deletion-impact.model';
 import { DateUtils } from '../utils/date.utils';
 import {
   DeadlineConflict,
   averageProgress,
   canCloseObjective,
+  effectiveActivityDeadline,
+  effectiveDeadline,
   computeProgress,
   deriveRecurrence,
   deriveStatus,
@@ -70,19 +73,28 @@ export class PlannerService {
   public subActivities = this.subActivitiesSignal.asReadonly();
   public records = this.recordsSignal.asReadonly();
 
-  /** Agenda de hoy (RN-25 a RN-29): excluye metas PAUSED/IDEA y tareas PAUSED. */
-  public todaysTasks = computed<AgendaItem[]>(() => {
-    const today = DateUtils.getTodayISO();
+  /**
+   * Tareas cuyas sesiones se muestran (RN-29, RN-66): excluye las de metas PAUSED/IDEA y las tareas PAUSED.
+   * Única fuente de visibilidad: la usan la agenda de hoy y el calendario, para que nunca difieran.
+   */
+  private visibleActivityIds = computed<Set<string>>(() => {
     const goals = this.goalsSignal();
     const objectives = this.objectivesSignal();
-    const activities = this.activitiesSignal();
 
-    const isVisible = (activity: Activity): boolean => {
+    return new Set(this.activitiesSignal().filter(activity => {
       if (activity.status === ActivityStatus.PAUSED) return false;
       const objective = objectives.find(o => o.id === activity.objectiveId);
       const goal = goals.find(g => g.id === objective?.goalId);
       return !!goal && goal.status === GoalStatus.ACTIVE;
-    };
+    }).map(a => a.id));
+  });
+
+  /** Agenda de hoy (RN-25 a RN-29). */
+  public todaysTasks = computed<AgendaItem[]>(() => {
+    const today = DateUtils.getTodayISO();
+    const visible = this.visibleActivityIds();
+    const activities = this.activitiesSignal();
+    const isVisible = (activity: Activity) => visible.has(activity.id);
 
     const items: AgendaItem[] = [];
 
@@ -125,6 +137,72 @@ export class PlannerService {
     const plannedTimeMin = tasks.reduce((acc, t) => acc + t.estimatedDurationMin, 0);
     const executedTimeMin = tasks.filter(t => t.isCompleted).reduce((acc, t) => acc + t.estimatedDurationMin, 0);
     return { total, completed, percentage, remaining: total - completed, plannedTimeMin, executedTimeMin };
+  });
+
+  /**
+   * Sesiones programadas por fecha para el calendario (RN-66): tareas simples y pasos visibles,
+   * con su jerarquía y deadlines efectivos (RN-48). Ordenadas por título dentro de cada día.
+   */
+  public calendarEntries = computed<ReadonlyMap<string, CalendarEntry[]>>(() => {
+    const visible = this.visibleActivityIds();
+    const goals = this.goalsSignal();
+    const objectives = this.objectivesSignal();
+    const entries = new Map<string, CalendarEntry[]>();
+
+    const add = (entry: CalendarEntry) => {
+      const day = entries.get(entry.date);
+      if (day) day.push(entry); else entries.set(entry.date, [entry]);
+    };
+
+    for (const activity of this.activitiesSignal()) {
+      const objective = objectives.find(o => o.id === activity.objectiveId);
+      const goal = goals.find(g => g.id === objective?.goalId);
+      if (!visible.has(activity.id) || !objective || !goal) continue;
+
+      const activityLimit = effectiveActivityDeadline(activity, objective);
+      const context = {
+        goalTitle: goal.title,
+        objectiveTitle: objective.title,
+        objectiveDeadline: objective.deadline,
+        activityTitle: activity.title,
+      };
+
+      if (activity.type === ActivityType.SIMPLE && activity.executionPlan) {
+        const plan = activity.executionPlan;
+        for (const date of plan.dates ?? []) {
+          add({
+            ...context,
+            date,
+            id: activity.id,
+            sourceType: TaskSourceType.ACTIVITY,
+            title: activity.title,
+            isCompleted: plan.completedDates.includes(date),
+            durationMin: plan.durationPerExecutionMin,
+            effectiveDeadline: activityLimit,
+          });
+        }
+      }
+
+      for (const step of this.stepsOf(activity.id)) {
+        for (const date of step.executionPlan.dates ?? []) {
+          add({
+            ...context,
+            date,
+            id: step.id,
+            sourceType: TaskSourceType.SUBACTIVITY,
+            title: step.title,
+            isCompleted: step.executionPlan.completedDates.includes(date),
+            durationMin: step.executionPlan.durationPerExecutionMin,
+            effectiveDeadline: effectiveDeadline(step, activityLimit),
+          });
+        }
+      }
+    }
+
+    for (const day of entries.values()) {
+      day.sort((a, b) => a.title.localeCompare(b.title, 'es'));
+    }
+    return entries;
   });
 
   // --- METAS ---

@@ -11,7 +11,7 @@ Mapa de qué reglas y casos de uso corresponden a cada parte del frontend. **No 
 | Tareas | `features/activities` (`activity-form`) | CU-10 a CU-13, CU-24 | RN-03, RN-04, RN-14 a RN-20, RN-39, RN-40, RN-47 a RN-51, RN-58 a RN-60 | 🔄 Alineado en código, en revisión | 1 a 4, 4b |
 | Pasos | `features/activities` (`structure-form`) | CU-14 a CU-16 | RN-05, RN-13, RN-48, RN-49 | 🔄 Alineado en código, en revisión | 1 a 4, 4b |
 | Agenda diaria | `features/daily` (`daily-dashboard`) | CU-17, CU-18 | RN-25 a RN-29 | 🔄 Alineado en código, en revisión | 3, 4 |
-| Calendario | `features/calendar` (por crear) | CU-26 | RN-25, RN-26, RN-29, RN-48, RN-66 | 🔄 Reglas y modelo listos (Fase 1 del plan [02](planes/02-calendario.md), en revisión); faltan servicio y pantalla | 1 a 3 del plan 02 |
+| Calendario | `features/calendar` (por crear) | CU-26 | RN-25, RN-26, RN-29, RN-48, RN-66 | 🔄 Reglas, modelo y servicio listos (Fases 1 y 2 del plan [02](planes/02-calendario.md), la 2 en revisión); falta la pantalla | 1 a 3 del plan 02 |
 | Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44 | 🔄 Alineado en código, en revisión | 3, 4 |
 
 **Estado:** ⏳ Por alinear · 🔄 En curso · ✅ Alineado con las reglas. Última revisión: 2026-10-22. Fases 1 a 4 hechas; la 4b (deadline del objetivo) está en revisión y falta el recorrido manual en el navegador y las pruebas (Fase 5). "Fases" son las del plan [01](planes/01-alinear-frontend-con-reglas-de-negocio.md).
@@ -24,6 +24,7 @@ Reglas que no pertenecen a una pantalla sino a la lógica compartida.
 |------|----------------|--------|--------|-------|
 | Progreso y estados en cascada | `core/rules` (reglas) y `core/services/planner.service.ts` (aplicación) | RN-30 a RN-37 | ✅ Alineado (Fases 2 y 3) | 2, 3 |
 | Plan de ejecución y fechas | `core/rules` y formularios | RN-21 a RN-24, RN-47 a RN-51 | 🔄 Alineado en código (Fases 2 y 4), en revisión | 2, 4, 4b |
+| Visibilidad de sesiones (agenda y calendario) | `core/services/planner.service.ts` (`visibleActivityIds`, `todaysTasks`, `calendarEntries`) | RN-29, RN-57, RN-59, RN-66 | ✅ Alineado (Fase 2 del plan [02](planes/02-calendario.md), en revisión) | 2 del plan 02 |
 | Borrado y confirmaciones | `core/services/planner.service.ts` (cascada e impacto), `native-dialog.service.ts`, `shared/components/global-dialog` | RN-07 a RN-11, RN-52, RN-62 | 🔄 Alineado en código (Fases 3 y 4), en revisión | 3, 4 |
 
 ## Notas

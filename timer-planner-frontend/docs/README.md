@@ -30,7 +30,7 @@ El objetivo del momento es alinear la funcionalidad del frontend con las reglas 
 | Código del frontend | Modelos y etiquetas (Fase 1), motor de reglas `core/rules` (Fase 2), `PlannerService` (Fase 3) y formularios, pantallas y diálogo (Fase 4) y deadline del objetivo (Fase 4b, en revisión). La app compila; falta el recorrido manual y las pruebas formales (Fase 5) |
 | Agentes (`Agents/`) | ✅ Estructura creada, con el agente planificador (Fase 0) |
 | Plan 01 | Fases 0 a 4b completadas. Fase 5 (pruebas) pendiente |
-| Plan 02 (calendario) | Definido y registrado como RN-66 / CU-26. Fase 1 en revisión. Fases 2 y 3 pendientes |
+| Plan 02 (calendario) | Definido y registrado como RN-66 / CU-26. Fase 1 completada. Fase 2 en revisión. Fase 3 pendiente |
 
 El avance detallado por fase está en [planes/01-alinear-frontend-con-reglas-de-negocio.md](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
@@ -63,3 +63,4 @@ Cada actualización se anota en el historial de abajo.
 | 2026-10-22 | Fase 4b (en revisión): cambio de regla — la meta no tiene fecha y el objetivo tiene deadline obligatorio (RN-65). Se actualiza también `../../docs/analisis-reglas-de-negocio.md`, plan 01 y `funcionalidad.md`. |
 | 2026-10-22 | Se define el plan 02 (calendario) y se registran RN-66 y CU-26 en `../../docs/analisis-reglas-de-negocio.md`. Fases 4 y 4b del plan 01 confirmadas con commit. |
 | 2026-10-22 | Plan 02, Fase 1 (en revisión): reglas puras de calendario (`calendar-view.rules.ts`), modelo `calendar-entry` y `MONTH_LABELS`. Se actualizan plan 02, `arquitectura.md` y `funcionalidad.md`. |
+| 2026-10-22 | Plan 02, Fase 2 (en revisión): `calendarEntries` en `PlannerService` y visibilidad compartida con la agenda. Se actualizan plan 02 y `funcionalidad.md`. |
