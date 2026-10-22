@@ -1,29 +1,24 @@
-export type GoalHorizon = 'corto' | 'mediano' | 'largo';
-export type GoalStatus = 'activa' | 'pausada' | 'archivada';
+export enum GoalHorizon {
+  SHORT_TERM = 'SHORT_TERM',
+  MEDIUM_TERM = 'MEDIUM_TERM',
+  LONG_TERM = 'LONG_TERM',
+}
 
-export const GOAL_HORIZON_OPTIONS: { value: GoalHorizon; label: string }[] = [
-  { value: 'corto', label: 'Corto Plazo' },
-  { value: 'mediano', label: 'Mediano Plazo' },
-  { value: 'largo', label: 'Largo Plazo' },
-];
-
-export const GOAL_STATUS_OPTIONS: { value: GoalStatus; label: string }[] = [
-  { value: 'activa', label: 'Activa' },
-  { value: 'pausada', label: 'Pausada' },
-  { value: 'archivada', label: 'Archivada' },
-];
+export enum GoalStatus {
+  IDEA = 'IDEA',
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+}
 
 /**
- * Representa una META en el sistema V2.
+ * Representa una META (o una IDEA si no tiene horizonte, RN-55).
  */
 export interface Goal {
   id: string;
   title: string;
-  horizon: GoalHorizon;
+  horizon: GoalHorizon | null; // null mientras sea IDEA
+  targetDate?: string; // 'YYYY-MM-DD'
   progress: number;
   status: GoalStatus;
   createdAt: Date;
-  
-  // Legacy / Compatibility
-  type?: string; 
 }

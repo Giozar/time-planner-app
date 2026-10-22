@@ -1,111 +1,117 @@
-export type ActivityType = 'simple' | 'compuesta';
-export type ActivityStatus = 'pendiente' | 'en_progreso' | 'completada' | 'pausada';
-export type ActivityPriority = 'alta' | 'media' | 'baja';
-export type ActivityCriticality = 'vital' | 'esencial_recurrente' | 'flexible';
-export type ActivityComplexity = 'baja' | 'media' | 'alta';
-export type ActivityRecurrence = 'unica' | 'patron_semanal' | 'fechas_especificas';
-export type SubActivityStatus = 'pendiente' | 'en_progreso' | 'completada';
+export enum ActivityType {
+  SIMPLE = 'SIMPLE',
+  COMPOSITE = 'COMPOSITE',
+}
 
-export const ACTIVITY_TYPE_OPTIONS: { value: ActivityType; label: string }[] = [
-  { value: 'simple', label: 'Simple (Se ejecuta directo)' },
-  { value: 'compuesta', label: 'Compuesta (Requiere pasos)' },
-];
+export enum ActivityStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  PAUSED = 'PAUSED',
+  OVERDUE = 'OVERDUE', // Solo derivado, nunca se almacena (RN-58)
+}
 
-export const ACTIVITY_STATUS_OPTIONS: { value: ActivityStatus; label: string }[] = [
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'en_progreso', label: 'En Progreso' },
-  { value: 'completada', label: 'Completada' },
-  { value: 'pausada', label: 'Pausada' },
-];
+export enum SubActivityStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+}
 
-export const ACTIVITY_PRIORITY_OPTIONS: { value: ActivityPriority; label: string }[] = [
-  { value: 'alta', label: 'Alta' },
-  { value: 'media', label: 'Media' },
-  { value: 'baja', label: 'Baja' },
-];
+export enum ActivityPriority {
+  HIGH = 'HIGH',
+  MEDIUM = 'MEDIUM',
+  LOW = 'LOW',
+}
 
-export const ACTIVITY_CRITICALITY_OPTIONS: { value: ActivityCriticality; label: string }[] = [
-  { value: 'vital', label: 'Vital' },
-  { value: 'esencial_recurrente', label: 'Esencial Recurrente' },
-  { value: 'flexible', label: 'Flexible' },
-];
+export enum ActivityCriticality {
+  VITAL = 'VITAL',
+  ESSENTIAL_RECURRING = 'ESSENTIAL_RECURRING',
+  FLEXIBLE = 'FLEXIBLE',
+}
 
-export const ACTIVITY_COMPLEXITY_OPTIONS: { value: ActivityComplexity; label: string }[] = [
-  { value: 'baja', label: 'Baja' },
-  { value: 'media', label: 'Media' },
-  { value: 'alta', label: 'Alta' },
-];
+export enum ActivityComplexity {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+}
 
-export const ACTIVITY_RECURRENCE_OPTIONS: { value: ActivityRecurrence; label: string }[] = [
-  { value: 'unica', label: 'Única' },
-  { value: 'patron_semanal', label: 'Patrón Semanal' },
-  { value: 'fechas_especificas', label: 'Fechas Específicas' },
-];
+export enum ActivityRecurrence {
+  SINGLE = 'SINGLE',
+  WEEKLY_PATTERN = 'WEEKLY_PATTERN',
+  SPECIFIC_DATES = 'SPECIFIC_DATES',
+}
 
-export const SUBACTIVITY_STATUS_OPTIONS: { value: SubActivityStatus; label: string }[] = [
-  { value: 'pendiente', label: 'Pendiente' },
-  { value: 'en_progreso', label: 'En Progreso' },
-  { value: 'completada', label: 'Completada' },
-];
+export enum ExecutionPlanType {
+  WEEKLY_PATTERN = 'WEEKLY_PATTERN',
+  SPECIFIC_DATES = 'SPECIFIC_DATES',
+}
 
-export const WEEK_DAYS: { label: string; value: WeekDay }[] = [
-  { label: 'Lun', value: 'L' },
-  { label: 'Mar', value: 'M' },
-  { label: 'Mié', value: 'X' },
-  { label: 'Jue', value: 'J' },
-  { label: 'Vie', value: 'V' },
-  { label: 'Sáb', value: 'S' },
-  { label: 'Dom', value: 'D' },
-];
+export enum WeekDay {
+  MONDAY = 'MONDAY',
+  TUESDAY = 'TUESDAY',
+  WEDNESDAY = 'WEDNESDAY',
+  THURSDAY = 'THURSDAY',
+  FRIDAY = 'FRIDAY',
+  SATURDAY = 'SATURDAY',
+  SUNDAY = 'SUNDAY',
+}
 
-// --- TIPOS PARA EJECUCIÓN ---
-export type ExecutionPlanType = 'fechas_especificas' | 'patron_repetitivo';
-export type WeekDay = 'L' | 'M' | 'X' | 'J' | 'V' | 'S' | 'D';
+/** Origen de un ítem de la agenda diaria. */
+export enum TaskSourceType {
+  ACTIVITY = 'ACTIVITY',
+  SUBACTIVITY = 'SUBACTIVITY',
+}
 
-export const EXECUTION_PLAN_TYPE_OPTIONS: { value: ExecutionPlanType; label: string }[] = [
-  { value: 'patron_repetitivo', label: 'Patrón Repetitivo (Días fijos hasta deadline)' },
-  { value: 'fechas_especificas', label: 'Fechas Específicas (Días sueltos)' },
+/** Días de la semana en el orden en que se muestran (lunes primero). */
+export const WEEK_DAYS_ORDER: readonly WeekDay[] = [
+  WeekDay.MONDAY,
+  WeekDay.TUESDAY,
+  WeekDay.WEDNESDAY,
+  WeekDay.THURSDAY,
+  WeekDay.FRIDAY,
+  WeekDay.SATURDAY,
+  WeekDay.SUNDAY,
 ];
 
 // Contrato de Ejecución
 export interface ExecutionPlan {
   type: ExecutionPlanType;
-  dates?: string[]; // ISO 'YYYY-MM-DD'
-  patternDays?: WeekDay[]; 
+  dates?: string[]; // 'YYYY-MM-DD'
+  patternDays?: WeekDay[];
   durationPerExecutionMin: number;
-  completedDates: string[]; // ISO
+  completedDates: string[]; // 'YYYY-MM-DD'
 }
 
 /**
- * Representa una TAREA en el sistema V2.
+ * Representa una TAREA.
  */
 export interface Activity {
   id: string;
-  objectiveId: string; // V2: Cuelga de Objetivo
+  objectiveId: string;
   title: string;
   type: ActivityType;
   priority: ActivityPriority;
   criticality: ActivityCriticality;
   complexity: ActivityComplexity;
-  recurrence: ActivityRecurrence;
+  recurrence: ActivityRecurrence | null; // null en compuestas (RN-47)
   deadline: string; // 'YYYY-MM-DD'
 
-  // Si es SIMPLE: Tiene plan propio
-  executionPlan?: ExecutionPlan; 
+  // Solo SIMPLE tiene plan propio; null en compuestas
+  executionPlan: ExecutionPlan | null;
 
   totalTimeRequiredMin?: number;
-  progress: number; 
-  status: ActivityStatus;
+  progress: number;
+  status: ActivityStatus; // Nunca OVERDUE almacenado
 }
 
 /**
- * Representa un PASO en el sistema V2.
+ * Representa un PASO de una tarea compuesta.
  */
 export interface SubActivity {
   id: string;
   activityId: string;
   title: string;
-  deadline: string; // 'YYYY-MM-DD'
+  deadline?: string; // 'YYYY-MM-DD'; si falta hereda el efectivo de la tarea (RN-48)
   complexity: ActivityComplexity;
   status: SubActivityStatus;
 

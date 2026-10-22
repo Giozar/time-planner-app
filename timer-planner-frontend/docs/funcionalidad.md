@@ -13,7 +13,7 @@ Mapa de qué reglas y casos de uso corresponden a cada parte del frontend. **No 
 | Agenda diaria | `features/daily` (`daily-dashboard`) | CU-17, CU-18 | RN-25 a RN-29 | ⏳ Por alinear | 3, 4 |
 | Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44 | ⏳ Por alinear | 3, 4 |
 
-**Estado:** ⏳ Por alinear · 🔄 En curso · ✅ Alineado con las reglas. Última revisión: 2026-10-21. Ninguna feature se ha modificado todavía: la app sigue funcionando con las reglas y valores anteriores. "Fases" son las del plan [01](planes/01-alinear-frontend-con-reglas-de-negocio.md).
+**Estado:** ⏳ Por alinear · 🔄 En curso · ✅ Alineado con las reglas. Última revisión: 2026-10-22. La Fase 1 (modelos, enums y etiquetas) está en revisión: ninguna feature está alineada todavía y la app no compila hasta que las Fases 2 a 4 adapten el servicio y los formularios a los nuevos enums. "Fases" son las del plan [01](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
 ## Funcionalidad transversal
 

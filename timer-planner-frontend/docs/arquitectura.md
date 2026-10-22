@@ -11,8 +11,9 @@ Estado verificado en `src/app`:
 ```
 src/app/
 ├── core/
-│   ├── models/        activity, goal, objective, daily-record
-│   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts
+│   ├── i18n/          labels.ts (etiquetas en español por enum)
+│   ├── models/        activity, goal, objective, daily-record (enums en inglés)
+│   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves planner_v3_*)
 │   ├── services/      planner.service.ts, native-dialog.service.ts
 │   └── utils/         date.utils.ts
 ├── features/
@@ -22,7 +23,8 @@ src/app/
 │   └── objectives/    objective-form, objective-detail
 ├── shared/
 │   ├── components/    global-dialog
-│   └── layout/        main-layout
+│   ├── layout/        main-layout
+│   └── pipes/         label.pipe.ts
 ├── app.config.ts      enlaza DataProvider con LocalStorageService
 └── app.routes.ts
 ```
@@ -33,18 +35,17 @@ Alineada con el plan [planes/01-alinear-frontend-con-reglas-de-negocio.md](plane
 
 ```
 core/
-├── rules/     funciones puras con las reglas de negocio (recurrencia, progreso, deadlines)
-└── i18n/      etiquetas en español indexadas por el valor del enum
-shared/
-└── pipes/     pipe `label` para mostrar las etiquetas en las plantillas
+└── rules/     funciones puras con las reglas de negocio (recurrencia, progreso, deadlines)
 ```
 
-### Estado de implementación (2026-10-21)
+`core/i18n` y `shared/pipes` ya existen (Fase 1).
+
+### Estado de implementación (2026-10-22)
 
 | Elemento | Existe | Lo crea |
 |----------|--------|---------|
-| `core/i18n` | No | Fase 1 |
-| `shared/pipes` | No | Fase 1 |
+| `core/i18n` | Sí (en revisión) | Fase 1 |
+| `shared/pipes` | Sí (en revisión) | Fase 1 |
 | `core/rules` | No | Fase 2 |
 | `Agents/` (en la raíz del frontend) | Sí | Fase 0 (completada 2026-10-21) |
 

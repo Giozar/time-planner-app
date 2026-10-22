@@ -21,7 +21,7 @@ Se actualiza al terminar cada fase. Estados: ⏳ Pendiente · 🔄 En curso · �
 |------|---------|--------|----------------------|
 | Base | Documentación en `docs/` (README, funcionalidad, arquitectura, buenas prácticas) | ✅ Completada | 2026-10-20 |
 | 0 | Agente planificador (`Agents/funcionalidad/Agents-planner.md`) | ✅ Completada | 2026-10-21 |
-| 1 | Modelos, enums y etiquetas | ⏳ Pendiente | — |
+| 1 | Modelos, enums y etiquetas | 🔄 En revisión (pendiente de validación del usuario) | 2026-10-22 |
 | 2 | Motor de reglas puro (`core/rules`) | ⏳ Pendiente | — |
 | 3 | Reescribir `PlannerService` | ⏳ Pendiente | — |
 | 4 | Formularios, pantallas y diálogo | ⏳ Pendiente | — |
@@ -114,3 +114,4 @@ Archivo: `src/app/core/services/planner.service.ts` (se mantiene `DataProvider`)
 | 2026-10-20 | Plan aprobado. Documentación base creada en `docs/`. |
 | 2026-10-21 | Se agregan el Estado de avance, las líneas "Al terminar" por fase y la regla de mantenimiento. Ninguna fase iniciada. |
 | 2026-10-21 | Fase 0 completada en la rama `chore/organize-agents-structure`: estructura `Agents/` con orquestador, reglas, tecnología y el agente planificador. `AGENTS-angular.md` se movió a `Agents/tecnologia/Agents-angular.md`. |
+| 2026-10-22 | Fase 1 implementada en la rama `feat/align-frontend-business-rules`, a la espera de validación. Enums en inglés (`enum` de TypeScript) en los 3 modelos, `TaskSourceType`, `core/i18n/labels.ts`, `shared/pipes/label.pipe.ts` y claves `planner_v3_*`. Se eliminan los `*_OPTIONS` y `WEEK_DAYS`. `daily-record.model.ts` no necesitó cambios. **Estado de compilación:** `tsc` falla a propósito en `planner.service.ts`, `date.utils.ts` y los formularios (usan valores viejos); se corrige en las Fases 2 a 4. |

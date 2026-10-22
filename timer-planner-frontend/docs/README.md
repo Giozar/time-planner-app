@@ -22,14 +22,14 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 
 El objetivo del momento es alinear la funcionalidad del frontend con las reglas de negocio. La arquitectura y las prácticas descritas aquí se irán aplicando después, de forma gradual. Cada documento indica qué es **estado actual** y qué es **objetivo**.
 
-## Estado general (2026-10-21)
+## Estado general (2026-10-22)
 
 | Área | Estado |
 |------|--------|
 | Documentación base (`docs/`) | ✅ Completada |
-| Código del frontend | Sin cambios: sigue con las reglas y valores anteriores |
+| Código del frontend | Modelos, enums, etiquetas y pipe `label` migrados (Fase 1). La app **no compila** hasta las Fases 2 a 4: servicio y formularios aún usan los valores viejos |
 | Agentes (`Agents/`) | ✅ Estructura creada, con el agente planificador (Fase 0) |
-| Plan 01 | Fase 0 completada. Fases 1 a 5 pendientes |
+| Plan 01 | Fase 0 completada. Fase 1 en revisión. Fases 2 a 5 pendientes |
 
 El avance detallado por fase está en [planes/01-alinear-frontend-con-reglas-de-negocio.md](planes/01-alinear-frontend-con-reglas-de-negocio.md).
 
@@ -55,3 +55,4 @@ Cada actualización se anota en el historial de abajo.
 | 2026-10-20 | Se crea la documentación base y el plan 01. |
 | 2026-10-21 | El plan pasa a `planes/` con nombre claro. Se agregan estado de avance, regla de mantenimiento y columnas de estado. |
 | 2026-10-21 | Se organiza `Agents/` (orquestador, reglas, tecnología, funcionalidad). `AGENTS-angular.md` pasa a `Agents/tecnologia/Agents-angular.md`. Se crea el agente planificador. |
+| 2026-10-22 | Fase 1 (en revisión): enums en inglés, `core/i18n`, `shared/pipes`, claves `planner_v3_*`. Se actualizan plan 01, `arquitectura.md` y `funcionalidad.md`. |
