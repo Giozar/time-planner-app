@@ -32,9 +32,8 @@ Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que emp
 - **Documentos a actualizar** al terminar cada fase.
 - **Decisiones que lo bloquean:** las `D-xx` de `../docs/estado-y-pendientes.md` que hay que resolver antes de cada fase.
 - **Pendiente:** lo que queda por verificar o por definir, sin repetir lo ya hecho.
-- **Registro de avances:** fecha y cambio de cada avance.
 
-Los planes se guardan en `docs/planes/` con numeración (`01-...`, `02-...`).
+Los planes se guardan en `docs/planes/` con numeración (`NN-tema.md`). Un plan terminado se borra siguiendo `Agents-documentacion.md`; no se conserva su historia.
 
 ## Mantenimiento de la documentación
 

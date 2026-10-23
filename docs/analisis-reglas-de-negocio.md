@@ -153,7 +153,7 @@ Guarda un resumen, no duplica el detalle de sesiones y bloques de trabajo. Si se
 
 ### 3.9 Proyecciones de agenda y calendario
 
-La **agenda** muestra las sesiones `PLANNED` y `DONE` de hoy que cumplen la visibilidad de RN-29, con minutos previstos y estado; permite registrar minutos reales y marcar la sesión realizada. El **calendario** muestra esas sesiones en sus fechas programadas, incluidas las pasadas, y su jerarquía; excluye `NOT_NEEDED` y es solo de consulta. La constancia y el tiempo real se calculan desde sesiones y `WorkLog`, respectivamente.
+La **agenda** muestra las sesiones `PLANNED` y `DONE` de la fecha elegida (hoy por defecto) que cumplen la visibilidad de RN-29, con minutos previstos y estado; permite registrar minutos reales y marcar la sesión realizada en hoy y en fechas pasadas (RN-27, RN-75). El **calendario** muestra esas sesiones en sus fechas programadas, incluidas las pasadas, y su jerarquía; excluye `NOT_NEEDED` y es solo de consulta. La constancia y el tiempo real se calculan desde sesiones y `WorkLog`, respectivamente.
 
 ## 4. Catálogos / enumeraciones
 
@@ -287,10 +287,11 @@ Se numeran para referenciarlas desde la implementación y las pruebas.
 
 | ID | Regla |
 |----|-------|
-| RN-25 | La **Agenda de Hoy** contiene las sesiones de hoy de tareas simples y pasos, con estado `PLANNED` o `DONE`, según la visibilidad de RN-29. |
+| RN-25 | La **agenda** de una fecha contiene las sesiones de esa fecha de tareas simples y pasos, con estado `PLANNED` o `DONE`, según la visibilidad de RN-29. Por defecto se muestra la de hoy (RN-75). |
 | RN-26 | Una sesión de la agenda está realizada cuando su estado es `DONE`; eso no implica que la tarea o el paso estén terminados. |
-| RN-27 | Solo se puede marcar o desmarcar una sesión de hoy. Para marcarla se registran minutos reales en `WorkLog`; desmarcarla conserva el trabajo registrado sin asociarlo a la sesión. No se marcan sesiones pasadas ni futuras. |
+| RN-27 | Se puede marcar o desmarcar una sesión de hoy o de una fecha pasada, sin límite hacia atrás. Las sesiones futuras no se marcan. Para marcarla se registran minutos reales en `WorkLog` de la fecha de la sesión; en una fecha pasada el valor inicial son los minutos previstos. Desmarcarla conserva el trabajo registrado sin asociarlo a la sesión. |
 | RN-28 | "Hoy" se calcula en la **zona horaria local** del usuario. |
+| RN-75 | **Navegar entre fechas.** La agenda permite ir al día anterior o siguiente, elegir una fecha y volver a hoy. Se puede consultar cualquier fecha; las futuras son de solo lectura (RN-27). La fecha elegida forma parte de la dirección de la pantalla, por lo que se puede abrir y compartir. |
 | RN-29 | La agenda excluye los ítems de metas `PAUSED` o `IDEA` y de tareas `PAUSED` (RN-57, RN-59). No filtra por otros estados. |
 
 ### 5.6 Cálculo de progreso y estados (cascada ascendente)
@@ -318,9 +319,9 @@ Se numeran para referenciarlas desde la implementación y las pruebas.
 | ID | Regla |
 |----|-------|
 | RN-41 | Al cerrar el día se guarda un `DailyRecord` con el resumen de sesiones, minutos previstos, minutos reales y notas opcionales. |
-| RN-42 | `plannedMinutes` suma los minutos previstos de las sesiones visibles de hoy; `actualMinutes` suma los `WorkLog.minutes` de hoy, incluidos los trabajos sin sesión programada. |
+| RN-42 | `plannedMinutes` suma los minutos previstos de las sesiones visibles de la fecha cerrada; `actualMinutes` suma los `WorkLog.minutes` de esa fecha, incluidos los trabajos sin sesión programada. |
 | RN-43 | **Un registro por fecha.** Cerrar un día que ya tiene registro reemplaza sus métricas, notas y fecha de cierre; conserva el mismo `id`. El historial conserva una sola fila por día con el cierre más reciente. |
-| RN-44 | Cerrar el día no bloquea ni modifica las tareas (se pueden seguir marcando después). |
+| RN-44 | **Cerrar un día** se puede hacer con hoy o con cualquier fecha pasada. No bloquea ni modifica las tareas: sus sesiones se pueden seguir marcando después. Si el día ya está cerrado y cambian sus sesiones o su `WorkLog`, el `DailyRecord` se recalcula solo, conserva sus notas y actualiza `closedAt`. |
 
 ### 5.9 Recurrencia, planificación y deadlines
 
@@ -359,8 +360,8 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 | RN-68 | **Medidas separadas.** Registrar minutos sin sesión no marca ninguna sesión como realizada. Realizar una sesión exige registrar minutos, pero no cambia automáticamente el avance. Indicar avance tampoco marca sesiones ni crea minutos. El objetivo conserva su cierre manual al llegar al 100 % (RN-63). |
 | RN-69 | **Estado de sesión.** Cada fecha programada tiene una `ExecutionSession` única. `PLANNED` es la inicial; `DONE` significa que se trabajó ese día y tiene `completedAt`; `NOT_NEEDED` es una sesión futura que ya no se requiere. Una `PLANNED` pasada, o de hoy tras cerrar el día, se muestra como no realizada. Ninguna de estas situaciones cambia por sí sola el avance del resultado. |
 | RN-70 | **Constancia.** `round(DONE / (DONE + no realizadas) × 100)` sobre las sesiones exigibles del ítem; devuelve `null` si no hay ninguna. Incluye las `DONE` hasta hoy y las `PLANNED` de fechas pasadas; una `PLANNED` de hoy cuenta al cerrar el día. Excluye sesiones futuras y `NOT_NEEDED`. En padres puede calcularse con todas las sesiones de sus descendientes ejecutables, sin promediar porcentajes. |
-| RN-71 | **Tiempo real.** Cada `WorkLog` guarda minutos enteros positivos trabajados en la fecha local de hoy para una tarea simple o un paso. Puede no estar ligado a una sesión. Si se vincula, la sesión debe estar `DONE` y deben coincidir ítem y fecha. Marcar una sesión `DONE` crea al menos un `WorkLog` vinculado; varios bloques del mismo día se suman. El tiempo planeado nunca sustituye al real. |
-| RN-72 | **Cierre diario.** `DailyRecord` guarda sesiones planeadas y realizadas, porcentaje de constancia del día, minutos planeados, suma de `WorkLog.minutes`, notas y `closedAt`. El porcentaje es `null` si no hubo sesiones planeadas. Se toma de las sesiones visibles de la agenda de ese día; los minutos reales incluyen también trabajo sin sesión programada. Un nuevo cierre en la misma fecha reemplaza el resumen y conserva el `id` (RN-43). |
+| RN-71 | **Tiempo real.** Cada `WorkLog` guarda minutos enteros positivos trabajados en una fecha, hoy o pasada pero nunca futura, para una tarea simple o un paso. Puede no estar ligado a una sesión. Si se vincula, la sesión debe estar `DONE` y deben coincidir ítem y fecha. Marcar una sesión `DONE` crea al menos un `WorkLog` vinculado; varios bloques del mismo día se suman. El tiempo planeado nunca sustituye al real. |
+| RN-72 | **Cierre diario.** `DailyRecord` guarda sesiones planeadas y realizadas, porcentaje de constancia del día, minutos planeados, suma de `WorkLog.minutes`, notas y `closedAt`. El porcentaje es `null` si no hubo sesiones planeadas. Se toma de las sesiones visibles de la agenda de ese día; los minutos reales incluyen también trabajo sin sesión programada. Un nuevo cierre en la misma fecha reemplaza el resumen y conserva el `id` (RN-43); un cambio posterior en esa fecha lo recalcula (RN-44). |
 | RN-73 | **Trabajo terminado antes del calendario.** Al llegar un ítem ejecutable a 100 %, sus sesiones `PLANNED` futuras pasan a `NOT_NEEDED` y dejan de aparecer en agenda y calendario; las sesiones `DONE` y las no realizadas de días pasados se conservan para la constancia. Si el avance vuelve a bajar, las `NOT_NEEDED` no se reactivan automáticamente: el usuario puede replanificar sesiones nuevas. |
 | RN-74 | **Historial y borrado.** Editar un plan conserva las sesiones pasadas y los `WorkLog` ya registrados; solo reemplaza las sesiones futuras `PLANNED` (RN-51). Borrar un ítem elimina sus sesiones y `WorkLog` asociados, pero no modifica los resúmenes `DailyRecord` ya cerrados (RN-11, RN-52). |
 
@@ -390,9 +391,9 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 | CU-14 | Crear paso | `/objectives/:oid/activities/:aid/add-step` |
 | CU-15 | Editar paso | `/objectives/:oid/activities/:aid/steps/:sid/edit` |
 | CU-16 | Eliminar paso | `/objectives/:id` |
-| CU-17 | Ver agenda de hoy | `/daily` |
-| CU-18 | Marcar/desmarcar ejecución de hoy | `/daily` |
-| CU-19 | Ver resumen y cerrar día | `/daily/summary` |
+| CU-17 | Ver agenda de una fecha (hoy por defecto) | `/daily` y `/daily?date=YYYY-MM-DD` |
+| CU-18 | Marcar/desmarcar ejecución de hoy o de un día pasado | `/daily` |
+| CU-19 | Ver resumen y cerrar día (hoy o pasado) | `/daily/summary` y `/daily/summary?date=YYYY-MM-DD` |
 | CU-20 | Indicar avance del resultado | Detalle de tarea simple o paso |
 | CU-21 | Consultar historial | `/history` |
 | CU-22 | Crear idea (meta sin horizonte) | `/goals/new` |
@@ -456,16 +457,16 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 - Mismo flujo de generación de fechas que CU-10 (RN-17 a RN-21).
 - **Post:** recalcula tarea padre → objetivo → meta (RN-32 a RN-34).
 
-#### CU-17 — Ver agenda de hoy
-- Muestra fecha completa, sesiones de hoy, minutos previstos y constancia del día. Cada sesión permite registrar minutos reales al marcarla `DONE`.
-- **Reglas:** RN-25, RN-26, RN-28, RN-29, RN-57, RN-59.
+#### CU-17 — Ver agenda de una fecha
+- Muestra la fecha completa, sus sesiones, minutos previstos y constancia del día. Una barra permite ir al día anterior o siguiente, elegir una fecha y volver a hoy. Cada sesión permite registrar minutos reales al marcarla `DONE`; en fechas futuras solo se consulta.
+- **Reglas:** RN-25, RN-26, RN-28, RN-29, RN-57, RN-59, RN-75.
 
 #### CU-18 — Marcar ejecución
-- **Entrada:** `sessionId` (sesión de hoy) y `minutes` (entero positivo) al marcar; solo `sessionId` al desmarcar.
-- **Flujo:** al marcar la sesión de hoy se registran minutos reales en `WorkLog` y su estado pasa a `DONE`; al desmarcarla, el trabajo queda registrado sin vinculación. El avance del ítem no cambia (RN-27, RN-68, RN-71).
+- **Entrada:** `sessionId` (sesión de hoy o pasada) y `minutes` (entero positivo, con los minutos previstos como valor inicial) al marcar; solo `sessionId` al desmarcar.
+- **Flujo:** al marcar la sesión se registran minutos reales en `WorkLog` de su fecha y su estado pasa a `DONE`; al desmarcarla, el trabajo queda registrado sin vinculación. Si ese día ya estaba cerrado, su resumen se recalcula (RN-44). El avance del ítem no cambia (RN-27, RN-68, RN-71).
 
 #### CU-19 — Cerrar día
-- Muestra sesiones planeadas y realizadas, constancia del día, minutos previstos y reales y un campo de notas. Al confirmar guarda o actualiza el `DailyRecord` de hoy (RN-41 a RN-44, RN-72).
+- Muestra sesiones planeadas y realizadas, constancia del día, minutos previstos y reales y un campo de notas. Se abre con la fecha de la agenda que se estaba viendo. Al confirmar guarda o actualiza el `DailyRecord` de esa fecha (RN-41 a RN-44, RN-72).
 
 #### CU-21 — Consultar historial
 - Lista los resúmenes diarios por fecha. El detalle de una fecha se consulta desde sus sesiones y registros de trabajo; si se borró un ítem, permanece el resumen diario (RN-11, RN-74).
@@ -495,7 +496,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 
 #### CU-20, CU-27 y CU-28 — Avance, tiempo real y constancia
 - En el detalle de una tarea simple o de un paso, el usuario indica su avance (0–100). Ese valor no cambia por realizar sesiones ni por registrar tiempo; los padres agregan el avance (RN-67, RN-68).
-- El usuario puede registrar minutos trabajados hoy aun sin sesión programada. La constancia muestra sesiones exigibles realizadas / exigibles totales; si no hay ninguna, se muestra «sin datos» (RN-70, RN-71).
+- El usuario puede registrar minutos trabajados en hoy o en un día pasado aun sin sesión programada. La constancia muestra sesiones exigibles realizadas / exigibles totales; si no hay ninguna, se muestra «sin datos» (RN-70, RN-71).
 
 ---
 
@@ -734,12 +735,12 @@ Ejemplo de cuerpo (tarea simple):
 ### Sesiones, tiempo real y cierre diario
 | Método | Ruta | Caso de uso | Notas |
 |--------|------|-------------|-------|
-| GET | `/daily/today` | CU-17 | Devuelve sesiones visibles de hoy, sus estados, trabajo registrado y métricas. "Hoy" según `user.timezone`. |
-| POST | `/execution-sessions/:id/complete` | CU-18, RN-69/71 | `{ minutes: entero positivo }`. Solo sesión de hoy: crea `WorkLog` y marca `DONE` en una transacción. No cambia `progress`. |
-| DELETE | `/execution-sessions/:id/completion` | CU-18 | Vuelve a `PLANNED`; desvincula los `WorkLog` de la sesión y los conserva como trabajo sin sesión. |
-| POST | `/work-logs` | RN-71 | `{ sourceType, sourceId, minutes, sessionId? }`. Registra trabajo de hoy, con o sin sesión. |
+| GET | `/daily?date=` | CU-17 | Devuelve sesiones visibles de la fecha (hoy si se omite), sus estados, trabajo registrado y métricas. "Hoy" según `user.timezone`. |
+| POST | `/execution-sessions/:id/complete` | CU-18, RN-69/71 | `{ minutes: entero positivo }`. Sesión de hoy o pasada (`422` si es futura): crea `WorkLog` en la fecha de la sesión y marca `DONE` en una transacción. Si esa fecha tiene `DailyRecord`, lo recalcula. No cambia `progress`. |
+| DELETE | `/execution-sessions/:id/completion` | CU-18 | Vuelve a `PLANNED`; desvincula los `WorkLog` de la sesión y los conserva como trabajo sin sesión. Recalcula el `DailyRecord` de esa fecha si existe. |
+| POST | `/work-logs` | RN-71 | `{ sourceType, sourceId, minutes, sessionId?, date? }`; `date` es hoy si se omite y nunca futura. Registra trabajo con o sin sesión. |
 | GET | `/work-logs?date=` | RN-71 | Detalle del tiempo real de la fecha. |
-| POST | `/daily/records` | CU-19 | `{ notes? }` → calcula el resumen con sesiones y `WorkLog`. Upsert por fecha (RN-43, RN-72). |
+| POST | `/daily/records` | CU-19 | `{ date?, notes? }` (hoy si se omite; no futura) → calcula el resumen con sesiones y `WorkLog`. Upsert por fecha (RN-43, RN-72). |
 | GET | `/daily/records?from=&to=` | CU-21 | Historial. |
 
 ### Validación (DTOs con `class-validator`)
@@ -751,6 +752,6 @@ Ejemplo de cuerpo (tarea simple):
 - `specificDates`: `@ArrayMinSize(1) @ArrayUnique()` cuando `type = SPECIFIC_DATES`.
 - `deadline` de objetivo: obligatorio. `deadline` de tarea y de paso: `@IsOptional()`; si se envía, debe ser ≤ el efectivo de su padre (RN-48).
 - `progress` editable: `@IsInt() @Min(0) @Max(100)` solo en tarea simple o paso; nunca se deriva de sesiones ni minutos (RN-67).
-- `WorkLog.minutes`: entero positivo; `sessionId`, si existe, debe referir a una sesión `DONE` del mismo ítem y del día de hoy (RN-71).
+- `WorkLog.minutes`: entero positivo; `sessionId`, si existe, debe referir a una sesión `DONE` del mismo ítem y de la misma fecha, que no sea futura (RN-71).
 
 ---

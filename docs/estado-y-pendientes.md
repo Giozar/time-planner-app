@@ -10,25 +10,25 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 
 | Tema | Definido | Estado del código |
 |------|----------|-------------------|
-| Jerarquía, validaciones, deadlines, recurrencia, pausas, cierre de objetivo y borrado con confirmación | RN-01 a RN-22, RN-47 a RN-50, RN-52 a RN-65 | ✅ Completada ([plan 01](../timer-planner-frontend/docs/planes/01-alinear-frontend-con-reglas-de-negocio.md)). Las reglas que dependen de `ExecutionSession` o `WorkLog` están en las filas siguientes. |
-| Vista de calendario (cuadrícula, navegación, jerarquía al pasar el cursor) | RN-66, CU-26 | ✅ Completada ([plan 02](../timer-planner-frontend/docs/planes/02-calendario.md)). Falta su adaptación a `ExecutionSession` (fila «Agenda y calendario»). |
 | Avance del resultado | Tarea simple y paso reciben un porcentaje indicado por el usuario; sus padres lo agregan (RN-30 a RN-37, RN-67, CU-20). | ⏳ Pendiente. `PlannerService` calcula el porcentaje de tareas simples y pasos contando sesiones realizadas. |
 | Sesiones y constancia | Una `ExecutionSession` por fecha con estado `PLANNED`, `DONE` o `NOT_NEEDED`; constancia = exigibles realizadas / exigibles (RN-69, RN-70, RN-73, CU-28). | ⏳ Pendiente. El plan guarda `dates` y `completedDates`, sin sesiones ni constancia. |
 | Tiempo real | `WorkLog` guarda minutos trabajados, incluso sin sesión (RN-71, CU-27). | ⏳ Pendiente. El tiempo «ejecutado» actual suma duraciones previstas de sesiones marcadas. |
 | Edición del plan y borrado con historial | Se conservan sesiones pasadas y `WorkLog`; borrar un ítem elimina sus sesiones y registros (RN-24, RN-51, RN-74). | ⏳ Pendiente. Hoy se conservan las fechas pasadas de `dates`. |
 | Cierre diario | `DailyRecord` resume sesiones, constancia y minutos reales (RN-41 a RN-44, RN-72). | ⏳ Pendiente. El registro actual guarda conteos de ítems y duraciones previstas. El reemplazo por fecha ya existe. |
 | Agenda y calendario | Muestran el estado de cada sesión y excluyen `NOT_NEEDED`; la agenda registra minutos reales (RN-25 a RN-27, RN-66, RN-73). | ⏳ Pendiente. Las pantallas muestran sesiones desde `dates` y usan `completedDates`. |
+| Agenda de días pasados | Navegar entre fechas, marcar y desmarcar sesiones de días pasados con sus minutos, y cerrar o recalcular el cierre de cualquier fecha no futura (RN-27, RN-44, RN-75, CU-17 a CU-19). | ⏳ Pendiente ([plan 04](../timer-planner-frontend/docs/planes/04-agenda-dias-pasados.md)). La agenda y el cierre solo trabajan con hoy. |
 | Historial | Lista de resúmenes diarios (CU-21). | ⏳ Pendiente. No existe la pantalla. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
 
-El trabajo del frontend se organiza en el [plan 03](../timer-planner-frontend/docs/planes/03-avance-constancia-tiempo-real.md). Los planes 01 y 02 documentan el modelo anterior, que es el que hoy ejecuta la aplicación.
+Lo que no aparece en la tabla está implementado y vive en las reglas y en [funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md). El trabajo del frontend se organiza en los planes [04](../timer-planner-frontend/docs/planes/04-agenda-dias-pasados.md) (se hace primero, sobre el modelo actual) y [03](../timer-planner-frontend/docs/planes/03-avance-constancia-tiempo-real.md).
 
 ## Trabajo pendiente
 
 | Tema | Estado |
 |------|--------|
+| Plan 04: agenda de días pasados | ⏳ Pendiente |
 | Plan 03: avance, constancia y tiempo real | ⏳ Pendiente |
-| Recorrido manual en el navegador de los casos de uso implementados | ⏳ Pendiente |
+| Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, cierre y reapertura de objetivo, borrado con confirmación escrita, cierre del día repetido, calendario con hover y cambio de mes) | ⏳ Pendiente |
 | Aviso de presupuesto de CSS en `objective-detail` (5,6 kB sobre 4 kB) | ⏳ Pendiente |
 | Backend | ⏳ Pendiente; requiere D-01 |
 | Agente planificador del backend (`timer-planner-backend/Agents/funcionalidad/`) | ⏳ Pendiente; se crea al empezar el backend |
@@ -64,8 +64,7 @@ Surgen de RN-67 a RN-74 y afectan al plan 03.
 | D-10 | Al llegar a 100 %, ¿la sesión `PLANNED` **de hoy** pasa a `NOT_NEEDED` o sigue exigible y cuenta como no realizada al cerrar el día? RN-73 habla solo de sesiones «futuras». | RN-69, RN-70, RN-73 |
 | D-11 | Al editar un plan, ¿la sesión `PLANNED` **de hoy** se reemplaza o se conserva? RN-21 genera desde hoy y RN-51 solo sustituye «futuras». | RN-21, RN-51 |
 | D-12 | ¿Las sesiones `PLANNED` de días en que la meta o la tarea estaba pausada cuentan como no realizadas en la constancia? | RN-57, RN-59, RN-70 |
-| D-13 | RN-44 permite marcar sesiones después de cerrar el día y RN-69 muestra la `PLANNED` de hoy como no realizada tras el cierre. ¿El `DailyRecord` se actualiza solo o hay que volver a cerrar el día? | RN-43, RN-44, RN-69, RN-72 |
-| D-14 | ¿Se pueden editar o borrar bloques de `WorkLog`? ¿Se puede registrar trabajo olvidado de un día pasado? RN-71 solo admite la fecha de hoy. | RN-27, RN-71, CU-27 |
+| D-14 | ¿Se pueden editar o borrar bloques de `WorkLog` ya registrados? | RN-27, RN-71, CU-27 |
 | D-15 | Al marcar una sesión que tiene trabajo de hoy sin vincular (por ejemplo, tras desmarcarla), ¿se vincula ese trabajo o se pide registrar minutos nuevos? Lo segundo puede duplicar minutos. | RN-27, RN-71, §8 `POST /execution-sessions/:id/complete` |
 | D-16 | Avance inicial al cambiar de tipo: compuesta → simple (¿conserva el promedio de los pasos o empieza en 0?) y simple → compuesta (pasa a 0 sin pasos). | RN-32, RN-39, RN-40 |
 | D-17 | ¿Se muestra la constancia de tarea compuesta, objetivo y meta? RN-70 dice que «puede calcularse». | RN-70, CU-28 |
@@ -77,4 +76,4 @@ Ninguna. Las correcciones C-01 a C-12 se aplicaron el 2026-10-23. Afectaron a §
 
 ## Identificadores retirados
 
-No existen RN-23, RN-38, RN-45 ni RN-46: se retiraron con el modelo anterior y sus números no se reutilizan. CU-20 se reasignó a «Indicar avance del resultado» antes de adoptar esta convención; antes era la migración de datos, eliminada.
+No existen RN-23, RN-38, RN-45 ni RN-46: se retiraron con el modelo anterior. Tampoco existe D-13: se resolvió en RN-44. Sus números no se reutilizan. CU-20 se reasignó a «Indicar avance del resultado» antes de adoptar esta convención; antes era la migración de datos, eliminada.

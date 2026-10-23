@@ -43,10 +43,10 @@ Están en [estado-y-pendientes.md](../../../docs/estado-y-pendientes.md#decision
 
 | Fase | Decisiones |
 |------|------------|
-| 1 | D-11 (sesión de hoy al editar el plan) y D-14 (corregir `WorkLog` o registrar días pasados) |
+| 1 | D-11 (sesión de hoy al editar el plan) y D-14 (corregir o borrar bloques de `WorkLog`) |
 | 2 | D-10 (sesión de hoy al llegar a 100 %), D-16 (avance al cambiar de tipo) y D-18 (avance o trabajo en ítems pausados o al 100 %) |
 | 3 | D-12 (constancia durante una pausa), D-15 (volver a marcar una sesión) y D-17 (constancia de los padres) |
-| 4 | D-02 (destino tras cerrar el día) y D-13 (marcar después de cerrar) |
+| 4 | D-02 (destino tras cerrar el día) |
 
 ## Verificación
 
@@ -57,14 +57,7 @@ Están en [estado-y-pendientes.md](../../../docs/estado-y-pendientes.md#decision
 
 ## Documentos a actualizar en cada fase
 
-- La tabla de fases de este plan y su registro de avances.
+- La tabla de fases de este plan.
 - La fila correspondiente de «Comparación con el código» en `../../../docs/estado-y-pendientes.md`. Al resolverse una decisión, también se quita de esa lista.
 - La columna Estado de `../funcionalidad.md` y el estado general de `../README.md`.
 - `../arquitectura.md` si se agregan carpetas o modelos.
-
-## Registro de avances
-
-| Fecha | Cambio |
-|-------|--------|
-| 2026-10-23 | Plan creado. Se agregan contexto, archivos, decisiones que lo bloquean y verificación. |
-| 2026-10-23 | Se aplican al documento de reglas las correcciones C-01 a C-12 que afectaban a este plan. |
