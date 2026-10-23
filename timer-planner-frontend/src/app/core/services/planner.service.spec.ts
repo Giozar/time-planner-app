@@ -163,9 +163,9 @@ describe('PlannerService', () => {
       service.addSubActivity(makeStep({ id: 's1', activityId: 'k', executionPlan: makePlan([TODAY]) }));
       service.addActivity(simple('a2', ['2026-10-30']));
 
-      const ids = service.todaysTasks().map(t => t.id).sort();
+      const ids = service.agendaTasks().map(t => t.id).sort();
       expect(ids).toEqual(['a1', 's1']);
-      expect(service.todaysTasks().find(t => t.id === 's1')?.parentId).toBe('k');
+      expect(service.agendaTasks().find(t => t.id === 's1')?.parentId).toBe('k');
     });
 
     it('las métricas incluyen el tiempo planeado y ejecutado', () => {
@@ -174,7 +174,7 @@ describe('PlannerService', () => {
       service.addActivity(simple('a2', [TODAY], [], { executionPlan: makePlan([TODAY], [], 30) }));
       service.toggleTaskExecution('a2', TaskSourceType.ACTIVITY);
 
-      expect(service.todaysMetrics()).toMatchObject({
+      expect(service.agendaMetrics()).toMatchObject({
         total: 2, completed: 1, percentage: 50, plannedTimeMin: 90, executedTimeMin: 30,
       });
     });
@@ -183,11 +183,11 @@ describe('PlannerService', () => {
       seedHierarchy();
       service.addActivity(simple('a1', [TODAY]));
       service.pauseGoal('g1');
-      expect(service.todaysTasks()).toHaveLength(0);
+      expect(service.agendaTasks()).toHaveLength(0);
       expect(service.activities()[0].progress).toBe(0);
 
       service.resumeGoal('g1');
-      expect(service.todaysTasks()).toHaveLength(1);
+      expect(service.agendaTasks()).toHaveLength(1);
     });
 
     it('oculta tareas pausadas y reanudar deriva el estado del progreso (RN-59)', () => {
@@ -196,7 +196,7 @@ describe('PlannerService', () => {
       service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
       service.pauseActivity('a1');
       expect(service.activities()[0].status).toBe(ActivityStatus.PAUSED);
-      expect(service.todaysTasks()).toHaveLength(0);
+      expect(service.agendaTasks()).toHaveLength(0);
 
       service.resumeActivity('a1');
       expect(service.activities()[0].status).toBe(ActivityStatus.COMPLETED);
@@ -208,7 +208,7 @@ describe('PlannerService', () => {
       expect(service.goals()[0].status).toBe(GoalStatus.IDEA);
 
       service.addActivity(simple('a1', [TODAY]));
-      expect(service.todaysTasks()).toHaveLength(0);
+      expect(service.agendaTasks()).toHaveLength(0);
 
       service.updateGoal({ ...service.goals()[0], horizon: 'SHORT_TERM' as never });
       expect(service.goals()[0].status).toBe(GoalStatus.ACTIVE);
@@ -222,12 +222,86 @@ describe('PlannerService', () => {
     });
   });
 
+  describe('agenda de días pasados (RN-27, RN-44, RN-75)', () => {
+    const PAST = '2026-10-20';
+
+    it('marca una sesión pasada con sus minutos reales sin tocar la de hoy', () => {
+      seedHierarchy();
+      service.addActivity(simple('a1', [PAST, TODAY]));
+      service.setSelectedDate(PAST);
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 45);
+
+      const plan = service.activities()[0].executionPlan!;
+      expect(plan.completedDates).toEqual([PAST]);
+      expect(plan.minutesByDate).toEqual({ [PAST]: 45 });
+      expect(service.agendaMetrics().executedTimeMin).toBe(45);
+    });
+
+    it('sin minutos usa los previstos y desmarcar los quita', () => {
+      seedHierarchy();
+      service.addActivity(simple('a1', [PAST]));
+      service.setSelectedDate(PAST);
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      expect(service.agendaTasks()[0].executedMinutes).toBe(30);
+
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      expect(service.activities()[0].executionPlan?.completedDates).toEqual([]);
+      expect(service.agendaTasks()[0].executedMinutes).toBe(0);
+    });
+
+    it('ignora fechas futuras y minutos no positivos', () => {
+      seedHierarchy();
+      service.addActivity(simple('a1', ['2026-10-30', PAST]));
+      service.setSelectedDate('2026-10-30');
+      expect(service.isSelectedDateReadOnly()).toBe(true);
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      service.setSelectedDate(PAST);
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 0);
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 1.5);
+
+      expect(service.activities()[0].executionPlan?.completedDates).toEqual([]);
+    });
+
+    it('rechaza fechas inválidas al navegar', () => {
+      expect(service.setSelectedDate('2026-02-30')).toBe(false);
+      expect(service.selectedDate()).toBe(TODAY);
+    });
+
+    it('cierra una fecha pasada y rechaza una futura', () => {
+      seedHierarchy();
+      service.addActivity(simple('a1', [PAST]));
+      expect(service.closeDay('x', PAST)).toMatchObject({ date: PAST, plannedItems: 1, completedItems: 0 });
+      expect(service.closeDay('x', '2026-10-30')).toBeNull();
+    });
+
+    it('un día cerrado se recalcula solo al marcar y conserva sus notas (RN-44)', () => {
+      seedHierarchy();
+      service.addActivity(simple('a1', [PAST]));
+      const closed = service.closeDay('mis notas', PAST)!;
+      service.setSelectedDate(PAST);
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 50);
+
+      expect(service.records()).toHaveLength(1);
+      expect(service.records()[0]).toMatchObject({
+        id: closed.id, notes: 'mis notas', completedItems: 1, executedTimeMin: 50,
+      });
+    });
+
+    it('marcar un día sin cierre no crea registro', () => {
+      seedHierarchy();
+      service.addActivity(simple('a1', [PAST]));
+      service.setSelectedDate(PAST);
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      expect(service.records()).toHaveLength(0);
+    });
+  });
+
   describe('cierre del día (RN-41 a RN-44)', () => {
     it('crea el registro con las métricas y el tiempo real ejecutado', () => {
       seedHierarchy();
       service.addActivity(simple('a1', [TODAY], [], { executionPlan: makePlan([TODAY], [], 60) }));
       service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
-      const record = service.closeDay('buen día');
+      const record = service.closeDay('buen día')!;
 
       expect(record).toMatchObject({
         date: TODAY, plannedItems: 1, completedItems: 1, plannedTimeMin: 60, executedTimeMin: 60, notes: 'buen día',
@@ -241,7 +315,7 @@ describe('PlannerService', () => {
 
       expect(service.records()).toHaveLength(1);
       expect(service.records()[0].notes).toBe('dos');
-      expect(second.id).toBe(first.id);
+      expect(second!.id).toBe(first!.id);
     });
 
     it('los registros no se ven afectados por los borrados (RN-11)', () => {
@@ -433,7 +507,7 @@ describe('PlannerService', () => {
       service.addSubActivity(makeStep({ id: 's1', activityId: 'k', executionPlan: makePlan([TODAY]) }));
 
       const fromCalendar = service.calendarEntries().get(TODAY)!.map(e => e.id).sort();
-      const fromAgenda = service.todaysTasks().map(t => t.id).sort();
+      const fromAgenda = service.agendaTasks().map(t => t.id).sort();
       expect(fromCalendar).toEqual(fromAgenda);
       expect(fromCalendar).toEqual(['a1', 's1']);
     });

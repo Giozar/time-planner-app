@@ -15,7 +15,7 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 | Edición del plan y borrado con historial | Se conservan sesiones pasadas y `WorkLog`; borrar un ítem elimina sus sesiones y registros (RN-24, RN-51, RN-74). | ⏳ Pendiente. Hoy se conservan las fechas pasadas de `dates`. |
 | Cierre diario | `DailyRecord` resume sesiones, constancia y minutos reales (RN-41 a RN-44, RN-72). | ⏳ Pendiente. El registro actual guarda conteos de ítems y duraciones previstas. El reemplazo por fecha ya existe. |
 | Agenda y calendario | Muestran el estado de cada sesión; la agenda registra minutos reales (RN-25 a RN-27, RN-66). | ⏳ Pendiente. Las pantallas muestran sesiones desde `dates` y usan `completedDates`. |
-| Agenda de días pasados | Navegar entre fechas, marcar y desmarcar sesiones de días pasados con sus minutos, y cerrar o volver a cerrar cualquier fecha no futura (RN-27, RN-44, RN-75, CU-17 a CU-19). | ⏳ Pendiente ([plan 04](../timer-planner-frontend/docs/planes/04-agenda-dias-pasados.md)). La agenda y el cierre solo trabajan con hoy. |
+| Agenda de días pasados | Navegar entre fechas, marcar y desmarcar sesiones de días pasados con sus minutos, y cerrar o volver a cerrar cualquier fecha no futura (RN-27, RN-44, RN-75, CU-17 a CU-19). | ⏳ Pendiente ([plan 04](../timer-planner-frontend/docs/planes/04-agenda-dias-pasados.md)). El servicio ya trabaja con cualquier fecha; faltan las pantallas (navegación, minutos, cierre de la fecha elegida). |
 | Historial | Lista de resúmenes diarios (CU-21). | ⏳ Pendiente. No existe la pantalla. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
 

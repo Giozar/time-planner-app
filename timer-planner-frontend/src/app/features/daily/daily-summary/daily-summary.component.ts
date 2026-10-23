@@ -15,7 +15,7 @@ export class DailySummaryComponent {
   private router = inject(Router);
 
   // Usamos las mismas métricas que ya calcula el servicio
-  metrics = this.plannerService.todaysMetrics;
+  metrics = this.plannerService.agendaMetrics;
   today = new Date();
 
   finishDay(notes: string) {

@@ -30,6 +30,9 @@ export function regenerateFutureSessions(
 
   const dates = [...new Set([...keptPast, ...future])].sort();
   const completedDates = (previous?.completedDates ?? []).filter(d => dates.includes(d));
+  const minutesByDate = Object.fromEntries(
+    Object.entries(previous?.minutesByDate ?? {}).filter(([d]) => completedDates.includes(d)),
+  );
 
   return {
     type: request.type,
@@ -37,5 +40,6 @@ export function regenerateFutureSessions(
     patternDays: request.type === ExecutionPlanType.WEEKLY_PATTERN ? request.patternDays : undefined,
     durationPerExecutionMin: request.durationPerExecutionMin,
     completedDates,
+    ...(Object.keys(minutesByDate).length ? { minutesByDate } : {}),
   };
 }

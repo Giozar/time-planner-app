@@ -80,6 +80,7 @@ export interface ExecutionPlan {
   patternDays?: WeekDay[];
   durationPerExecutionMin: number;
   completedDates: string[]; // 'YYYY-MM-DD'
+  minutesByDate?: Record<string, number>; // minutos reales por fecha completada; si falta, los previstos
 }
 
 /**

@@ -55,6 +55,11 @@ export function isValidISODate(date: string): boolean {
   return fromDayNumber(toDayNumber(Number(match[1]), Number(match[2]), Number(match[3]))) === date;
 }
 
+/** `true` si `date` es posterior a `today` (RN-27: las fechas futuras no se marcan). */
+export function isFutureDate(date: string, today: string): boolean {
+  return parse(date) > parse(today);
+}
+
 /** Suma (o resta, si es negativo) días a una fecha. */
 export function addDays(date: string, days: number): string {
   return fromDayNumber(parse(date) + days);

@@ -15,8 +15,8 @@ export class DailyDashboardComponent {
   private plannerService = inject(PlannerService);
   
   // Signals computadas desde el servicio
-  tasks = this.plannerService.todaysTasks;
-  metrics = this.plannerService.todaysMetrics;
+  tasks = this.plannerService.agendaTasks;
+  metrics = this.plannerService.agendaMetrics;
 
   // Fecha actual para mostrar en el título
   today = new Date();

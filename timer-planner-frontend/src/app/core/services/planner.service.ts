@@ -26,6 +26,8 @@ import {
   deriveRecurrence,
   deriveStatus,
   deriveSubActivityStatus,
+  isFutureDate,
+  isValidISODate,
   reopenIfBelowComplete,
   validateDeadlines,
 } from '../rules';
@@ -89,55 +91,68 @@ export class PlannerService {
     }).map(a => a.id));
   });
 
-  /** Agenda de hoy (RN-25 a RN-29). */
-  public todaysTasks = computed<AgendaItem[]>(() => {
-    const today = DateUtils.getTodayISO();
+  /** Fecha de la agenda; hoy por defecto (RN-75). */
+  private selectedDateSignal = signal<string>(DateUtils.getTodayISO());
+  public selectedDate = this.selectedDateSignal.asReadonly();
+
+  /** Las fechas futuras son de solo lectura (RN-27). */
+  public isSelectedDateReadOnly = computed(() => isFutureDate(this.selectedDateSignal(), DateUtils.getTodayISO()));
+
+  /** Cambia la fecha de la agenda. Devuelve `false` si no es una fecha válida. */
+  setSelectedDate(date: string): boolean {
+    if (!isValidISODate(date)) return false;
+    this.selectedDateSignal.set(date);
+    return true;
+  }
+
+  /** Agenda de la fecha elegida (RN-25 a RN-29, RN-75). */
+  public agendaTasks = computed<AgendaItem[]>(() => this.agendaFor(this.selectedDateSignal()));
+
+  public agendaMetrics = computed(() => this.metricsOf(this.agendaTasks()));
+
+  /** Sesiones de `date` de tareas simples y pasos visibles. */
+  private agendaFor(date: string): AgendaItem[] {
     const visible = this.visibleActivityIds();
     const activities = this.activitiesSignal();
     const isVisible = (activity: Activity) => visible.has(activity.id);
+    const toItem = (
+      id: string, title: string, plan: ExecutionPlan, sourceType: TaskSourceType, parentId: string | null,
+    ): AgendaItem => {
+      const isCompleted = plan.completedDates.includes(date);
+      return {
+        id, title, sourceType, parentId, isCompleted,
+        estimatedDurationMin: plan.durationPerExecutionMin,
+        executedMinutes: isCompleted ? plan.minutesByDate?.[date] ?? plan.durationPerExecutionMin : 0,
+      };
+    };
 
     const items: AgendaItem[] = [];
 
     for (const act of activities) {
       const plan = act.executionPlan;
-      if (act.type === ActivityType.SIMPLE && plan?.dates?.includes(today) && isVisible(act)) {
-        items.push({
-          id: act.id,
-          title: act.title,
-          estimatedDurationMin: plan.durationPerExecutionMin,
-          isCompleted: plan.completedDates.includes(today),
-          sourceType: TaskSourceType.ACTIVITY,
-          parentId: null,
-        });
+      if (act.type === ActivityType.SIMPLE && plan?.dates?.includes(date) && isVisible(act)) {
+        items.push(toItem(act.id, act.title, plan, TaskSourceType.ACTIVITY, null));
       }
     }
 
     for (const sub of this.subActivitiesSignal()) {
       const parent = activities.find(a => a.id === sub.activityId);
-      if (parent && sub.executionPlan.dates?.includes(today) && isVisible(parent)) {
-        items.push({
-          id: sub.id,
-          title: sub.title,
-          estimatedDurationMin: sub.executionPlan.durationPerExecutionMin,
-          isCompleted: sub.executionPlan.completedDates.includes(today),
-          sourceType: TaskSourceType.SUBACTIVITY,
-          parentId: sub.activityId,
-        });
+      if (parent && sub.executionPlan.dates?.includes(date) && isVisible(parent)) {
+        items.push(toItem(sub.id, sub.title, sub.executionPlan, TaskSourceType.SUBACTIVITY, sub.activityId));
       }
     }
 
     return items;
-  });
+  }
 
-  public todaysMetrics = computed(() => {
-    const tasks = this.todaysTasks();
+  private metricsOf(tasks: AgendaItem[]) {
     const total = tasks.length;
     const completed = tasks.filter(t => t.isCompleted).length;
     const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
     const plannedTimeMin = tasks.reduce((acc, t) => acc + t.estimatedDurationMin, 0);
-    const executedTimeMin = tasks.filter(t => t.isCompleted).reduce((acc, t) => acc + t.estimatedDurationMin, 0);
+    const executedTimeMin = tasks.reduce((acc, t) => acc + t.executedMinutes, 0);
     return { total, completed, percentage, remaining: total - completed, plannedTimeMin, executedTimeMin };
-  });
+  }
 
   /**
    * Sesiones programadas por fecha para el calendario (RN-66): tareas simples y pasos visibles,
@@ -409,14 +424,24 @@ export class PlannerService {
 
   // --- EJECUCIÓN ---
 
-  /** Marca o desmarca la sesión de HOY (RN-27). */
-  toggleTaskExecution(id: string, sourceType: TaskSourceType) {
-    const today = DateUtils.getTodayISO();
+  /**
+   * Marca o desmarca la sesión de `date` (hoy por defecto la fecha de la agenda), pasada o de hoy (RN-27).
+   * `minutes` son los minutos reales; si falta, los previstos. Las fechas futuras se ignoran.
+   * Si el día ya estaba cerrado, su registro se recalcula (RN-44).
+   */
+  toggleTaskExecution(id: string, sourceType: TaskSourceType, minutes?: number, date = this.selectedDateSignal()) {
+    if (isFutureDate(date, DateUtils.getTodayISO())) return;
+    if (minutes !== undefined && (!Number.isInteger(minutes) || minutes <= 0)) return;
+
     const toggle = (plan: ExecutionPlan): ExecutionPlan => {
-      const done = plan.completedDates.includes(today);
+      const { [date]: _removed, ...otherMinutes } = plan.minutesByDate ?? {};
+      if (plan.completedDates.includes(date)) {
+        return { ...plan, completedDates: plan.completedDates.filter(d => d !== date), minutesByDate: otherMinutes };
+      }
       return {
         ...plan,
-        completedDates: done ? plan.completedDates.filter(d => d !== today) : [...plan.completedDates, today],
+        completedDates: [...plan.completedDates, date],
+        minutesByDate: minutes === undefined ? otherMinutes : { ...otherMinutes, [date]: minutes },
       };
     };
 
@@ -428,12 +453,26 @@ export class PlannerService {
         s.id === id ? { ...s, executionPlan: toggle(s.executionPlan) } : s));
     }
     this.commit();
+    this.refreshClosedDay(date);
   }
 
-  /** Cierra el día. Un registro por fecha: si ya existe, se reemplaza (RN-43). */
-  closeDay(notes: string): DailyRecord {
-    const metrics = this.todaysMetrics();
-    const date = DateUtils.getTodayISO();
+  /**
+   * Cierra la fecha (la de la agenda por defecto). Un registro por fecha: si ya existe, se reemplaza (RN-43).
+   * Devuelve `null` si la fecha es futura (RN-44).
+   */
+  closeDay(notes: string, date = this.selectedDateSignal()): DailyRecord | null {
+    if (isFutureDate(date, DateUtils.getTodayISO())) return null;
+    return this.saveRecord(date, notes);
+  }
+
+  /** Recalcula el cierre de `date` si existe, conservando sus notas (RN-44). */
+  private refreshClosedDay(date: string) {
+    const existing = this.recordsSignal().find(r => r.date === date);
+    if (existing) this.saveRecord(date, existing.notes ?? '');
+  }
+
+  private saveRecord(date: string, notes: string): DailyRecord {
+    const metrics = this.metricsOf(this.agendaFor(date));
     const existing = this.recordsSignal().find(r => r.date === date);
 
     const record: DailyRecord = {

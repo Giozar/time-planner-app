@@ -1,7 +1,16 @@
 import { WeekDay } from '../models/activity.model';
-import { addDays, generateDatesFromPattern, isValidISODate, weekDayOf } from './calendar.rules';
+import { addDays, generateDatesFromPattern, isFutureDate, isValidISODate, weekDayOf } from './calendar.rules';
 
 describe('calendar.rules', () => {
+  describe('isFutureDate', () => {
+    it('compara fechas calendario, incluso cruzando mes y año', () => {
+      expect(isFutureDate('2026-10-23', '2026-10-22')).toBe(true);
+      expect(isFutureDate('2027-01-01', '2026-12-31')).toBe(true);
+      expect(isFutureDate('2026-10-22', '2026-10-22')).toBe(false);
+      expect(isFutureDate('2026-09-30', '2026-10-01')).toBe(false);
+    });
+  });
+
   describe('weekDayOf', () => {
     it('calcula el día de la semana sin depender de la zona horaria', () => {
       expect(weekDayOf('2026-10-19')).toBe(WeekDay.MONDAY);
