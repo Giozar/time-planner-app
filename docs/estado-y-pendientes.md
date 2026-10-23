@@ -10,13 +10,12 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 
 | Tema | Definido | Estado del código |
 |------|----------|-------------------|
-| Avance del resultado | Tarea simple y paso reciben un porcentaje indicado por el usuario; sus padres lo agregan (RN-30 a RN-37, RN-67, CU-20). | ⏳ Pendiente. `PlannerService` calcula el porcentaje de tareas simples y pasos contando sesiones realizadas. |
-| Sesiones y constancia | Una `ExecutionSession` por fecha con estado `PLANNED`, `DONE` o `NOT_NEEDED`; constancia = exigibles realizadas / exigibles (RN-69, RN-70, RN-73, CU-28). | ⏳ Pendiente. El plan guarda `dates` y `completedDates`, sin sesiones ni constancia. |
+| Sesiones y constancia | Una `ExecutionSession` por fecha con estado `PLANNED` o `DONE`; constancia = exigibles realizadas / exigibles (RN-69, RN-70, CU-28). | ⏳ Pendiente. El plan guarda `dates` y `completedDates`, sin sesiones ni constancia. |
 | Tiempo real | `WorkLog` guarda minutos trabajados, incluso sin sesión (RN-71, CU-27). | ⏳ Pendiente. El tiempo «ejecutado» actual suma duraciones previstas de sesiones marcadas. |
 | Edición del plan y borrado con historial | Se conservan sesiones pasadas y `WorkLog`; borrar un ítem elimina sus sesiones y registros (RN-24, RN-51, RN-74). | ⏳ Pendiente. Hoy se conservan las fechas pasadas de `dates`. |
 | Cierre diario | `DailyRecord` resume sesiones, constancia y minutos reales (RN-41 a RN-44, RN-72). | ⏳ Pendiente. El registro actual guarda conteos de ítems y duraciones previstas. El reemplazo por fecha ya existe. |
-| Agenda y calendario | Muestran el estado de cada sesión y excluyen `NOT_NEEDED`; la agenda registra minutos reales (RN-25 a RN-27, RN-66, RN-73). | ⏳ Pendiente. Las pantallas muestran sesiones desde `dates` y usan `completedDates`. |
-| Agenda de días pasados | Navegar entre fechas, marcar y desmarcar sesiones de días pasados con sus minutos, y cerrar o recalcular el cierre de cualquier fecha no futura (RN-27, RN-44, RN-75, CU-17 a CU-19). | ⏳ Pendiente ([plan 04](../timer-planner-frontend/docs/planes/04-agenda-dias-pasados.md)). La agenda y el cierre solo trabajan con hoy. |
+| Agenda y calendario | Muestran el estado de cada sesión; la agenda registra minutos reales (RN-25 a RN-27, RN-66). | ⏳ Pendiente. Las pantallas muestran sesiones desde `dates` y usan `completedDates`. |
+| Agenda de días pasados | Navegar entre fechas, marcar y desmarcar sesiones de días pasados con sus minutos, y cerrar o volver a cerrar cualquier fecha no futura (RN-27, RN-44, RN-75, CU-17 a CU-19). | ⏳ Pendiente ([plan 04](../timer-planner-frontend/docs/planes/04-agenda-dias-pasados.md)). La agenda y el cierre solo trabajan con hoy. |
 | Historial | Lista de resúmenes diarios (CU-21). | ⏳ Pendiente. No existe la pantalla. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
 
@@ -61,14 +60,11 @@ Surgen de RN-67 a RN-74 y afectan al plan 03.
 
 | ID | Pregunta | Reglas relacionadas |
 |----|----------|---------------------|
-| D-10 | Al llegar a 100 %, ¿la sesión `PLANNED` **de hoy** pasa a `NOT_NEEDED` o sigue exigible y cuenta como no realizada al cerrar el día? RN-73 habla solo de sesiones «futuras». | RN-69, RN-70, RN-73 |
 | D-11 | Al editar un plan, ¿la sesión `PLANNED` **de hoy** se reemplaza o se conserva? RN-21 genera desde hoy y RN-51 solo sustituye «futuras». | RN-21, RN-51 |
 | D-12 | ¿Las sesiones `PLANNED` de días en que la meta o la tarea estaba pausada cuentan como no realizadas en la constancia? | RN-57, RN-59, RN-70 |
 | D-14 | ¿Se pueden editar o borrar bloques de `WorkLog` ya registrados? | RN-27, RN-71, CU-27 |
-| D-15 | Al marcar una sesión que tiene trabajo de hoy sin vincular (por ejemplo, tras desmarcarla), ¿se vincula ese trabajo o se pide registrar minutos nuevos? Lo segundo puede duplicar minutos. | RN-27, RN-71, §8 `POST /execution-sessions/:id/complete` |
-| D-16 | Avance inicial al cambiar de tipo: compuesta → simple (¿conserva el promedio de los pasos o empieza en 0?) y simple → compuesta (pasa a 0 sin pasos). | RN-32, RN-39, RN-40 |
 | D-17 | ¿Se muestra la constancia de tarea compuesta, objetivo y meta? RN-70 dice que «puede calcularse». | RN-70, CU-28 |
-| D-18 | ¿Se puede registrar avance o trabajo en ítems de una meta `PAUSED` o `IDEA`, de una tarea `PAUSED` o ya al 100 %? | RN-57, RN-59, RN-67, RN-71 |
+| D-18 | ¿Se puede registrar trabajo sin sesión (CU-27) en ítems de una meta `PAUSED` o `IDEA`, de una tarea `PAUSED` o ya al 100 %? | RN-57, RN-59, RN-71 |
 
 ## Correcciones pendientes en el documento de reglas
 
@@ -76,4 +72,9 @@ Ninguna. Las correcciones C-01 a C-12 se aplicaron el 2026-10-23. Afectaron a §
 
 ## Identificadores retirados
 
-No existen RN-23, RN-38, RN-45 ni RN-46: se retiraron con el modelo anterior. Tampoco existe D-13: se resolvió en RN-44. Sus números no se reutilizan. CU-20 se reasignó a «Indicar avance del resultado» antes de adoptar esta convención; antes era la migración de datos, eliminada.
+No existen RN-23, RN-38, RN-45 ni RN-46: se retiraron con el modelo anterior. Tampoco existen D-13, resuelta en RN-44, ni D-15, resuelta en RN-27 (desmarcar elimina los minutos). Sus números no se reutilizan.
+
+El 2026-10-23 el usuario decidió que el avance sale de las sesiones marcadas, no de un porcentaje indicado a mano (RN-30). Con eso se retiraron:
+- **RN-73** y el estado `NOT_NEEDED`: el 100 % solo llega al marcar todas las sesiones, así que no quedan sesiones futuras que descartar.
+- **CU-20** («Indicar avance del resultado»). Antes de esa reasignación era la migración de datos, eliminada.
+- **D-10** (sesión de hoy al llegar a 100 %) y **D-16** (avance al cambiar de tipo): el avance siempre se calcula.

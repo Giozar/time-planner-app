@@ -5,37 +5,37 @@
 ## Contexto
 
 El modelo definido en el [documento de reglas](../../../docs/analisis-reglas-de-negocio.md) separa tres medidas de cada tarea simple o paso:
-- **Avance del resultado:** porcentaje que indica el usuario.
-- **Constancia:** sesiones exigibles realizadas.
-- **Tiempo real:** minutos registrados en `WorkLog`.
+- **Avance:** sesiones realizadas sobre todas las del plan. El frontend ya lo calcula así.
+- **Constancia:** sesiones exigibles realizadas. No existe todavía.
+- **Tiempo real:** minutos registrados en `WorkLog`. Hoy se guarda junto a la fecha marcada (`completedMinutes`, plan 04).
 
-Hoy el frontend mezcla las tres. Calcula el avance contando fechas marcadas en `completedDates` y toma como tiempo ejecutado la duración prevista. La diferencia exacta está en la [comparación con el código](../../../docs/estado-y-pendientes.md#comparación-con-el-código).
+Lo que falta es pasar de `dates` y `completedDates` a `ExecutionSession` y `WorkLog`, y agregar la constancia. La diferencia exacta está en la [comparación con el código](../../../docs/estado-y-pendientes.md#comparación-con-el-código).
 
 Decisiones ya tomadas:
+- Se hace después del [plan 04](04-agenda-dias-pasados.md): reutiliza su fecha seleccionada y su diálogo de minutos, y pasa `completedMinutes` a `WorkLog`.
 - Los datos locales de prueba se reinician al cambiar el modelo; no se implementa migración.
 - Se conserva la arquitectura actual: reglas puras en `core/rules` y estado en `PlannerService` (ver `../arquitectura.md`).
 
 ## RN y CU cubiertas
 
-RN-24 a RN-37, RN-39 a RN-44, RN-51, RN-66 y RN-67 a RN-74. CU-17 a CU-21, CU-26, CU-27 y CU-28. Entidades `ExecutionSession`, `WorkLog` y `DailyRecord` (secciones 3.6 a 3.9).
+RN-24 a RN-37, RN-39 a RN-44, RN-51, RN-66, RN-67 a RN-72 y RN-74. CU-17 a CU-19, CU-21, CU-26, CU-27 y CU-28. Entidades `ExecutionSession`, `WorkLog` y `DailyRecord` (secciones 3.6 a 3.9).
 
 ## Archivos a tocar
 
 - `core/models`: plan de ejecución sin `dates` ni `completedDates`; modelos nuevos de sesión y registro de trabajo; `DailyRecord` con el resumen nuevo; enum `SessionStatus` y sus etiquetas en `core/i18n`.
-- `core/rules`: generación y regeneración de sesiones, constancia, avance manual y `NOT_NEEDED`, con sus specs.
+- `core/rules`: generación y regeneración de sesiones, avance y constancia con sesiones, con sus specs.
 - `core/providers`: contrato `DataProvider` y `LocalStorageService` para sesiones y registros de trabajo.
-- `core/services/planner.service.ts`: acciones de avance, marcar y desmarcar, registro de minutos y cierre del día.
-- `features/activities`, `features/daily`, `features/calendar` y, en la Fase 4, la pantalla de historial.
+- `core/services/planner.service.ts`: marcar y desmarcar, registro de minutos y cierre del día.
+- `features/activities`, `features/daily`, `features/calendar` y, en la Fase 3, la pantalla de historial.
 - `src/app/testing`: builders para sesiones y registros de trabajo.
 
 ## Fases
 
 | Fase | Alcance | Estado |
 |------|---------|--------|
-| 1 | Modelos, persistencia y reglas de `ExecutionSession` y `WorkLog` | ⏳ Pendiente |
-| 2 | Avance manual de tareas simples y pasos, agregación de padres y sesiones `NOT_NEEDED` | ⏳ Pendiente |
-| 3 | Agenda, calendario, registro de minutos reales y constancia | ⏳ Pendiente |
-| 4 | `DailyRecord` con sesiones y minutos reales; historial y pruebas de reglas | ⏳ Pendiente |
+| 1 | Modelos, persistencia y reglas de `ExecutionSession` y `WorkLog`; avance calculado con sesiones | ⏳ Pendiente |
+| 2 | Agenda, calendario, registro de minutos reales y constancia | ⏳ Pendiente |
+| 3 | `DailyRecord` con sesiones y minutos reales; historial y pruebas de reglas | ⏳ Pendiente |
 
 ## Decisiones que lo bloquean
 
@@ -44,16 +44,15 @@ Están en [estado-y-pendientes.md](../../../docs/estado-y-pendientes.md#decision
 | Fase | Decisiones |
 |------|------------|
 | 1 | D-11 (sesión de hoy al editar el plan) y D-14 (corregir o borrar bloques de `WorkLog`) |
-| 2 | D-10 (sesión de hoy al llegar a 100 %), D-16 (avance al cambiar de tipo) y D-18 (avance o trabajo en ítems pausados o al 100 %) |
-| 3 | D-12 (constancia durante una pausa), D-15 (volver a marcar una sesión) y D-17 (constancia de los padres) |
-| 4 | D-02 (destino tras cerrar el día) |
+| 2 | D-12 (constancia durante una pausa), D-17 (constancia de los padres) y D-18 (trabajo sin sesión en ítems pausados o al 100 %) |
+| 3 | D-02 (destino tras cerrar el día) |
 
 ## Verificación
 
 - `pnpm ng test --watch=false`, también con `TZ=America/Mexico_City` y `TZ=Pacific/Auckland`.
 - `pnpm ng build` sin errores de tipos.
-- Las pruebas citan las RN que cubren (`RN-67` a `RN-74`).
-- Recorrido manual con el ejemplo de la sección 2 del documento de reglas. Debe dar 100 % de avance, 50 % de constancia y 120 minutos reales.
+- Las pruebas citan las RN que cubren (`RN-67` a `RN-72` y `RN-74`).
+- Recorrido manual con el ejemplo de la sección 2 del documento de reglas. Debe dar 25 % de avance, 50 % de constancia y 90 minutos reales.
 
 ## Documentos a actualizar en cada fase
 
