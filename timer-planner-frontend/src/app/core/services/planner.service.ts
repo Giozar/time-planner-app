@@ -105,6 +105,11 @@ export class PlannerService {
     return true;
   }
 
+  /** Fija la fecha desde el parámetro `?date=` de la URL; sin parámetro o inválido, hoy (RN-75). */
+  syncSelectedDate(param: string | null) {
+    this.setSelectedDate(param && isValidISODate(param) ? param : DateUtils.getTodayISO());
+  }
+
   /** Agenda de la fecha elegida (RN-25 a RN-29, RN-75). */
   public agendaTasks = computed<AgendaItem[]>(() => this.agendaFor(this.selectedDateSignal()));
 

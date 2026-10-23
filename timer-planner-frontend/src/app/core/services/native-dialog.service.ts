@@ -11,8 +11,11 @@ export interface DialogOptions {
   isDanger?: boolean;
   /** Si se indica, el usuario debe escribir este texto exacto para poder confirmar (RN-62). */
   requireText?: string;
+  /** Si se indica, el diálogo pide un entero positivo con este valor inicial. */
+  numberDefault?: number;
+  numberLabel?: string;
   type: 'confirm' | 'alert';
-  resolve: (value: boolean) => void;
+  resolve: (value: boolean, input?: number) => void;
 }
 
 @Injectable({
@@ -36,6 +39,22 @@ export class NativeDialogService {
         requireText: options?.requireText,
         type: 'confirm',
         resolve
+      });
+    });
+  }
+
+  /** Pide un número entero positivo (minutos reales, RN-71). Devuelve `null` si se cancela. */
+  promptMinutes(title: string, message: string, defaultMinutes: number): Promise<number | null> {
+    return new Promise((resolve) => {
+      this.dialogState.set({
+        title,
+        message,
+        confirmText: 'Guardar',
+        cancelText: 'Cancelar',
+        numberDefault: defaultMinutes,
+        numberLabel: 'Minutos trabajados',
+        type: 'confirm',
+        resolve: (ok, input) => resolve(ok && input !== undefined ? input : null),
       });
     });
   }
@@ -82,10 +101,10 @@ export class NativeDialogService {
     });
   }
 
-  close(result: boolean) {
+  close(result: boolean, input?: number) {
     const current = this.dialogState();
     if (current) {
-      current.resolve(result);
+      current.resolve(result, input);
       this.dialogState.set(null);
     }
   }

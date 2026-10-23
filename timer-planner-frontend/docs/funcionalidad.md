@@ -10,12 +10,12 @@ Mapa de qué reglas y casos de uso corresponden a cada parte del frontend. **No 
 | Objetivos | `features/objectives` | CU-06 a CU-09, CU-24, CU-25 | RN-08, RN-33, RN-52 a RN-54, RN-63 a RN-65, RN-68 | ⏳ Pendiente | Plan 03 |
 | Tareas | `features/activities` (`activity-form`) | CU-10 a CU-13, CU-24 | RN-03, RN-04, RN-14 a RN-20, RN-30, RN-39, RN-40, RN-47 a RN-51, RN-67 a RN-72, RN-74 | ⏳ Pendiente | Plan 03 |
 | Pasos | `features/activities` (`structure-form`) | CU-14 a CU-16 | RN-05, RN-13, RN-30, RN-48, RN-49, RN-67 a RN-72, RN-74 | ⏳ Pendiente | Plan 03 |
-| Agenda diaria | `features/daily` (`daily-dashboard`) | CU-17, CU-18, CU-27, CU-28 | RN-25 a RN-29, RN-69 a RN-72, RN-75 | ⏳ Pendiente | Plan 04, Plan 03 |
-| Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44, RN-72 | ⏳ Pendiente | Plan 04, Plan 03 |
+| Agenda diaria | `features/daily` (`daily-dashboard`) | CU-17, CU-18, CU-27, CU-28 | RN-25 a RN-29, RN-69 a RN-72, RN-75 | ⏳ Pendiente | Plan 03 |
+| Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44, RN-72 | ⏳ Pendiente | Plan 03 |
 | Calendario | `features/calendar` (`calendar-view`) | CU-26 | RN-25, RN-26, RN-29, RN-48, RN-66 | ⏳ Pendiente | Plan 03 |
 | Historial | Por crear | CU-21, CU-28 | RN-11, RN-43, RN-70, RN-72, RN-74 | ⏳ Pendiente | Plan 03, Fase 3 |
 
-**Estado:** lo que falta por alinear. Las pantallas existentes funcionan con el modelo anterior. «Pendiente» indica su adaptación a la agenda de días pasados ([plan 04](planes/04-agenda-dias-pasados.md)) y al modelo de avance, constancia y tiempo real ([plan 03](planes/03-avance-constancia-tiempo-real.md)).
+**Estado:** lo que falta por alinear. Las pantallas existentes funcionan con el modelo anterior. «Pendiente» indica su adaptación al modelo de avance, constancia y tiempo real ([plan 03](planes/03-avance-constancia-tiempo-real.md)).
 
 ## Funcionalidad transversal
 
@@ -35,6 +35,7 @@ Reglas que no pertenecen a una pantalla sino a la lógica compartida.
 - La pantalla de **historial** (CU-21) se crea en la Fase 3 del plan 03.
 - El estado `ARCHIVED` no existe en el MVP.
 - **Calendario:** la cuadrícula muestra hasta 3 sesiones por celda y «+N más»; las completadas aparecen tachadas y los días de otros meses atenuados. En pantallas de 700 px o menos las sesiones se muestran como puntos y el panel del día lista todo. Entrada «Calendario» del menú, entre «Agenda Hoy» y «Mis Metas».
+- **Agenda por fecha:** barra con día anterior, siguiente, selector de fecha y «Hoy»; la fecha viaja en `?date=`. En días pasados, marcar pide los minutos reales (previstos por defecto); hoy se marca de un clic. Las fechas futuras son de solo lectura y no tienen botón de cierre. El resumen de cierre muestra las notas ya guardadas de esa fecha.
 - **Diálogos:** el borrado exige escribir el título (`requireText`) y los conflictos de deadline se listan antes de guardar.
 
 ## Pendiente por definir

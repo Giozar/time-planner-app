@@ -9,12 +9,19 @@
                 [value]="typedText()" (input)="typedText.set($any($event.target).value)"
                 (keydown.enter)="onConfirm()">
             }
+            @if (d.numberDefault !== undefined) {
+            <label class="confirm-label">{{ d.numberLabel }}
+                <input class="confirm-input" type="number" min="1" step="1" inputmode="numeric"
+                    [value]="numberText(d.numberDefault)" (input)="typedNumber.set($any($event.target).value)"
+                    (keydown.enter)="onConfirm()">
+            </label>
+            }
         </div>
         <div class="dialog-actions">
             @if (d.type === 'confirm') {
             <button class="btn-secondary" (click)="onCancel()">{{ d.cancelText }}</button>
             }
-            <button [class]="d.isDanger ? 'btn-danger' : 'btn-primary'" [disabled]="!canConfirm(d.requireText)" (click)="onConfirm()">
+            <button [class]="d.isDanger ? 'btn-danger' : 'btn-primary'" [disabled]="!canConfirm(d.requireText, d.numberDefault)" (click)="onConfirm()">
                 {{ d.confirmText }}
             </button>
         </div>

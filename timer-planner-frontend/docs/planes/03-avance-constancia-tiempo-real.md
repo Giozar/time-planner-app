@@ -7,12 +7,12 @@
 El modelo definido en el [documento de reglas](../../../docs/analisis-reglas-de-negocio.md) separa tres medidas de cada tarea simple o paso:
 - **Avance:** sesiones realizadas sobre todas las del plan. El frontend ya lo calcula así.
 - **Constancia:** sesiones exigibles realizadas. No existe todavía.
-- **Tiempo real:** minutos registrados en `WorkLog`. Hoy se guarda junto a la fecha marcada (`completedMinutes`, plan 04).
+- **Tiempo real:** minutos registrados en `WorkLog`. Hoy se guarda junto a la fecha marcada (`minutesByDate` en el plan de ejecución).
 
 Lo que falta es pasar de `dates` y `completedDates` a `ExecutionSession` y `WorkLog`, y agregar la constancia. La diferencia exacta está en la [comparación con el código](../../../docs/estado-y-pendientes.md#comparación-con-el-código).
 
 Decisiones ya tomadas:
-- Se hace después del [plan 04](04-agenda-dias-pasados.md): reutiliza su fecha seleccionada y su diálogo de minutos, y pasa `completedMinutes` a `WorkLog`.
+- Reutiliza la fecha seleccionada de la agenda y el diálogo de minutos (`promptMinutes`), y pasa `minutesByDate` a `WorkLog`.
 - Los datos locales de prueba se reinician al cambiar el modelo; no se implementa migración.
 - Se conserva la arquitectura actual: reglas puras en `core/rules` y estado en `PlannerService` (ver `../arquitectura.md`).
 

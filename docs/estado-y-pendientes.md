@@ -15,19 +15,17 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 | Edición del plan y borrado con historial | Se conservan sesiones pasadas y `WorkLog`; borrar un ítem elimina sus sesiones y registros (RN-24, RN-51, RN-74). | ⏳ Pendiente. Hoy se conservan las fechas pasadas de `dates`. |
 | Cierre diario | `DailyRecord` resume sesiones, constancia y minutos reales (RN-41 a RN-44, RN-72). | ⏳ Pendiente. El registro actual guarda conteos de ítems y duraciones previstas. El reemplazo por fecha ya existe. |
 | Agenda y calendario | Muestran el estado de cada sesión; la agenda registra minutos reales (RN-25 a RN-27, RN-66). | ⏳ Pendiente. Las pantallas muestran sesiones desde `dates` y usan `completedDates`. |
-| Agenda de días pasados | Navegar entre fechas, marcar y desmarcar sesiones de días pasados con sus minutos, y cerrar o volver a cerrar cualquier fecha no futura (RN-27, RN-44, RN-75, CU-17 a CU-19). | ⏳ Pendiente ([plan 04](../timer-planner-frontend/docs/planes/04-agenda-dias-pasados.md)). El servicio ya trabaja con cualquier fecha; faltan las pantallas (navegación, minutos, cierre de la fecha elegida). |
 | Historial | Lista de resúmenes diarios (CU-21). | ⏳ Pendiente. No existe la pantalla. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
 
-Lo que no aparece en la tabla está implementado y vive en las reglas y en [funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md). El trabajo del frontend se organiza en los planes [04](../timer-planner-frontend/docs/planes/04-agenda-dias-pasados.md) (se hace primero, sobre el modelo actual) y [03](../timer-planner-frontend/docs/planes/03-avance-constancia-tiempo-real.md).
+Lo que no aparece en la tabla está implementado y vive en las reglas y en [funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md). El trabajo del frontend se organiza en el [plan 03](../timer-planner-frontend/docs/planes/03-avance-constancia-tiempo-real.md).
 
 ## Trabajo pendiente
 
 | Tema | Estado |
 |------|--------|
-| Plan 04: agenda de días pasados | ⏳ Pendiente |
 | Plan 03: avance, constancia y tiempo real | ⏳ Pendiente |
-| Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, cierre y reapertura de objetivo, borrado con confirmación escrita, cierre del día repetido, calendario con hover y cambio de mes) | ⏳ Pendiente |
+| Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, cierre y reapertura de objetivo, borrado con confirmación escrita, cierre del día repetido, calendario con hover y cambio de mes, y agenda de días pasados con minutos y recálculo del cierre) | ⏳ Pendiente |
 | Aviso de presupuesto de CSS en `objective-detail` (5,6 kB sobre 4 kB) | ⏳ Pendiente |
 | Backend | ⏳ Pendiente; requiere D-01 |
 | Agente planificador del backend (`timer-planner-backend/Agents/funcionalidad/`) | ⏳ Pendiente; se crea al empezar el backend |

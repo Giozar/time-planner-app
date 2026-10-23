@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { PlannerService } from '../../../core/services/planner.service';
 
 @Component({
@@ -13,19 +14,29 @@ import { PlannerService } from '../../../core/services/planner.service';
 export class DailySummaryComponent {
   private plannerService = inject(PlannerService);
   private router = inject(Router);
+  private params = toSignal(inject(ActivatedRoute).queryParamMap);
 
-  // Usamos las mismas métricas que ya calcula el servicio
   metrics = this.plannerService.agendaMetrics;
-  today = new Date();
+  selectedDate = this.plannerService.selectedDate;
+  readOnly = this.plannerService.isSelectedDateReadOnly;
+
+  /** Notas del cierre existente de esa fecha, para no perderlas al volver a cerrar (RN-43). */
+  savedNotes = computed(() => this.plannerService.records().find(r => r.date === this.selectedDate())?.notes ?? '');
+
+  displayDate = computed(() => {
+    const [y, m, d] = this.selectedDate().split('-').map(Number);
+    return new Date(y, m - 1, d);
+  });
+
+  constructor() {
+    effect(() => this.plannerService.syncSelectedDate(this.params()?.get('date') ?? null));
+  }
 
   finishDay(notes: string) {
-    // 1. Guardar en el servicio
-    this.plannerService.closeDay(notes);
-    
-    // 2. Feedback simple (podríamos usar un toast/alerta mejor después)
-    alert('¡Día registrado exitosamente!');
+    if (!this.plannerService.closeDay(notes)) return;
 
-    // 3. Redirigir (por ahora a metas, o podrías limpiar el dashboard)
+    // Feedback simple (podríamos usar un toast/alerta mejor después)
+    alert('¡Día registrado exitosamente!');
     this.router.navigate(['/goals']);
   }
 }

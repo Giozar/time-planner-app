@@ -262,6 +262,16 @@ describe('PlannerService', () => {
       expect(service.activities()[0].executionPlan?.completedDates).toEqual([]);
     });
 
+    it('syncSelectedDate toma la fecha de la URL y vuelve a hoy si falta o es inválida (RN-75)', () => {
+      service.syncSelectedDate(PAST);
+      expect(service.selectedDate()).toBe(PAST);
+      service.syncSelectedDate('basura');
+      expect(service.selectedDate()).toBe(TODAY);
+      service.syncSelectedDate(PAST);
+      service.syncSelectedDate(null);
+      expect(service.selectedDate()).toBe(TODAY);
+    });
+
     it('rechaza fechas inválidas al navegar', () => {
       expect(service.setSelectedDate('2026-02-30')).toBe(false);
       expect(service.selectedDate()).toBe(TODAY);

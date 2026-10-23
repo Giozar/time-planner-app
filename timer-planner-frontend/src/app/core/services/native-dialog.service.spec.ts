@@ -14,6 +14,17 @@ describe('NativeDialogService', () => {
     expect(dialog.state()).toBeNull();
   });
 
+  it('promptMinutes devuelve los minutos al confirmar y null al cancelar (RN-71)', async () => {
+    const ok = dialog.promptMinutes('t', 'm', 30);
+    expect(dialog.state()?.numberDefault).toBe(30);
+    dialog.close(true, 45);
+    expect(await ok).toBe(45);
+
+    const cancelled = dialog.promptMinutes('t', 'm', 30);
+    dialog.close(false);
+    expect(await cancelled).toBeNull();
+  });
+
   it('confirmDelete exige escribir el título y resume el impacto (RN-62)', async () => {
     const impact: DeletionImpact = { title: 'Mi meta', objectives: 2, activities: 5, steps: 3, completed: 4 };
     const pending = dialog.confirmDelete(DeletableType.GOAL, impact);

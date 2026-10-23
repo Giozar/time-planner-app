@@ -2,7 +2,7 @@
   
   <header>
     <h1>Resumen del Día</h1>
-    <p class="subtitle">{{ today | date:'fullDate' }}</p>
+    <p class="subtitle">{{ displayDate() | date:'fullDate' }}</p>
   </header>
 
   <div class="stats-grid">
@@ -29,12 +29,13 @@
       id="notes" 
       placeholder="¿Qué salió bien? ¿Qué obstaculizó el plan?..."
       rows="5"
+      [value]="savedNotes()"
     ></textarea>
   </section>
 
   <footer class="actions">
     <button class="btn-cancel" onclick="history.back()">Volver</button>
-    <button class="btn-confirm" (click)="finishDay(notesInput.value)">
+    <button class="btn-confirm" [disabled]="readOnly()" (click)="finishDay(notesInput.value)">
       Cerrar Día y Guardar
     </button>
   </footer>

@@ -186,3 +186,39 @@ h1 {
   transform: translateY(-2px);
   box-shadow: 0 6px 12px rgba(44, 62, 80, 0.3);
 }
+
+/* Navegación entre días */
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.nav-btn,
+.nav-today {
+  border: 1px solid #e0e0e0;
+  background: white;
+  border-radius: 8px;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  color: #2c3e50;
+}
+
+.nav-btn:hover,
+.nav-today:hover {
+  border-color: #3498db;
+}
+
+.date-picker {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: #2c3e50;
+}
+
+.readonly-note {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}

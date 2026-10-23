@@ -2,8 +2,8 @@
 
     <header class="daily-header">
         <div>
-            <h1>Agenda de Hoy</h1>
-            <p class="date-display">{{ today | date:'fullDate' }}</p>
+            <h1>{{ isToday() ? 'Agenda de Hoy' : 'Agenda del día' }}</h1>
+            <p class="date-display">{{ displayDate() | date:'fullDate' }}</p>
         </div>
 
         <div class="metrics-card">
@@ -18,34 +18,52 @@
         </div>
     </header>
 
+    <nav class="date-nav" aria-label="Navegar entre días">
+        <button type="button" class="nav-btn" (click)="shiftDay(-1)" aria-label="Día anterior">◀</button>
+        <input type="date" class="date-picker" [value]="selectedDate()" (change)="onDatePicked($any($event.target).value)"
+            aria-label="Elegir fecha">
+        <button type="button" class="nav-btn" (click)="shiftDay(1)" aria-label="Día siguiente">▶</button>
+        @if (!isToday()) {
+        <button type="button" class="nav-today" (click)="goTo(null)">Hoy</button>
+        }
+    </nav>
+
+    @if (readOnly()) {
+    <p class="readonly-note">Es una fecha futura: solo puedes consultarla.</p>
+    }
+
     <section class="tasks-list">
         @for (task of tasks(); track task.id) {
         <div class="task-item" [class.completed]="task.isCompleted">
 
             <label class="checkbox-wrapper">
-                <input type="checkbox" [checked]="task.isCompleted" (change)="toggleTask(task.id, task.sourceType)">
+                <input type="checkbox" [checked]="task.isCompleted" [disabled]="readOnly()" (change)="toggleTask(task, $event)">
                 <span class="checkmark"></span>
             </label>
 
             <div class="task-content">
                 <div class="task-main">
                     <span class="task-title">{{ task.title }}</span>
-                    <span class="task-time">{{ task.estimatedDurationMin }} min</span>
+                    <span class="task-time">
+                        @if (task.isCompleted) { {{ task.executedMinutes }} / }{{ task.estimatedDurationMin }} min
+                    </span>
                 </div>
             </div>
 
         </div>
         } @empty {
         <div class="empty-day">
-            <p>No tienes tareas programadas para hoy.</p>
+            <p>{{ isToday() ? 'No tienes tareas programadas para hoy.' : 'No hay tareas programadas ese día.' }}</p>
         </div>
         }
     </section>
 
+    @if (!readOnly()) {
     <footer class="dashboard-footer">
-        <a routerLink="/daily/summary" class="btn-end-day">
-            Finalizar Día
+        <a routerLink="/daily/summary" [queryParams]="isToday() ? {} : { date: selectedDate() }" class="btn-end-day">
+            {{ isToday() ? 'Finalizar Día' : 'Cerrar este día' }}
         </a>
     </footer>
+    }
 
 </div>

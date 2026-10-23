@@ -9,7 +9,7 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 | [funcionalidad.md](funcionalidad.md) | Mapa de features: qué casos de uso y reglas de negocio aplican a cada carpeta. |
 | [arquitectura.md](arquitectura.md) | Cómo está organizado el código, qué responsabilidad tiene cada capa y cómo puede evolucionar. |
 | [buenas-practicas.md](buenas-practicas.md) | SOLID y Clean Code aplicados de forma ligera, convención de nombres y pruebas. |
-| [planes/](planes/) | Planes de trabajo **por hacer** (hoy el 03 y el 04). Un plan terminado se borra: su historia está en git. |
+| [planes/](planes/) | Planes de trabajo **por hacer** (hoy el 03). Un plan terminado se borra: su historia está en git. |
 
 ## Cómo se relaciona con el resto del repositorio
 
@@ -20,7 +20,7 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 
 ## Pendiente
 
-- **Código:** funciona con el modelo anterior; faltan los planes 04 (agenda de días pasados, se hace primero) y 03 (avance, constancia y tiempo real).
+- **Código:** funciona con el modelo anterior; falta el plan 03 (avance, constancia y tiempo real).
 
 - **Recorrido manual** en el navegador (`pnpm ng serve`) de los casos de uso implementados. Las pruebas automáticas cubren la lógica, no la interfaz.
 - **Aviso de presupuesto de CSS** en `objective-detail` (5,6 kB sobre 4 kB).
