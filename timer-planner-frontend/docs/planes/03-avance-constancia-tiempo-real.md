@@ -10,14 +10,16 @@ Decisiones ya tomadas:
 
 ## RN y CU cubiertas
 
-RN-41 a RN-44, RN-70 a RN-72 y RN-76. CU-19, CU-21, CU-27 y CU-28. Entidad `DailyRecord` (sección 3.8).
+RN-41 a RN-44, RN-57, RN-59, RN-70 a RN-72 y RN-76. CU-19, CU-21, CU-27 y CU-28. Entidad `DailyRecord` (sección 3.8).
 
 ## Archivos a tocar
 
-- `core/rules`: constancia de un ítem y de un día (RN-70), con su spec.
+- `core/models`: `pauses` en meta y tarea; `core/services`: registrar el periodo al pausar y reanudar.
+- `core/rules`: constancia de un ítem, de un padre y de un día (RN-70), excluyendo los periodos de pausa, con su spec.
 - `core/models/daily-record.model.ts`: resumen con sesiones planeadas y realizadas, porcentaje de constancia, minutos planeados y reales y `closedAt`.
 - `core/services/planner.service.ts`: `saveRecord` con el resumen nuevo.
-- `features/objectives/objective-detail` y `features/daily`: constancia, registro de tiempo sin sesión y corrección de bloques.
+- `features/objectives/objective-detail`, `features/goals` y `features/daily`: constancia en cada nivel, registro de tiempo sin sesión y corrección de bloques.
+- `features/daily/daily-summary`: al cerrar, volver a la agenda de esa fecha.
 - Pantalla de historial (nueva) en la Fase 2.
 
 ## Fases
@@ -26,15 +28,6 @@ RN-41 a RN-44, RN-70 a RN-72 y RN-76. CU-19, CU-21, CU-27 y CU-28. Entidad `Dail
 |------|---------|--------|
 | 1 | Constancia (regla y pantalla) y registro de tiempo: sin sesión, corregir y borrar bloques | ⏳ Pendiente |
 | 2 | `DailyRecord` con sesiones y minutos reales; pantalla de historial | ⏳ Pendiente |
-
-## Decisiones que lo bloquean
-
-Están en [estado-y-pendientes.md](../../../docs/estado-y-pendientes.md#decisiones-abiertas):
-
-| Fase | Decisiones |
-|------|------------|
-| 1 | D-12 (constancia durante una pausa), D-17 (constancia de los padres) y D-18 (trabajo sin sesión en ítems pausados o al 100 %) |
-| 2 | D-02 (destino tras cerrar el día) |
 
 ## Verificación
 

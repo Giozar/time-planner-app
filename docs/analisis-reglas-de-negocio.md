@@ -60,6 +60,7 @@ Solo las tareas simples y los pasos son **ítems ejecutables**. Sus sesiones rea
 | `horizon` | `GoalHorizon` o `null` | Sin horizonte, la meta se crea como `IDEA` (RN-55). |
 | `progress` | entero 0–100 | Promedio simple del avance de sus objetivos; 0 si no hay. |
 | `status` | `GoalStatus` | `IDEA`, `ACTIVE` o `PAUSED`. |
+| `pauses` | lista de periodos `{ from, to? }` | Historial de pausas; `to` falta mientras sigue pausada (RN-70). |
 
 La meta no tiene deadline, constancia almacenada ni minutos reales propios.
 
@@ -89,6 +90,7 @@ No almacena constancia ni minutos reales; se consultan desde sus ítems ejecutab
 | `progress` | entero 0–100 | Simple: calculado con sus sesiones (RN-30). Compuesta: promedio de pasos. |
 | `completedAt` | fecha/hora opcional | En simple se almacena: se fija al llegar a 100 % y se limpia si baja. En compuesta no se almacena: se calcula como el `completedAt` más reciente de sus pasos cuando todos están al 100 %. |
 | `status` | `ActivityStatus` | Derivado del avance, salvo pausa manual; `OVERDUE` es visual. |
+| `pauses` | lista de periodos `{ from, to? }` | Historial de pausas de la tarea; `to` falta mientras sigue pausada (RN-70). |
 
 ### 3.4 SubActivity (Paso)
 
@@ -359,7 +361,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 | RN-67 | **Finalización del resultado.** Cuando el avance de una tarea simple o paso llega a 100 %, se fija `completedAt`; si baja, se borra. En tarea compuesta se calcula desde sus pasos y no se almacena (§3.3). |
 | RN-68 | **Medidas separadas.** El avance cuenta las sesiones realizadas sobre todas las del plan; la constancia, sobre las exigibles (RN-70); el tiempo real suma minutos (RN-71). Registrar minutos sin sesión no marca ninguna sesión ni cambia el avance. El objetivo conserva su cierre manual al llegar al 100 % (RN-63). |
 | RN-69 | **Estado de sesión.** Cada fecha programada tiene una `ExecutionSession` única. `PLANNED` es la inicial; `DONE` significa que se trabajó ese día y tiene `completedAt`. Una `PLANNED` pasada, o de hoy tras cerrar el día, se muestra como no realizada. |
-| RN-70 | **Constancia.** `round(DONE / (DONE + no realizadas) × 100)` sobre las sesiones exigibles del ítem; devuelve `null` si no hay ninguna. Incluye las `DONE` hasta hoy y las `PLANNED` de fechas pasadas; una `PLANNED` de hoy cuenta al cerrar el día. Excluye sesiones futuras. En padres puede calcularse con todas las sesiones de sus descendientes ejecutables, sin promediar porcentajes. |
+| RN-70 | **Constancia.** `round(DONE / (DONE + no realizadas) × 100)` sobre las sesiones exigibles del ítem; devuelve `null` si no hay ninguna. Incluye las `DONE` hasta hoy y las `PLANNED` de fechas pasadas; una `PLANNED` de hoy cuenta al cerrar el día. Excluye sesiones futuras y las de fechas en que la meta o la tarea estaba pausada (según su historial de pausas, RN-57, RN-59). Se muestra también en tarea compuesta, objetivo y meta, calculada con todas las sesiones de sus descendientes ejecutables, sin promediar porcentajes. |
 | RN-71 | **Tiempo real.** Cada `WorkLog` guarda minutos enteros positivos trabajados en una fecha, hoy o pasada pero nunca futura, para una tarea simple o un paso. Puede no estar ligado a una sesión. Si se vincula, la sesión debe estar `DONE` y deben coincidir ítem y fecha. Marcar una sesión `DONE` crea al menos un `WorkLog` vinculado; varios bloques del mismo día se suman. El tiempo planeado nunca sustituye al real. |
 | RN-72 | **Cierre diario.** `DailyRecord` guarda sesiones planeadas y realizadas, porcentaje de constancia del día, minutos planeados, suma de `WorkLog.minutes`, notas y `closedAt`. El porcentaje es `null` si no hubo sesiones planeadas. Se toma de las sesiones visibles de la agenda de ese día; los minutos reales incluyen también trabajo sin sesión programada. Un nuevo cierre en la misma fecha reemplaza el resumen y conserva el `id` (RN-43); los cambios posteriores se reflejan al volver a cerrar ese día (RN-44). |
 | RN-74 | **Historial y borrado.** Editar un plan conserva las sesiones pasadas y los `WorkLog` ya registrados; solo reemplaza las sesiones `PLANNED` de hoy y futuras (RN-51). Borrar un ítem elimina sus sesiones y `WorkLog` asociados, pero no modifica los resúmenes `DailyRecord` ya cerrados (RN-11, RN-52). |
@@ -464,7 +466,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 - **Flujo:** al marcar la sesión se registran los minutos en `WorkLog` de su fecha y su estado pasa a `DONE`; al desmarcarla vuelve a `PLANNED` y se eliminan esos minutos. Si ese día ya estaba cerrado, el cambio se refleja al volver a cerrarlo (RN-44). El avance del ítem y de sus padres se recalcula (RN-30, RN-36).
 
 #### CU-19 — Cerrar día
-- Muestra sesiones planeadas y realizadas, constancia del día, minutos previstos y reales y un campo de notas. Se abre con la fecha de la agenda que se estaba viendo. Al confirmar guarda o actualiza el `DailyRecord` de esa fecha (RN-41 a RN-44, RN-72).
+- Muestra sesiones planeadas y realizadas, constancia del día, minutos previstos y reales y un campo de notas. Se abre con la fecha de la agenda que se estaba viendo. Al confirmar guarda o actualiza el `DailyRecord` de esa fecha (RN-41 a RN-44, RN-72) y vuelve a la agenda de esa fecha.
 
 #### CU-21 — Consultar historial
 - Lista los resúmenes diarios por fecha. El detalle de una fecha se consulta desde sus sesiones y registros de trabajo; si se borró un ítem, permanece el resumen diario (RN-11, RN-74).
@@ -493,7 +495,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 - **Reglas:** RN-25, RN-26, RN-29, RN-48, RN-66, RN-69. Solo consulta.
 
 #### CU-27 y CU-28 — Tiempo real y constancia
-- El usuario puede registrar minutos trabajados en hoy o en un día pasado aun sin sesión programada. La constancia muestra sesiones exigibles realizadas / exigibles totales; si no hay ninguna, se muestra «sin datos» (RN-70, RN-71).
+- El usuario puede registrar minutos trabajados en hoy o en un día pasado aun sin sesión programada, también en ítems de una meta `PAUSED` o `IDEA`, de una tarea `PAUSED` o ya al 100 %: el tiempo trabajado es real. La constancia, en cada nivel, muestra sesiones exigibles realizadas / exigibles totales; si no hay ninguna, se muestra «sin datos» (RN-70, RN-71).
 - Cada bloque de tiempo registrado se puede corregir o borrar; el resumen de un día cerrado se actualiza al volver a cerrarlo (RN-44, RN-76).
 
 ---
