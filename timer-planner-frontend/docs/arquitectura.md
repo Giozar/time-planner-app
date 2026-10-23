@@ -6,17 +6,17 @@ La arquitectura actual se mantiene: **simple, compacta y todo en uno**. Se toman
 
 ## Estructura actual
 
-Estado verificado en `src/app`:
+Estado verificado en `src/app` (2026-10-23):
 
 ```
 src/app/
 ├── core/
 │   ├── i18n/          labels.ts (etiquetas en español por enum)
 │   ├── models/        activity, goal, objective, daily-record, agenda-item, deletion-impact, calendar-entry (enums en inglés)
-│   ├── rules/         calendar, calendar-view, progress, recurrence, deadline, session, objective (funciones puras)
 │   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves planner_v4_*)
+│   ├── rules/         calendar, calendar-view, progress, recurrence, deadline, session, objective (funciones puras)
 │   ├── services/      planner.service.ts, native-dialog.service.ts
-│   └── utils/         date.utils.ts
+│   └── utils/         date.utils.ts (getTodayISO, calculateProgress)
 ├── features/
 │   ├── activities/    activity-form, structure-form
 │   ├── calendar/      calendar-view
@@ -27,33 +27,12 @@ src/app/
 │   ├── components/    global-dialog
 │   ├── layout/        main-layout
 │   └── pipes/         label.pipe.ts
-├── app.config.ts      enlaza DataProvider con LocalStorageService
 ├── testing/           builders.ts e in-memory-data.provider.ts (solo para pruebas)
+├── app.config.ts      enlaza DataProvider con LocalStorageService
 └── app.routes.ts
 ```
 
-## Estructura objetivo
-
-Alineada con el plan [planes/01-alinear-frontend-con-reglas-de-negocio.md](planes/01-alinear-frontend-con-reglas-de-negocio.md). Solo se **agrega**; lo existente no cambia de lugar. Estas carpetas **todavía no existen**:
-
-```
-core/
-```
-
-`core/i18n`, `shared/pipes` (Fase 1) y `core/rules` (Fase 2) ya existen.
-
-
-### Estado de implementación (2026-10-22)
-
-| Elemento | Existe | Lo crea |
-|----------|--------|---------|
-| `core/i18n` | Sí | Fase 1 (completada 2026-10-22) |
-| `shared/pipes` | Sí | Fase 1 (completada 2026-10-22) |
-| `core/rules` | Sí | Fase 2 (completada 2026-10-22) |
-| `Agents/` (en la raíz del frontend) | Sí | Fase 0 (completada 2026-10-21) |
-| `features/calendar` | Sí (en revisión) | Plan 02, Fase 3 |
-
-Cuando una fase crea o mueve carpetas, esta tabla y la sección "Estructura actual" se actualizan en el mismo cambio.
+Las pruebas (`*.spec.ts`) viven junto al archivo que prueban. Cuando se crean o mueven carpetas, esta sección se actualiza en el mismo cambio.
 
 ## Capas y responsabilidades
 

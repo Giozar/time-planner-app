@@ -6,7 +6,7 @@ Guía ligera de Clean Code y SOLID para este proyecto. Es una referencia para de
 
 | Principio | Cómo se aplica aquí |
 |-----------|---------------------|
-| **S**: responsabilidad única | Hoy `PlannerService` guarda estado, persiste, calcula reglas y migra datos. El objetivo es que solo coordine, y que las reglas vivan en `core/rules`. |
+| **S**: responsabilidad única | `PlannerService` coordina: guarda el estado, persiste y aplica las reglas. Las reglas viven en `core/rules` como funciones puras. |
 | **O**: abierto/cerrado | Agregar una persistencia nueva (HTTP) no obliga a tocar el servicio ni los componentes: se crea otra clase que implementa `DataProvider`. |
 | **L**: sustitución de Liskov | `LocalStorageService` y un futuro proveedor HTTP deben poder intercambiarse sin que el código que usa `DataProvider` note la diferencia. |
 | **I**: segregación de interfaces | `DataProvider` es un solo contrato con todos los métodos. Es aceptable por ahora. Si crece, se divide por entidad. |
