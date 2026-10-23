@@ -1,10 +1,10 @@
 # Agents — timer-planner-frontend
 
-Punto de entrada de los agentes de este proyecto. Léelo primero: indica qué otros archivos cargar según la tarea.
+Orquestador de este proyecto: indica qué otros archivos cargar según la tarea. Antes de usarlo, lee el orquestador del monorepo, `../../Agents/Agents.md` (desde esta carpeta), y sus reglas generales.
 
 ## Siempre
 
-- [reglas/Agents-alcance.md](reglas/Agents-alcance.md): alcance, permisos y estilo de respuesta.
+- [reglas/Agents-alcance.md](reglas/Agents-alcance.md): reglas propias de este proyecto.
 
 ## Según la tarea
 
@@ -13,6 +13,7 @@ Punto de entrada de los agentes de este proyecto. Léelo primero: indica qué ot
 | Instalar dependencias, ejecutar scripts o generar código Angular | [tecnologia/Agents-angular.md](tecnologia/Agents-angular.md) |
 | Planificar cómo alinear una feature con las reglas de negocio | [funcionalidad/Agents-planner.md](funcionalidad/Agents-planner.md) |
 | Crear o revisar commits y ramas (afecta a todo el monorepo) | `../../Agents/tecnologia/Agents-git-monorepo.md`, en la raíz del repositorio |
+| Revisar o actualizar documentación, consultar qué está por definir o agregar un agente | `../../Agents/funcionalidad/Agents-documentacion.md`, en la raíz del repositorio |
 
 ## Organización de esta carpeta
 
@@ -25,8 +26,10 @@ Agents/
 ```
 
 - **Nombre:** `Agents-<tema>.md`. El orquestador es `Agents.md`.
-- **Agregar un agente:** créalo en la carpeta que corresponda o crea un nueva carpeta si es ncesario, regístralo en la tabla de arriba y anótalo en el historial de `../docs/README.md`.
+- **Agregar un agente:** ver `../../Agents/funcionalidad/Agents-documentacion.md`.
 
 ## Documentación del proyecto
 
 La documentación está en [../docs/README.md](../docs/README.md): funcionalidad, arquitectura, buenas prácticas y planes.
+
+Fuera de esta carpeta, en la raíz del monorepo: las reglas definidas en `../../docs/analisis-reglas-de-negocio.md` y lo pendiente o por definir en `../../docs/estado-y-pendientes.md`.

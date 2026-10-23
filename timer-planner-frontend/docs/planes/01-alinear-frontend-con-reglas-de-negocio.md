@@ -2,6 +2,8 @@
 
 **Estado: ✅ Completado** (Fases 0 a 5). Lo que sigue pendiente está al final.
 
+Este plan registra la implementación anterior. El modelo de avance, constancia y tiempo real está en el [plan 03](03-avance-constancia-tiempo-real.md); su estado frente al código está en [estado-y-pendientes.md](../../../docs/estado-y-pendientes.md).
+
 ## Contexto
 
 La app Time Planner (Angular 21, signals, standalone) guarda sus datos de desarrollo en `localStorage`. Antes de construir el backend se alineó el frontend con las reglas y casos de uso vigentes de `../../../docs/analisis-reglas-de-negocio.md` y se creó un agente planificador en `timer-planner-frontend/Agents/`.
@@ -10,7 +12,7 @@ Decisiones del usuario:
 - El agente es un archivo Markdown de instrucciones dentro de `Agents/funcionalidad/`.
 - El plan se hizo por fases, con todas las reglas del documento.
 - Los datos de prueba se reinician al cambiar el modelo durante el desarrollo.
-- El agente lee el documento de reglas como referencia de solo lectura. Solo se edita con autorización explícita del usuario.
+- El agente lee el documento de reglas como referencia. La forma vigente de mantenerlo está en `../../../Agents/funcionalidad/Agents-documentacion.md`.
 
 Fuera de alcance: backend, historial (CU-21), estado `ARCHIVED`, respaldos, autenticación.
 
@@ -43,14 +45,14 @@ Fuera de alcance: backend, historial (CU-21), estado `ARCHIVED`, respaldos, aute
 - Una sola cascada de recálculo (`cascade()` + `commit()`) tras cada mutación.
 - Agenda sin metas `PAUSED`/`IDEA` ni tareas `PAUSED`.
 - Acciones nuevas: `pauseGoal`/`resumeGoal`, `pauseActivity`/`resumeActivity`, `closeObjective` y reapertura automática.
-- Borrado en cascada con `deletionImpact`, cambio de tipo con `typeChangeImpact`, y `closeDay` con upsert por fecha y tiempo real ejecutado.
+- Borrado en cascada con `deletionImpact`, cambio de tipo con `typeChangeImpact`, y `closeDay` con upsert por fecha y duración prevista de sesiones realizadas.
 - Las operaciones que guardan tareas y pasos devuelven los conflictos de deadline y no guardan si hay alguno.
 
 **Fase 4: formularios, pantallas y diálogo.**
 - Diálogo con `requireText` (confirmación escrita del título), `confirmDelete` y `alertDeadlineConflicts`.
 - Metas: horizonte opcional (crea `IDEA`), pausar y reanudar. Objetivos: botón "Cerrar objetivo", estado `OVERDUE` derivado y pausa de tareas.
 - Tareas: recurrencia calculada, duración mínima siempre validada, plan con sesiones pasadas conservadas, confirmación de cambio de tipo solo si hay datos que perder. Pasos: título mínimo 3 (RN-13).
-- Agenda con `isCompleted` y resumen con tiempo real.
+- Agenda con `isCompleted` y resumen basado en duraciones previstas.
 
 **Fase 4b: deadline del objetivo.** La meta no tiene fecha y el objetivo tiene deadline obligatorio que topa a sus tareas y pasos (RN-65). El código incluye `Objective.deadline`, `Activity.deadline` opcional y `validateDeadlines` sobre la cadena objetivo → tarea → paso.
 
@@ -59,7 +61,7 @@ Fuera de alcance: backend, historial (CU-21), estado `ARCHIVED`, respaldos, aute
 ## Decisiones tomadas durante la ejecución
 
 - La meta no tiene fecha (RN-56); el objetivo tiene deadline obligatorio (RN-65). Tarea y paso heredan el deadline de su padre y pueden tener uno más corto, nunca más largo (confirmado por el usuario).
-- Una meta nueva con horizonte nace `ACTIVE`; sin horizonte nace `IDEA`. `cascade()` pasa una `IDEA` con horizonte a `ACTIVE` cuando tiene al menos una tarea. Está pendiente de definir (sección 9, punto 8 del documento de reglas).
+- Una meta nueva con horizonte nace `ACTIVE`; sin horizonte nace `IDEA`. `cascade()` pasa una `IDEA` con horizonte a `ACTIVE` cuando tiene al menos una tarea. Es la decisión abierta D-05 de `../../../docs/estado-y-pendientes.md`.
 - `deriveStatus` conserva `PAUSED`; `resumeActivity` solo actúa sobre tareas pausadas y deriva el estado del progreso.
 - `updateActivity` elimina los pasos al pasar a simple, por eso se quitó `deleteSubActivitiesByActivityId`.
 - Al editar, los formularios muestran solo las fechas específicas futuras; las pasadas se conservan solas (RN-51). Un deadline anterior a hoy se rechaza si es nuevo o fue modificado.
@@ -75,7 +77,7 @@ Fuera de alcance: backend, historial (CU-21), estado `ARCHIVED`, respaldos, aute
 
 - Recorrido manual en el navegador por los casos de uso implementados, en particular: crear una idea y promoverla, un patrón semanal que no se desfasa, el bloqueo de un deadline mayor al del padre, la pausa de una meta que oculta la agenda, el cierre de un objetivo al 100% y su reapertura, el borrado con confirmación escrita y el cierre del día repetido.
 - Aviso de presupuesto de CSS en `objective-detail` (5,6 kB sobre 4 kB).
-- Decisiones por definir: sección 9 del documento de reglas.
+- Decisiones por definir: [estado-y-pendientes.md](../../../docs/estado-y-pendientes.md).
 
 ## Registro de avances
 

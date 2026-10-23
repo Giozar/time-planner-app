@@ -1,19 +1,5 @@
 # Reglas generales del frontend
 
-Aplican a todos los agentes de `timer-planner-frontend`.
+Aplican a todos los agentes de `timer-planner-frontend`. Se suman a las reglas del monorepo, en `Agents/reglas/Agents-alcance.md` de la raíz (`../Agents/reglas/Agents-alcance.md` desde `timer-planner-frontend/`).
 
-- Trabaja únicamente dentro de este proyecto. No accedas ni hagas cambios fuera de su directorio.
-- No leas ni modifiques archivos salvo que el usuario lo solicite explícitamente. Limita la lectura a lo necesario para esa petición.
-- Responde de forma directa y breve, salvo que el usuario pida una explicación detallada.
-- Si necesitas ejecutar un comando, pide permiso y explica de manera breve qué hará. Por lo regular, si es para lectura, escritura o modificaciones, explícalo claro.
-- Mantén la documentación al día: al terminar una fase de un plan, actualiza los documentos según `docs/README.md`. Los estados de fases y features son solo **Pendiente** o **Completada**: no se usan estados intermedios como "en curso" o "en revisión".
-
-## Alcance del trabajo
-
-1. **Solo dentro del proyecto.** Trabaja exclusivamente dentro de esta carpeta (`timer-planner-frontend`) y de sus subcarpetas. No leas, busques, analices ni modifiques archivos fuera de este directorio.
-2. **Solo bajo instrucción explícita.** No leas ni modifiques archivos dentro del proyecto a menos que el usuario te dé instrucciones para hacerlo.
-3. **Entorno cerrado.** Todo el trabajo se realiza dentro de este entorno y de esta carpeta, sin más excepciones que las declaradas abajo.
-
-## Excepciones declaradas
-
-- **Reglas de negocio, solo lectura:** `docs/analisis-reglas-de-negocio.md` en la raíz del monorepo (`../docs/analisis-reglas-de-negocio.md` desde esta carpeta). Es la fuente de verdad de las reglas. Los agentes de funcionalidad la leen. Solo se modifica cuando el usuario lo autoriza de forma explícita (por ejemplo, al cambiar o agregar una regla), y el cambio se registra en el plan correspondiente.
+- Al terminar una fase, actualiza la documentación del frontend según la tabla de mantenimiento de `timer-planner-frontend/docs/README.md`.

@@ -21,14 +21,14 @@ Al formular los tipos y alcances (`type(scope):`), debes diferenciar explícitam
 ## 2. Permisos y Restricciones de Ejecución
 
 ### Reglas estrictas de comandos Git:
-1. **Inspección no destructiva (Siempre permitida para análisis):**
-   - Ante la petición de redactar un commit, inspecciona el estado de Git usando comandos de lectura:
+1. **Inspección no destructiva (con autorización, según `Agents/reglas/Agents-alcance.md`):**
+   - Ante la petición de redactar un commit, explica qué comandos de lectura vas a usar y para qué; al autorizarlos, inspecciona el estado de Git con:
      - `git status`
      - `git diff --staged` o `git diff --cached`
      - `git diff`
      - `git diff --stat`
      - `git log -n 1`
-2. **Creación de Ramas (Único permiso de modificación autónomo previa solicitud):**
+2. **Creación de Ramas (solo cuando el usuario lo pide):**
    - **SOLO** tienes permiso de crear ramas (`git checkout -b <nombre-rama>` o `git switch -c <nombre-rama>`) **única y específicamente cuando el usuario te lo pida**.
    - Si el usuario no ha solicitado explícitamente crear una rama, no la crees.
 3. **Commits, Add y Push (Estrictamente bajo confirmación del usuario):**

@@ -2,6 +2,8 @@
 
 **Estado: ✅ Completado** (Fases 1 a 3). Lo que sigue pendiente está al final.
 
+Este plan registra el calendario existente. Su adaptación a `ExecutionSession` se contempla en el [plan 03](03-avance-constancia-tiempo-real.md).
+
 ## Contexto
 
 El usuario pidió una vista de **calendario** en el menú para ver, día por día, qué tareas y pasos se deben ejecutar, navegar a meses y años anteriores o posteriores, y al pasar el cursor sobre una sesión ver a qué meta, objetivo, tarea y paso pertenece. Se hizo después de las Fases 0 a 4b del plan 01 y antes de su Fase 5, para que las pruebas lo cubrieran.
@@ -52,7 +54,7 @@ Las pruebas del calendario se escribieron en la Fase 5 del plan 01 (`53081be`).
 ## Pendiente
 
 - Recorrido manual en el navegador: una tarea con patrón semanal aparece solo en sus días; navegar a otro mes y año y volver con "Hoy"; pausar la meta y ver que desaparecen sus sesiones; hover, foco y toque muestran la jerarquía y los deadlines; el calendario y la agenda coinciden hoy.
-- Decisiones por definir que lo afectan (sección 9 del documento de reglas): sesiones atrasadas, objetivo vencido, pausa de objetivo y API del calendario.
+- Decisiones por definir que lo afectan (D-03, D-04, D-09 y D-12): [estado-y-pendientes.md](../../../docs/estado-y-pendientes.md).
 
 ## Registro de avances
 

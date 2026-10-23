@@ -1,29 +1,32 @@
 # Agents — monorepo time-planner-app
 
-Índice de los agentes del repositorio. Cada proyecto tiene su propio orquestador con la misma estructura.
+Punto de entrada de todos los agentes del repositorio. Cada proyecto tiene además su propio orquestador.
+
+## Siempre
+
+- [reglas/Agents-alcance.md](reglas/Agents-alcance.md): límite de trabajo, comandos, documentación y estilo de respuesta.
 
 ## Proyectos
 
 | Proyecto | Orquestador |
 |----------|-------------|
-| Frontend (Angular) | [timer-planner-frontend/Agents/Agents.md](../timer-planner-frontend/Agents/Agents.md) |
-| Backend (NestJS) | [timer-planner-backend/Agents/Agents.md](../timer-planner-backend/Agents/Agents.md) |
+| Frontend (Angular) | [../timer-planner-frontend/Agents/Agents.md](../timer-planner-frontend/Agents/Agents.md) |
+| Backend (NestJS) | [../timer-planner-backend/Agents/Agents.md](../timer-planner-backend/Agents/Agents.md) |
 
 ## Agentes del monorepo
 
 | Tarea | Agente |
 |-------|--------|
 | Commits, ramas y flujo de trabajo en git | [tecnologia/Agents-git-monorepo.md](tecnologia/Agents-git-monorepo.md) |
-| Guía genérica de commits semánticos (el anterior es su versión para monorepo) | [tecnologia/Agents-git-commits.md](tecnologia/Agents-git-commits.md) |
+| Revisar o actualizar documentación, discutir una propuesta nueva, registrar una decisión por definir, saber qué está pendiente o agregar un agente | [funcionalidad/Agents-documentacion.md](funcionalidad/Agents-documentacion.md) |
 
-## Reglas de negocio
+`tecnologia/Agents-git-commits.md` es solo una plantilla genérica para reutilizar en otros proyectos; en este repositorio aplica `Agents-git-monorepo.md`.
 
-La fuente de verdad es [../docs/analisis-reglas-de-negocio.md](../docs/analisis-reglas-de-negocio.md). Los agentes la leen; solo se modifica cuando el usuario lo autoriza de forma explícita.
+## Documentación del producto
 
-Al actualizar documentación, describe el comportamiento vigente y las decisiones aún abiertas. Elimina referencias a migraciones, versiones de datos de prueba, bugs resueltos y estados intermedios que ya no aporten a la especificación. Evita repetir reglas en varios documentos.
+[../docs/analisis-reglas-de-negocio.md](../docs/analisis-reglas-de-negocio.md) (lo definido) y [../docs/estado-y-pendientes.md](../docs/estado-y-pendientes.md) (lo pendiente y por definir). Qué va en cada uno y cómo se mantienen: [funcionalidad/Agents-documentacion.md](funcionalidad/Agents-documentacion.md).
 
-## Convención
+## Organización
 
 - **Nombre:** `Agents-<tema>.md`. Los orquestadores son `Agents.md`.
 - **Carpetas:** `reglas/` (aplican siempre), `tecnologia/` (herramientas y frameworks) y `funcionalidad/` (un agente por tarea o feature).
-- **Agregar un agente:** créalo en la carpeta que corresponda y regístralo en la tabla del orquestador de su proyecto.
