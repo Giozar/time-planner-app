@@ -36,13 +36,13 @@ describe('calendar.rules', () => {
     });
   });
 
-  describe('generateDatesFromPattern (RN-21, regresión B-01)', () => {
+  describe('generateDatesFromPattern (RN-21)', () => {
     it('incluye el inicio y el deadline, y solo los días elegidos', () => {
       const dates = generateDatesFromPattern('2026-10-19', '2026-11-02', [WeekDay.MONDAY]);
       expect(dates).toEqual(['2026-10-19', '2026-10-26', '2026-11-02']);
     });
 
-    it('no incluye el día anterior al inicio ni excluye el deadline (B-01)', () => {
+    it('no incluye el día anterior al inicio ni excluye el deadline', () => {
       const dates = generateDatesFromPattern('2026-10-17', '2026-10-24', [
         WeekDay.SATURDAY, WeekDay.SUNDAY, WeekDay.MONDAY, WeekDay.TUESDAY, WeekDay.WEDNESDAY,
         WeekDay.THURSDAY, WeekDay.FRIDAY,

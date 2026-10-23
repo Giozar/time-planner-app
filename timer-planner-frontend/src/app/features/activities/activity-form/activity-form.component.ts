@@ -55,7 +55,7 @@ export class ActivityFormComponent implements OnInit {
   readonly planTypeLabels = EXECUTION_PLAN_TYPE_LABELS;
   readonly weekDayLabels = WEEK_DAY_LABELS;
 
-  // La recurrencia no se elige: se calcula del plan (RN-47, B-02).
+  // La recurrencia no se elige: se calcula del plan (RN-47).
   activityForm = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
     priority: [ActivityPriority.MEDIUM, Validators.required],
@@ -65,7 +65,7 @@ export class ActivityFormComponent implements OnInit {
     deadline: [''], // opcional: si se omite hereda el del objetivo (RN-14)
 
     planType: [ExecutionPlanType.WEEKLY_PATTERN],
-    duration: [60, [Validators.required, Validators.min(5)]], // RN-15: siempre se valida (B-12)
+    duration: [60, [Validators.required, Validators.min(5)]], // RN-15
 
     patternDays: this.fb.array([]),
     specificDates: this.fb.array([])

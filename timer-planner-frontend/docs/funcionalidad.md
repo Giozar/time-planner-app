@@ -27,16 +27,14 @@ Reglas que no pertenecen a una pantalla sino a la lógica compartida.
 | Deadlines objetivo → tarea → paso | `core/rules/deadline.rules.ts` y `planner.service.ts` | RN-14, RN-48, RN-49, RN-65 | ✅ Alineado |
 | Visibilidad de sesiones (agenda y calendario) | `core/services/planner.service.ts` (`visibleActivityIds`, `todaysTasks`, `calendarEntries`) | RN-29, RN-57, RN-59, RN-66 | ✅ Alineado |
 | Borrado y confirmaciones | `core/services/planner.service.ts` (cascada e impacto), `native-dialog.service.ts`, `shared/components/global-dialog` | RN-07 a RN-11, RN-52, RN-62 | ✅ Alineado |
-| Persistencia | `core/providers/local-storage.service.ts` (claves `planner_v4_*`) | — | ✅ Alineado |
+| Persistencia | `core/providers/local-storage.service.ts` (claves `time_planner_*`) | — | ✅ Alineado |
 
 ## Notas
 
 - **Deadlines (RN-65):** la meta no tiene fecha; el objetivo tiene deadline obligatorio y es el tope de sus tareas y pasos. Tarea y paso heredan el deadline de su padre si no tienen uno propio, y pueden tener uno más corto, nunca más largo.
-- **RN-38** y **RN-23** están marcadas como superadas en el documento de reglas; no se implementan tal como estaban.
-- **CU-20** (migración V1 → V2) se eliminó del frontend: los datos empezaron de cero con las claves `planner_v4_*`.
 - La pantalla de **historial** (CU-21) queda fuera del alcance actual.
 - El estado `ARCHIVED` no existe en el MVP.
 
 ## Pendiente por definir
 
-Las decisiones que afectan a la funcionalidad están en la sección 10 del documento de reglas. Las que tocan al frontend son: sesiones atrasadas y marcar días pasados, destino tras cerrar el día, objetivo vencido, pausa de objetivo, ideas con objetivos y tareas, y edición de elementos completados.
+Las decisiones que afectan a la funcionalidad están en la sección 9 del documento de reglas. Las que tocan al frontend son: sesiones atrasadas y marcar días pasados, destino tras cerrar el día, objetivo vencido, pausa de objetivo, ideas con objetivos y tareas, y edición de elementos completados.

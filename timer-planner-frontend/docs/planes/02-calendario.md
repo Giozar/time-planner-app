@@ -52,7 +52,7 @@ Las pruebas del calendario se escribieron en la Fase 5 del plan 01 (`53081be`).
 ## Pendiente
 
 - Recorrido manual en el navegador: una tarea con patrón semanal aparece solo en sus días; navegar a otro mes y año y volver con "Hoy"; pausar la meta y ver que desaparecen sus sesiones; hover, foco y toque muestran la jerarquía y los deadlines; el calendario y la agenda coinciden hoy.
-- Decisiones por definir que lo afectan (sección 10 del documento de reglas): sesiones atrasadas, objetivo vencido, pausa de objetivo y API del calendario.
+- Decisiones por definir que lo afectan (sección 9 del documento de reglas): sesiones atrasadas, objetivo vencido, pausa de objetivo y API del calendario.
 
 ## Registro de avances
 

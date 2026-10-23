@@ -6,7 +6,7 @@ Las rutas de este archivo son relativas a la raíz de `timer-planner-frontend`.
 
 ## Fuentes
 
-- **Reglas de negocio (solo lectura):** `../docs/analisis-reglas-de-negocio.md`. Excepción declarada en `Agents/reglas/Agents-alcance.md`. Contiene las reglas (RN), los casos de uso (CU), los bugs (B) y las decisiones pendientes (sección 10). Solo se edita con autorización explícita del usuario.
+- **Reglas de negocio (solo lectura):** `../docs/analisis-reglas-de-negocio.md`. Excepción declarada en `Agents/reglas/Agents-alcance.md`. Contiene las reglas (RN), los casos de uso (CU) y las decisiones pendientes (sección 9). Solo se edita con autorización explícita del usuario.
 - **Funcionalidad por feature:** `docs/funcionalidad.md`. Indica qué RN y CU aplican a cada carpeta y su estado.
 - **Arquitectura y prácticas:** `docs/arquitectura.md` y `docs/buenas-practicas.md`. No se inventan decisiones de arquitectura fuera de ellos.
 - **Planes existentes:** `docs/planes/` (`01-alinear-frontend-con-reglas-de-negocio.md` y `02-calendario.md`).
@@ -33,6 +33,8 @@ Los planes se guardan en `docs/planes/` con numeración (`01-...`, `02-...`).
 ## Mantenimiento de la documentación
 
 Una fase no se da por terminada hasta que su documentación esté al día. Al terminar, actualiza los documentos que correspondan según `docs/README.md` y marca la fase como **Completada** en el plan. Los estados son solo **Pendiente** o **Completada**; mientras trabajas una fase sigue Pendiente.
+
+Escribe solo el comportamiento vigente y las decisiones pendientes. Quita referencias a datos de prueba anteriores, migraciones descartadas, bugs resueltos y explicaciones duplicadas. Durante el desarrollo, un cambio de modelo reinicia los datos locales sin migración.
 
 ## Mapa de features
 

@@ -2,7 +2,7 @@ import { WeekDay } from '../models/activity.model';
 
 /**
  * Aritmética de fechas calendario ('YYYY-MM-DD') sin `new Date(string)`.
- * Trabaja con números de día (días desde 1970-01-01) para no depender de la zona horaria (B-01).
+ * Trabaja con números de día (días desde 1970-01-01) para no depender de la zona horaria.
  */
 
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;

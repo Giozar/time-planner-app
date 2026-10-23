@@ -13,16 +13,23 @@ import { DailyRecord } from '../models/daily-record.model';
 export class LocalStorageService extends DataProvider {
 
   private readonly KEYS = {
-    GOALS: 'planner_v4_goals',
-    OBJECTIVES: 'planner_v4_objectives',
-    ACTIVITIES: 'planner_v4_activities',
-    SUB_ACTIVITIES: 'planner_v4_sub_activities',
-    RECORDS: 'planner_v4_records'
+    GOALS: 'time_planner_goals',
+    OBJECTIVES: 'time_planner_objectives',
+    ACTIVITIES: 'time_planner_activities',
+    SUB_ACTIVITIES: 'time_planner_sub_activities',
+    RECORDS: 'time_planner_records'
   };
 
   // Inyectamos el ID de la plataforma para saber si estamos en Server o Browser
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
     super();
+    if (isPlatformBrowser(this.platformId)) {
+      for (const key of Object.keys(localStorage)) {
+        if (/^planner(?:_v\d+)?_(?:goals|objectives|activities|sub_activities|records)$/.test(key)) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
   }
 
   // --- Helpers privados protegidos con SSR ---

@@ -26,15 +26,15 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 | Agentes (`Agents/`) | ✅ Completados, con el agente planificador |
 | Plan 01: alinear con las reglas de negocio | ✅ Completado (Fases 0 a 5) |
 | Plan 02: calendario | ✅ Completado (Fases 1 a 3) |
-| Código del frontend | ✅ Alineado con RN-01 a RN-66 y CU-01 a CU-26; 101 pruebas con Vitest |
+| Código del frontend | ✅ Alineado con las reglas y casos de uso implementados; 101 pruebas con Vitest |
 
 El detalle de lo hecho está en [planes/](planes/).
 
 ## Pendiente
 
-- **Recorrido manual** en el navegador (`pnpm ng serve`) de los casos de uso CU-01 a CU-26. Las pruebas automáticas cubren la lógica, no la interfaz.
+- **Recorrido manual** en el navegador (`pnpm ng serve`) de los casos de uso implementados. Las pruebas automáticas cubren la lógica, no la interfaz.
 - **Aviso de presupuesto de CSS** en `objective-detail` (5,6 kB sobre 4 kB).
-- **Decisiones por definir:** están en la sección 10 de `../../docs/analisis-reglas-de-negocio.md` (sesiones atrasadas, objetivo vencido, pausa de objetivo, ideas, edición de elementos completados, API del calendario, entre otras).
+- **Decisiones por definir:** están en la sección 9 de `../../docs/analisis-reglas-de-negocio.md` (sesiones atrasadas, objetivo vencido, pausa de objetivo, ideas, edición de elementos completados, API del calendario, entre otras).
 
 ## Mantenimiento de la documentación
 
@@ -64,4 +64,4 @@ Cada actualización se anota en el historial de abajo.
 | 2026-10-22 | Plan 01, Fase 4b: cambio de regla pedido por el usuario. La meta no tiene fecha y el objetivo tiene deadline obligatorio (RN-65). |
 | 2026-10-22 | Plan 02 (calendario): se registran RN-66 y CU-26 y se implementan las reglas, el servicio y la pantalla. |
 | 2026-10-22 | Plan 01, Fase 5: 101 pruebas con Vitest y helpers en `src/app/testing`. |
-| 2026-10-23 | Revisión completa de la documentación: se quitan los estados intermedios, se corrigen inconsistencias y las decisiones abiertas quedan en la sección 10 del documento de reglas. |
+| 2026-10-23 | Documentación de reglas y planes actualizada; las decisiones abiertas quedan en la sección 9 del documento de reglas. |

@@ -3,7 +3,7 @@
 > **Propósito:** servir como especificación base para construir el backend en NestJS (`timer-planner-backend`), a partir del comportamiento actual del frontend Angular (`timer-planner-frontend`), que hoy persiste todo en `localStorage`.
 >
 > **Fuente analizada:** `timer-planner-frontend/src/app` (modelos, `PlannerService`, `DateUtils`, formularios y vistas).
-> **Estado del frontend:** alineado con estas reglas (RN-01 a RN-66, CU-01 a CU-26) y con pruebas unitarias.
+> **Estado del frontend:** implementa las reglas y casos de uso vigentes; el historial sigue pendiente.
 > **Estado del backend:** proyecto base de NestJS 11 sin módulos, sin ORM y sin base de datos.
 > **Fecha del análisis:** 2026-10-17 · Última revisión: 2026-10-23 · Versión de la app analizada: "Planner V2" (`v2.0.0`).
 
@@ -17,11 +17,10 @@
 4. [Catálogos / enumeraciones](#4-catálogos--enumeraciones)
 5. [Reglas de negocio](#5-reglas-de-negocio)
 6. [Casos de uso](#6-casos-de-uso)
-7. [Inconsistencias y bugs detectados](#7-inconsistencias-y-bugs-detectados)
-8. [Modelo de datos propuesto para la base de datos](#8-modelo-de-datos-propuesto-para-la-base-de-datos)
-9. [Propuesta de API REST](#9-propuesta-de-api-rest)
-10. [Decisiones](#10-decisiones)
-11. [Apéndice: referencias al código fuente](#11-apéndice-referencias-al-código-fuente)
+7. [Modelo de datos propuesto para la base de datos](#7-modelo-de-datos-propuesto-para-la-base-de-datos)
+8. [Propuesta de API REST](#8-propuesta-de-api-rest)
+9. [Decisiones pendientes](#9-decisiones-pendientes)
+10. [Apéndice: referencias al código fuente](#10-apéndice-referencias-al-código-fuente)
 
 ---
 
@@ -65,7 +64,7 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 
 - **Contrato de persistencia:** `DataProvider` (clase abstracta) con pares `getX()` / `saveX(lista completa)` para 5 colecciones.
 - **Implementación actual:** `LocalStorageService`, inyectado en `app.config.ts` como `{ provide: DataProvider, useClass: LocalStorageService }`.
-- **Claves de `localStorage`:** `planner_v4_goals`, `planner_v4_objectives`, `planner_v4_activities`, `planner_v4_sub_activities`, `planner_v4_records`. Las claves anteriores (`planner_*` y `planner_v3_*`) ya no se leen: el frontend empezó de cero.
+- **Claves de `localStorage`:** `time_planner_goals`, `time_planner_objectives`, `time_planner_activities`, `time_planner_sub_activities`, `time_planner_records`. Durante el desarrollo, si cambia el modelo, se reinician los datos de prueba; no hay migraciones.
 - **Estado en memoria:** `PlannerService` mantiene una `signal` por colección. Las reglas puras viven en `core/rules` (progreso, estados, recurrencia, deadlines, sesiones y calendario) y el servicio las aplica con una única cascada de recálculo (`cascade()`) que se ejecuta tras cada mutación.
 - **Estrategia de guardado:** cada mutación recalcula la cascada y reescribe las 4 colecciones completas (no los registros). El cierre de día reescribe solo los registros.
 - **IDs:** generados en el cliente con `crypto.randomUUID()`.
@@ -123,7 +122,7 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 | `recurrence`           | `ActivityRecurrence`  | Condicional | Calculado desde `executionPlan` (RN-47). `null` en compuestas. |
 | `deadline`             | `string` `YYYY-MM-DD` | No | Si se omite, hereda el deadline del objetivo (RN-14, RN-65). Nunca puede superarlo (RN-48). En UI no puede ser anterior a hoy. |
 | `executionPlan`        | `ExecutionPlan`       | Condicional | **Solo si `type = SIMPLE`**. `null` si es compuesta. |
-| `totalTimeRequiredMin` | `number`              | No | Solo simple: `dates.length × durationPerExecutionMin`. |
+| `totalTimeRequiredMin` | `number`              | No (calculado) | Simple: `dates.length × durationPerExecutionMin`; compuesta: suma del tiempo de sus pasos (RN-24). |
 | `progress`             | `number` 0–100        | Sí | Calculado (ver §5.6). |
 | `status`               | `ActivityStatus`      | Sí | Inicia `PENDING`; luego derivado del progreso. |
 
@@ -152,7 +151,7 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 | `durationPerExecutionMin` | `number`             | Mínimo 5. Default 60 (tarea) / 45 (paso). |
 | `completedDates`          | `string[]` ISO       | Fechas en que la sesión se marcó como hecha. |
 
-> Hoy está embebido dentro de `Activity` y `SubActivity`. En BD se recomienda normalizarlo (ver §8).
+> Hoy está embebido dentro de `Activity` y `SubActivity`. En BD se recomienda normalizarlo (ver §7).
 
 ### 3.6 DailyRecord (Registro Diario)
 
@@ -168,9 +167,9 @@ Registro Diario (DailyRecord)     ← Snapshot de métricas al cerrar el día
 | `plannedTimeMin`      | number | Suma de duración de todos los ítems del día. |
 | `executedTimeMin`     | number | Suma de duración de los ítems completados. |
 | `notes`               | string | Opcional. Reflexión del usuario. |
-| `createdAt`           | Date   | Momento del cierre. |
+| `createdAt`           | Date   | Momento del cierre más reciente. |
 
-> Es un **snapshot inmutable**: no referencia a qué ítems se planificaron. Hoy no hay pantalla para consultarlos ("Historial (Pronto)").
+> Es un resumen independiente de las tareas: no referencia a los ítems planificados. Si se vuelve a cerrar la misma fecha, se reemplazan sus métricas y notas (RN-43). Hoy no hay pantalla para consultarlo ("Historial (Pronto)").
 
 ### 3.7 Entidad derivada: TodayTask (no persistida)
 
@@ -205,64 +204,62 @@ Sesión programada de un día, con su jerarquía, calculada por `calendarEntries
 
 **Regla:** el código, la API y la BD solo manejan el valor en inglés. La etiqueta en español vive en un diccionario de UI indexado por el valor, por ejemplo `ActivityStatus.IN_PROGRESS → "En progreso"`.
 
-**Datos existentes:** el frontend anterior guardaba los valores en español y minúscula (`en_progreso`, `patron_repetitivo`). El frontend actual no los lee. Si se implementa la importación (§9), debe mapearlos a los valores nuevos de la tabla 4.2.
-
 ### 4.2 Valores
 
-| Enum | Valor (código) | Etiqueta UI | Valor anterior (localStorage) |
-|------|----------------|-------------|-------------------------------|
-| `GoalHorizon` | `SHORT_TERM` | Corto plazo | `corto` |
-| `GoalHorizon` | `MEDIUM_TERM` | Mediano plazo | `mediano` |
-| `GoalHorizon` | `LONG_TERM` | Largo plazo | `largo` |
-| `GoalStatus` | `IDEA` | Idea | *nuevo (RN-55)* |
-| `GoalStatus` | `ACTIVE` | Activa | `activa` |
-| `GoalStatus` | `PAUSED` | Pausada | `pausada` |
-| `ObjectiveNature` | `PERSONAL` | Personal | `personal` |
-| `ObjectiveNature` | `PROFESSIONAL` | Profesional | `profesional` |
-| `ObjectiveNature` | `HEALTH` | Salud | `salud` |
-| `ObjectiveNature` | `FINANCE` | Finanzas | `finanzas` |
-| `ObjectiveNature` | `LEARNING` | Aprendizaje | `aprendizaje` |
-| `ObjectiveNature` | `HABIT` | Hábito | `habito` |
-| `ObjectiveNature` | `WELLBEING` | Bienestar | `bienestar` |
-| `ObjectiveNature` | `OTHER` | Otro | `otro` |
-| `ObjectiveStatus` | `ACTIVE` | Activo | `activa` |
-| `ObjectiveStatus` | `PAUSED` | Pausado | `pausada` |
-| `ObjectiveStatus` | `COMPLETED` | Completado | `completada` |
-| `ActivityType` | `SIMPLE` | Simple | `simple` |
-| `ActivityType` | `COMPOSITE` | Compuesta | `compuesta` |
-| `ActivityStatus` | `PENDING` | Pendiente | `pendiente` |
-| `ActivityStatus` | `IN_PROGRESS` | En progreso | `en_progreso` |
-| `ActivityStatus` | `COMPLETED` | Completada | `completada` |
-| `ActivityStatus` | `PAUSED` | Pausada | `pausada` |
-| `ActivityStatus` | `OVERDUE` | Vencida | *derivado, no se almacena (RN-58)* |
-| `SubActivityStatus` | `PENDING` | Pendiente | `pendiente` |
-| `SubActivityStatus` | `IN_PROGRESS` | En progreso | `en_progreso` |
-| `SubActivityStatus` | `COMPLETED` | Completada | `completada` |
-| `ActivityPriority` | `HIGH` | Alta | `alta` |
-| `ActivityPriority` | `MEDIUM` | Media | `media` |
-| `ActivityPriority` | `LOW` | Baja | `baja` |
-| `ActivityCriticality` | `VITAL` | Vital | `vital` |
-| `ActivityCriticality` | `ESSENTIAL_RECURRING` | Esencial recurrente | `esencial_recurrente` |
-| `ActivityCriticality` | `FLEXIBLE` | Flexible | `flexible` |
-| `ActivityComplexity` | `LOW` | Baja | `baja` |
-| `ActivityComplexity` | `MEDIUM` | Media | `media` |
-| `ActivityComplexity` | `HIGH` | Alta | `alta` |
-| `ActivityRecurrence` | `SINGLE` | Única | `unica` |
-| `ActivityRecurrence` | `WEEKLY_PATTERN` | Patrón semanal | `patron_semanal` |
-| `ActivityRecurrence` | `SPECIFIC_DATES` | Fechas específicas | `fechas_especificas` |
-| `ExecutionPlanType` | `WEEKLY_PATTERN` | Patrón repetitivo | `patron_repetitivo` |
-| `ExecutionPlanType` | `SPECIFIC_DATES` | Fechas específicas | `fechas_especificas` |
-| `WeekDay` | `MONDAY` | Lun | `L` |
-| `WeekDay` | `TUESDAY` | Mar | `M` |
-| `WeekDay` | `WEDNESDAY` | Mié | `X` |
-| `WeekDay` | `THURSDAY` | Jue | `J` |
-| `WeekDay` | `FRIDAY` | Vie | `V` |
-| `WeekDay` | `SATURDAY` | Sáb | `S` |
-| `WeekDay` | `SUNDAY` | Dom | `D` |
-| `TaskSourceType` | `ACTIVITY` | Tarea | *nuevo (antes `activity`)* |
-| `TaskSourceType` | `SUBACTIVITY` | Paso | *nuevo (antes `subactivity`)* |
+| Enum | Valor (código) | Etiqueta UI |
+|------|----------------|-------------|
+| `GoalHorizon` | `SHORT_TERM` | Corto plazo |
+| `GoalHorizon` | `MEDIUM_TERM` | Mediano plazo |
+| `GoalHorizon` | `LONG_TERM` | Largo plazo |
+| `GoalStatus` | `IDEA` | Idea |
+| `GoalStatus` | `ACTIVE` | Activa |
+| `GoalStatus` | `PAUSED` | Pausada |
+| `ObjectiveNature` | `PERSONAL` | Personal |
+| `ObjectiveNature` | `PROFESSIONAL` | Profesional |
+| `ObjectiveNature` | `HEALTH` | Salud |
+| `ObjectiveNature` | `FINANCE` | Finanzas |
+| `ObjectiveNature` | `LEARNING` | Aprendizaje |
+| `ObjectiveNature` | `HABIT` | Hábito |
+| `ObjectiveNature` | `WELLBEING` | Bienestar |
+| `ObjectiveNature` | `OTHER` | Otro |
+| `ObjectiveStatus` | `ACTIVE` | Activo |
+| `ObjectiveStatus` | `PAUSED` | Pausado |
+| `ObjectiveStatus` | `COMPLETED` | Completado |
+| `ActivityType` | `SIMPLE` | Simple |
+| `ActivityType` | `COMPOSITE` | Compuesta |
+| `ActivityStatus` | `PENDING` | Pendiente |
+| `ActivityStatus` | `IN_PROGRESS` | En progreso |
+| `ActivityStatus` | `COMPLETED` | Completada |
+| `ActivityStatus` | `PAUSED` | Pausada |
+| `ActivityStatus` | `OVERDUE` | Vencida (derivado, no se almacena) |
+| `SubActivityStatus` | `PENDING` | Pendiente |
+| `SubActivityStatus` | `IN_PROGRESS` | En progreso |
+| `SubActivityStatus` | `COMPLETED` | Completada |
+| `ActivityPriority` | `HIGH` | Alta |
+| `ActivityPriority` | `MEDIUM` | Media |
+| `ActivityPriority` | `LOW` | Baja |
+| `ActivityCriticality` | `VITAL` | Vital |
+| `ActivityCriticality` | `ESSENTIAL_RECURRING` | Esencial recurrente |
+| `ActivityCriticality` | `FLEXIBLE` | Flexible |
+| `ActivityComplexity` | `LOW` | Baja |
+| `ActivityComplexity` | `MEDIUM` | Media |
+| `ActivityComplexity` | `HIGH` | Alta |
+| `ActivityRecurrence` | `SINGLE` | Única |
+| `ActivityRecurrence` | `WEEKLY_PATTERN` | Patrón semanal |
+| `ActivityRecurrence` | `SPECIFIC_DATES` | Fechas específicas |
+| `ExecutionPlanType` | `WEEKLY_PATTERN` | Patrón repetitivo |
+| `ExecutionPlanType` | `SPECIFIC_DATES` | Fechas específicas |
+| `WeekDay` | `MONDAY` | Lun |
+| `WeekDay` | `TUESDAY` | Mar |
+| `WeekDay` | `WEDNESDAY` | Mié |
+| `WeekDay` | `THURSDAY` | Jue |
+| `WeekDay` | `FRIDAY` | Vie |
+| `WeekDay` | `SATURDAY` | Sáb |
+| `WeekDay` | `SUNDAY` | Dom |
+| `TaskSourceType` | `ACTIVITY` | Tarea |
+| `TaskSourceType` | `SUBACTIVITY` | Paso |
 
-> **Nota:** las etiquetas de UI son una propuesta y se pueden ajustar sin tocar el código. `WeekDay` pasa de letras a nombres completos porque en inglés las letras se repiten (`T` sirve para Tuesday y Thursday, `S` para Saturday y Sunday).
+> **Nota:** las etiquetas de UI se pueden ajustar sin cambiar los valores del dominio.
 
 ### 4.3 Persistencia
 
@@ -295,7 +292,7 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 | RN-10 | Tras cualquier eliminación se **recalcula el progreso** de los ancestros. |
 | RN-11 | Los **Registros Diarios** no se ven afectados por eliminaciones (son snapshots independientes). |
 
-> Es **eliminación física** (hard delete). Los respaldos y el soft delete quedan fuera del MVP (§10).
+> Es **eliminación física** (hard delete). Los respaldos y el soft delete quedan fuera del MVP (§9).
 
 ### 5.3 Validaciones de campos
 
@@ -317,8 +314,7 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 |----|-------|
 | RN-21 | **Patrón repetitivo:** al guardar, se generan todas las fechas desde **hoy** hasta el **deadline** (inclusive) cuyo día de la semana esté en `patternDays`. Las fechas quedan **materializadas** en `dates`. [SVC `generateDatesFromPattern`] |
 | RN-22 | **Fechas específicas:** `dates` = lista elegida por el usuario, ordenada. |
-| RN-23 | *(Superada por RN-51.)* Al **editar** un plan, solo se regeneran las sesiones futuras; las pasadas se conservan. |
-| RN-24 | `totalTimeRequiredMin` de tarea simple = `dates.length × durationPerExecutionMin`. En compuesta = Σ de sus pasos (B-14). |
+| RN-24 | `totalTimeRequiredMin` de tarea simple = `dates.length × durationPerExecutionMin`. En compuesta = suma del tiempo de sus pasos. |
 
 ### 5.5 Ejecución diaria
 
@@ -342,7 +338,6 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 | RN-35 | Los promedios son **no ponderados**: no consideran duración, complejidad, prioridad ni número de sesiones. |
 | RN-36 | El progreso se recalcula hacia arriba (paso → tarea → objetivo → meta) al: crear, editar, eliminar o hacer toggle de cualquier hijo. |
 | RN-37 | El progreso y el estado **no son editables** por el usuario; al editar una entidad se conservan los valores originales. |
-| RN-38 | *(Comportamiento actual, superado.)* Hoy los estados de meta, objetivo y tarea no tienen flujo para cambiarlos. Ver RN-55, RN-57, RN-59 y B-09. |
 
 ### 5.7 Cambio de tipo de tarea
 
@@ -357,35 +352,12 @@ Se numeran para poder referenciarlas desde tests, DTOs e issues. **[UI]** = hoy 
 |----|-------|
 | RN-41 | Al "Cerrar Día y Guardar" se crea un `DailyRecord` con las métricas actuales de la agenda de hoy y las notas opcionales. |
 | RN-42 | `plannedTimeMin` = Σ duración de todos los ítems de hoy; `executedTimeMin` = Σ duración de los completados. |
-| RN-43 | **Un registro por fecha.** Cerrar un día que ya tiene registro reemplaza ese registro (upsert por `userId` + `date`). El historial conserva una sola fila por día con el cierre más reciente. |
+| RN-43 | **Un registro por fecha.** Cerrar un día que ya tiene registro reemplaza sus métricas, notas y fecha de cierre; conserva el mismo `id`. El historial conserva una sola fila por día con el cierre más reciente. |
 | RN-44 | Cerrar el día no bloquea ni modifica las tareas (se pueden seguir marcando después). |
 
-### 5.9 Migración V1 → V2 (legado, eliminada del frontend)
+### 5.9 Recurrencia, planificación y deadlines
 
-> El frontend actual ya no ejecuta esta migración: empezó de cero con las claves `planner_v4_*`. Estas reglas solo aplican al endpoint de importación opcional (§9).
-
-| ID | Regla |
-|----|-------|
-| RN-45 | Al cargar, por cada meta **sin objetivos** se crea un objetivo `"General"` (naturaleza `OTHER`, estado `ACTIVE`). |
-| RN-46 | Las tareas V1 con `goalId` se reasignan a ese objetivo y se mapean campos legacy: |
-
-| `level` (V1)         | `priority` | `criticality` |
-|----------------------|------------|---------------|
-| `urgente_directo`    | `HIGH`     | `VITAL` |
-| `urgente_sistemico`  | `HIGH`     | `ESSENTIAL_RECURRING` |
-| `sistema`            | `MEDIUM`   | `ESSENTIAL_RECURRING` |
-| `progreso`           | `MEDIUM`   | `FLEXIBLE` |
-| otro / vacío         | `LOW`      | `FLEXIBLE` |
-
-`executionPlan.type` (V1) → `recurrence` (V2): `patron_repetitivo` → `WEEKLY_PATTERN`, `fechas_especificas` → `SPECIFIC_DATES`, otro → `SINGLE`. `complexity` faltante → `MEDIUM`.
-
-> **Nota:** en el frontend anterior RN-45 se ejecutaba también en datos V2: cualquier meta que quedara sin objetivos (p. ej. al borrar el último) recibía un objetivo "General" en la siguiente recarga (B-13). **No replicar en el backend**; solo es relevante para un endpoint de importación de datos locales.
-
----
-
-### 5.10 Recurrencia, planificación y deadlines (actualizadas)
-
-Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla principal: **el plan define cuándo se trabaja, la recurrencia clasifica esa programación y el deadline fija el límite de todas las ejecuciones.**
+El plan define cuándo se trabaja, la recurrencia clasifica esa programación y el deadline fija el límite de todas las ejecuciones. RN-47 a RN-51 precisan RN-21 a RN-24 y RN-40.
 
 | ID | Regla |
 |----|-------|
@@ -398,7 +370,7 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 | RN-53 | **Agregar hijos.** Se pueden agregar pasos, tareas u objetivos a un padre existente, aunque ya tenga progreso. El progreso del padre se recalcula sobre todos sus hijos, así que puede bajar. |
 | RN-54 | **Borrar hijos no completados.** Es posible borrar un elemento que no está completado. Solo se recalcula el progreso de sus ancestros. |
 | RN-55 | **Idea.** Una meta puede existir en estado `IDEA`: sin tareas programadas, sin agenda y sin horizonte obligatorio. Pasa a `ACTIVE` cuando se le asigna horizonte y se crean sus tareas con deadline. |
-| RN-56 | **La meta no tiene fecha.** Una meta no lleva deadline ni fecha objetivo; solo se clasifica por `horizon` (corto, mediano o largo plazo). Los deadlines que obligan son los del objetivo y, dentro de él, los de tareas y pasos (RN-14, RN-48, RN-65). *(Reemplaza la versión anterior, que definía un `targetDate` informativo en la meta.)* |
+| RN-56 | **La meta no tiene fecha.** Una meta no lleva deadline ni fecha objetivo; solo se clasifica por `horizon` (corto, mediano o largo plazo). Los deadlines que obligan son los del objetivo y, dentro de él, los de tareas y pasos (RN-14, RN-48, RN-65). |
 | RN-57 | **Pausa de meta.** Pausar una meta cambia solo su estado a `PAUSED`. Se oculta su agenda, pero no se modifican deadlines, sesiones ni progreso de sus hijos. |
 | RN-58 | **Tareas vencidas.** Una tarea no completada con deadline efectivo ya pasado se muestra como `OVERDUE`. Es un estado derivado, no se almacena. Al reanudar la meta, el usuario replanifica esas tareas. |
 | RN-59 | **Pausa de tarea (MVP).** Igual que la pausa de meta: solo oculta la tarea de la agenda. No cambia su deadline, sus sesiones ni su progreso. |
@@ -432,7 +404,7 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 | CU-08 | Editar objetivo | `/goals/:goalId/objectives/:id/edit` |
 | CU-09 | Eliminar objetivo | `/goals/:id` |
 | CU-10 | Crear tarea simple | `/objectives/:objectiveId/activities/new` |
-| CU-11 | Crear tarea compuesta | idem |
+| CU-11 | Crear tarea compuesta | misma ruta que CU-10 |
 | CU-12 | Editar tarea (incl. cambio de tipo) | `/objectives/:objectiveId/activities/:activityId/edit` |
 | CU-13 | Eliminar tarea | `/objectives/:id` |
 | CU-14 | Crear paso | `/objectives/:oid/activities/:aid/add-step` |
@@ -441,7 +413,6 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 | CU-17 | Ver agenda de hoy | `/daily` |
 | CU-18 | Marcar/desmarcar ejecución de hoy | `/daily` |
 | CU-19 | Ver resumen y cerrar día | `/daily/summary` |
-| CU-20 | Migrar datos V1 → V2 | *Eliminado del frontend; solo aplica al endpoint de importación (§9)* |
 | CU-21 | Consultar historial | *No implementado ("Pronto")* |
 | CU-22 | Crear idea (meta sin horizonte) | `/goals/new` |
 | CU-23 | Pausar y reanudar meta o tarea | `/goals/:id`, `/objectives/:id` |
@@ -490,7 +461,7 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 
 #### CU-11 — Crear tarea compuesta
 - Igual que CU-10 sin sección de plan: *"No defines tiempos ahora. Crearás sub-actividades (Pasos) después."*
-- Se guarda sin `executionPlan` ni `totalTimeRequiredMin`.
+- Se guarda sin `executionPlan`; `totalTimeRequiredMin` se calcula con sus pasos (RN-24).
 
 #### CU-12 — Editar tarea
 - Carga datos actuales; conserva `progress`, `status`, `completedDates`.
@@ -514,7 +485,7 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 - Muestra métricas y un textarea de notas. Al confirmar crea el `DailyRecord` (RN-41 a RN-44), muestra alerta "¡Día registrado exitosamente!" y redirige a `/goals`.
 
 #### CU-21 — Consultar historial (futuro)
-- Ya existen los datos (`planner_records`), falta la vista. El backend debería exponer listado por rango de fechas.
+- Ya existen los registros en `time_planner_records`; falta la vista. El backend debería exponer un listado por rango de fechas.
 
 #### CU-22 — Crear idea
 - **Entrada:** `title` (≥3). `horizon` opcional.
@@ -541,34 +512,11 @@ Estas reglas reemplazan a RN-21 a RN-24 y RN-40 en lo que se opongan. Regla prin
 
 ---
 
-## 7. Inconsistencias y bugs — estado de resolución
-
-Todos los hallazgos están resueltos con las reglas actualizadas (§5.10) o con decisiones de arquitectura. Las decisiones que siguen abiertas están en la sección 10.
-
-| # | Sev. | Hallazgo | Resolución | Estado |
-|---|------|----------|------------|--------|
-| B-01 | Alta | Desfase de un día en zonas horarias negativas. Verificado en `America/Mexico_City` con hoy 17-oct y deadline 24-oct: genera del 16 al 23, incluye ayer y excluye el deadline. | Fechas de calendario como `DATE`, generadas en el backend con aritmética sin hora (§8.2, punto 6). | ✅ Resuelto |
-| B-02 | Media | `recurrence` tiene default `'especifica'`, valor inexistente en el enum. | `recurrence` ya no se elige: se calcula desde el plan (RN-47). Desaparece el default. | ✅ Resuelto |
-| B-03 | Media | `recurrence` es redundante con `executionPlan.type`. | Derivada del plan (RN-47). No es entrada del usuario, así que no puede contradecirlo. | ✅ Resuelto |
-| B-04 | Media | Al editar un plan se regeneran `dates` desde hoy pero se conservan `completedDates`, lo que distorsiona el progreso. | Se conservan las sesiones pasadas y solo se regeneran las futuras (RN-51). | ✅ Resuelto |
-| B-05 | Media | El progreso no se recalcula al editar sesiones o fechas. | El backend recalcula la cascada (RN-36) en cada escritura. | ✅ Resuelto |
-| B-06 | Media | Fechas y deadlines no se validan entre sí. | RN-48 y RN-49: toda ejecución ≤ deadline de la tarea o del paso; paso ≤ tarea; un cambio de deadline revalida y bloquea el guardado si hay conflicto. | ✅ Resuelto |
-| B-07 | Baja | El resumen muestra `completados × 45` en lugar del tiempo real. | El resumen usa `executedTimeMin` del backend. | ✅ Resuelto |
-| B-08 | Baja | Se pueden crear varios `DailyRecord` para la misma fecha. | Un registro por fecha con upsert (RN-43). Coincide con el índice único `(user_id, date)` de §8.3. | ✅ Resuelto |
-| B-09 | Baja | Los estados `PAUSED`, `ARCHIVED` y `COMPLETED` nunca se asignan y la agenda no los respeta. | Estados manuales: `IDEA` y `PAUSED` en metas (RN-55, RN-57). `COMPLETED` en objetivos por cierre manual con progreso 100% (RN-63). La agenda excluye metas pausadas e ideas. | ✅ Resuelto |
-| B-10 | Baja | Un ítem desmarcado a 0% queda `IN_PROGRESS`. | Progreso 0 → `PENDING`; 1–99 → `IN_PROGRESS`; 100 → `COMPLETED` (RN-31 y RN-32). | ✅ Resuelto |
-| B-11 | Baja | La agenda usa `task.status` para la clase `completed`, pero ese campo no existe en el objeto. | El frontend usa `task.isCompleted`. | ✅ Resuelto |
-| B-12 | Baja | `min(5)` en la duración solo se aplica si el usuario cambia el tipo. | `@Min(5)` siempre en el backend (RN-15). | ✅ Resuelto |
-| B-13 | Info | La migración crea un objetivo "General" en cada carga, no solo para datos V1. | No se replica en el backend. | ✅ Resuelto |
-| B-14 | Info | `totalTimeRequiredMin` no existe para compuestas. | Simple: `dates × duración`. Compuesta: Σ de los pasos. Lo calcula el backend y no es entrada del usuario. | ✅ Resuelto |
-
----
-
-## 8. Modelo de datos propuesto para la base de datos
+## 7. Modelo de datos propuesto para la base de datos
 
 Se propone un modelo **relacional** (recomendado: PostgreSQL), ya que el dominio es estrictamente jerárquico, con cascadas y agregaciones. El modelo es agnóstico del ORM (TypeORM, Prisma o MikroORM).
 
-### 8.1 Diagrama entidad-relación
+### 7.1 Diagrama entidad-relación
 
 ```mermaid
 erDiagram
@@ -672,7 +620,7 @@ erDiagram
     }
 ```
 
-### 8.2 Decisiones clave del modelo
+### 7.2 Decisiones clave del modelo
 
 1. **`USER` (nuevo):** el frontend no tiene usuarios, pero un backend con BD lo necesita para aislar datos. `timezone` es indispensable para calcular "hoy" (RN-28) en el servidor. Si inicialmente es monousuario, igual se recomienda la columna `user_id` para no migrar después.
 2. **`EXECUTION_PLAN` como tabla propia** con FK exclusiva: `CHECK ((activity_id IS NULL) <> (sub_activity_id IS NULL))` + `UNIQUE` en cada FK. Alternativa válida: columnas del plan directamente en `activity` y `sub_activity` (más simple, algo de duplicación).
@@ -680,17 +628,17 @@ erDiagram
    - Cada fecha programada es una fila; `completed_at IS NOT NULL` = hecha.
    - `UNIQUE (plan_id, scheduled_date)`.
    - Índice en `scheduled_date` → la Agenda de Hoy es un `SELECT … WHERE scheduled_date = :today`.
-   - Resuelve B-04: al regenerar el plan se borran solo sesiones **futuras no completadas** y se conservan las pasadas.
+   - Al editar el plan se conservan las sesiones pasadas y se regeneran las futuras (RN-51).
    - Progreso = `COUNT(completed_at) / COUNT(*)`.
 4. **`EXECUTION_PLAN_DAY`** guarda `patternDays` (necesario para re-generar y para editar el formulario).
 5. **Progreso como columna denormalizada** en goal/objective/activity/sub_activity, recalculada en el servicio dentro de la **misma transacción** que la escritura que la origina. Alternativa: calcularlo al vuelo con vistas/consultas agregadas (más consistente, más costoso en lectura).
-6. **Fechas de calendario** (`deadline`, `scheduled_date`, `daily_record.date`) como `DATE`, nunca `timestamp`, para evitar B-01.
+6. **Fechas de calendario** (`deadline`, `scheduled_date`, `daily_record.date`) como `DATE`, nunca `timestamp`, para respetar el día local (RN-28).
 7. **Cascadas:** `ON DELETE CASCADE` en `goal → objective → activity → sub_activity → execution_plan → execution_session / execution_plan_day`. El recálculo de progreso de ancestros se hace en el servicio.
 8. **`DAILY_RECORD`:** `UNIQUE (user_id, date)`, un registro por día (RN-43).
-9. **IDs:** UUID. Permitir que el cliente envíe el `id` facilita la importación desde `localStorage` y el uso offline.
+9. **IDs:** UUID. Definir si los genera el cliente o el servidor al diseñar la API.
 10. **Calendario (RN-66):** se resuelve con `EXECUTION_SESSION` filtrada por rango de `scheduled_date` y los joins de la jerarquía (meta › objetivo › tarea › paso), excluyendo metas `PAUSED`/`IDEA` y tareas `PAUSED` igual que la agenda. El índice `(scheduled_date)` lo cubre.
 
-### 8.3 Índices recomendados
+### 7.3 Índices recomendados
 
 | Tabla | Índice |
 |-------|--------|
@@ -702,7 +650,7 @@ erDiagram
 | `execution_session` | `UNIQUE (plan_id, scheduled_date)`, `(scheduled_date)` |
 | `daily_record` | `UNIQUE (user_id, date)` |
 
-### 8.4 Sugerencia de módulos NestJS
+### 7.4 Sugerencia de módulos NestJS
 
 | Módulo | Responsabilidad |
 |--------|-----------------|
@@ -714,11 +662,10 @@ erDiagram
 | `ExecutionPlansModule` | Generación de sesiones (RN-21, RN-22, RN-47 a RN-51), servicio de fechas. |
 | `ProgressModule` (servicio) | Recalcular progreso/estado en cascada (RN-30 a RN-36). Usado por los demás módulos. |
 | `DailyModule` | Agenda de hoy, toggle de ejecución, cierre de día, historial. |
-| `ImportModule` (opcional) | Importar el JSON de `localStorage` (incluye migración V1→V2, RN-45/46). |
 
 ---
 
-## 9. Propuesta de API REST
+## 8. Propuesta de API REST
 
 Rutas anidadas solo para **creación/listado** por padre; operaciones sobre un recurso por su id directo (coherente con el frontend, que ya navega `/objectives/:id`).
 
@@ -728,7 +675,7 @@ Rutas anidadas solo para **creación/listado** por padre; operaciones sobre un r
 | GET | `/goals` | CU-01 | Lista con `progress`, `status`. |
 | POST | `/goals` | CU-02, CU-22 | `{ title, horizon?, status? }`. Sin horizonte se crea como `IDEA`. |
 | GET | `/goals/:id` | CU-03 | Incluye objetivos (o usar endpoint de abajo). |
-| PATCH | `/goals/:id` | CU-04, CU-23, CU-24 | `{ title?, horizon?, status? }` |
+| PATCH | `/goals/:id` | CU-04, CU-23 | `{ title?, horizon?, status? }` |
 | DELETE | `/goals/:id` | CU-05 | Cascada. |
 
 ### Objetivos
@@ -783,11 +730,6 @@ Ejemplo de cuerpo (tarea simple):
 | POST | `/daily/records` | CU-19 | `{ notes? }` → el servidor calcula las métricas. Upsert por fecha (RN-43). |
 | GET | `/daily/records?from=&to=` | CU-21 | Historial. |
 
-### Importación (opcional)
-| Método | Ruta | Uso |
-|--------|------|-----|
-| POST | `/import/local-storage` | Recibe las 5 colecciones de `localStorage`, aplica migración V1→V2 y las persiste. |
-
 ### Validación (DTOs con `class-validator`)
 - `title`: `@IsString() @MinLength(3)`
 - enums: `@IsEnum(...)`
@@ -799,9 +741,7 @@ Ejemplo de cuerpo (tarea simple):
 
 ---
 
-## 10. Decisiones
-
-### Pendientes por definir
+## 9. Decisiones pendientes
 
 1. **Autenticación / multiusuario.** ¿Se implementa desde el inicio (JWT) o se arranca monousuario?
 2. **Motor de base de datos y ORM.** Recomendado PostgreSQL + TypeORM o Prisma.
@@ -814,24 +754,11 @@ Ejemplo de cuerpo (tarea simple):
 9. **Editar elementos completados** (RN-60): la regla habla de editar el deadline de elementos "no completados", pero hoy no se bloquea editar una tarea o un objetivo ya completado. ¿Se bloquea?
 10. **Orden manual** de objetivos, tareas y pasos (hoy: orden de inserción). ¿Agregar columna `position`?
 11. **Respaldos y soft delete:** fuera del MVP. Se decidirá cuando se quiera recuperar datos borrados.
-12. **Importación de datos existentes** desde `localStorage` (endpoint de §9).
-13. **API del calendario:** ¿qué endpoint expone las sesiones de CU-26 (por ejemplo por rango de fechas)? Hoy §9 no lo define.
-
-### Resueltas
-
-- **Recurrencia vs plan** (B-03): la recurrencia se deriva del plan (RN-47).
-- **Estado `ARCHIVED`:** se elimina del MVP porque no tiene uso definido.
-- **Cierre de objetivo:** es manual y solo con progreso 100% (RN-63).
-- **Objetivo cerrado con hijos nuevos:** vuelve a `ACTIVE` al bajar de 100% (RN-64).
-- **Borrar con historial:** se puede borrar en cascada, incluso con elementos completados, con confirmación escrita (RN-52, RN-62).
-- **Mínimo de título de paso:** 3 caracteres, igual que el resto (RN-13).
-- **Fecha de la meta:** la meta no tiene fecha, solo horizonte (RN-56).
-- **Deadline del objetivo:** obligatorio y tope de tareas y pasos (RN-65).
-- **Calendario:** vista de consulta con la visibilidad de la agenda (RN-66).
+12. **API del calendario:** ¿qué endpoint expone las sesiones de CU-26 (por ejemplo por rango de fechas)? Hoy §8 no lo define.
 
 ---
 
-## 11. Apéndice: referencias al código fuente
+## 10. Apéndice: referencias al código fuente
 
 | Tema | Archivo |
 |------|---------|

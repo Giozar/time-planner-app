@@ -68,7 +68,7 @@ describe('PlannerService', () => {
       expect(service.objectives()[0].progress).toBe(50);
     });
 
-    it('la compuesta promedia sus pasos y suma su tiempo total (RN-32, RN-24, B-14)', () => {
+    it('la compuesta promedia sus pasos y suma su tiempo total (RN-32, RN-24)', () => {
       seedHierarchy();
       service.addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
       service.addSubActivity(makeStep({ id: 's1', activityId: 'k', executionPlan: makePlan([TODAY], [], 30) }));

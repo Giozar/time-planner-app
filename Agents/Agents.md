@@ -20,6 +20,8 @@
 
 La fuente de verdad es [../docs/analisis-reglas-de-negocio.md](../docs/analisis-reglas-de-negocio.md). Los agentes la leen; solo se modifica cuando el usuario lo autoriza de forma explícita.
 
+Al actualizar documentación, describe el comportamiento vigente y las decisiones aún abiertas. Elimina referencias a migraciones, versiones de datos de prueba, bugs resueltos y estados intermedios que ya no aporten a la especificación. Evita repetir reglas en varios documentos.
+
 ## Convención
 
 - **Nombre:** `Agents-<tema>.md`. Los orquestadores son `Agents.md`.

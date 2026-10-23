@@ -50,7 +50,7 @@ El código y los datos manejan el valor en inglés. El español aparece solo al 
 - `PlannerService` se prueba con `TestBed` y un `DataProvider` en memoria (`src/app/testing/in-memory-data.provider.ts`); los datos de ejemplo salen de `src/app/testing/builders.ts` (`makeGoal`, `makeObjective`, `makeActivity`, `makeStep`, `makePlan`). No se usa `localStorage` en las pruebas.
 - "Hoy" se fija con `vi.useFakeTimers({ toFake: ['Date'] })` y `vi.setSystemTime(...)`; nunca dependas de la fecha real.
 - Ejecutar una vez: `pnpm ng test --watch=false`.
-- Las fechas se prueban también con otras zonas horarias, por ejemplo `TZ=America/Mexico_City pnpm ng test --watch=false` y `TZ=Pacific/Auckland` (regresión de B-01).
+- Las fechas se prueban también con otras zonas horarias, por ejemplo `TZ=America/Mexico_City pnpm ng test --watch=false` y `TZ=Pacific/Auckland`.
 - Cada regla de negocio relevante debería tener al menos una prueba que cite su identificador (`RN-xx`).
 
 ## Documentación al día
