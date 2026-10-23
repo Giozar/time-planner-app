@@ -20,6 +20,7 @@ export interface TypeChangeImpact {
   stepsToDelete: number;
   sessionsToLose: number;
   completedSessionsToLose: number;
+  workLogsToLose: number;
   /** `true` solo si hay datos que perder; si no, no hace falta confirmar. */
   needsConfirmation: boolean;
 }

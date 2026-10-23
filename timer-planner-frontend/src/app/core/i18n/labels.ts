@@ -1,3 +1,4 @@
+import { SessionStatus } from '../models/session.model';
 import { GoalHorizon, GoalStatus } from '../models/goal.model';
 import { DeletableType } from '../models/deletion-impact.model';
 import { DeadlineConflictKind } from '../rules/deadline.rules';
@@ -100,6 +101,11 @@ export const WEEK_DAY_LABELS: Record<WeekDay, string> = {
   [WeekDay.FRIDAY]: 'Vie',
   [WeekDay.SATURDAY]: 'Sáb',
   [WeekDay.SUNDAY]: 'Dom',
+};
+
+export const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {
+  [SessionStatus.PLANNED]: 'Programada',
+  [SessionStatus.DONE]: 'Realizada',
 };
 
 export const TASK_SOURCE_TYPE_LABELS: Record<TaskSourceType, string> = {

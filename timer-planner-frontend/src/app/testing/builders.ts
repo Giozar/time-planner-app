@@ -2,17 +2,28 @@ import {
   Activity, ActivityComplexity, ActivityCriticality, ActivityPriority, ActivityStatus, ActivityType,
   ExecutionPlan, ExecutionPlanType, SubActivity, SubActivityStatus,
 } from '../core/models/activity.model';
+import { ExecutionSession, SessionStatus } from '../core/models/session.model';
 import { Goal, GoalHorizon, GoalStatus } from '../core/models/goal.model';
 import { Objective, ObjectiveNature, ObjectiveStatus } from '../core/models/objective.model';
 
 /** Constructores de datos para pruebas: valores válidos por defecto, sobrescribibles. */
 
-export const makePlan = (dates: string[], completedDates: string[] = [], durationPerExecutionMin = 30): ExecutionPlan => ({
+export const makePlan = (id = 'p1', durationPerExecutionMin = 30): ExecutionPlan => ({
+  id,
   type: ExecutionPlanType.SPECIFIC_DATES,
-  dates,
   durationPerExecutionMin,
-  completedDates,
 });
+
+/** Sesiones de un plan: una por fecha, `PLANNED` salvo las de `done`. */
+export const makeSessions = (planId: string, dates: string[], done: string[] = [], plannedMinutes = 30): ExecutionSession[] =>
+  dates.map(scheduledDate => ({
+    id: `${planId}-${scheduledDate}`,
+    planId,
+    scheduledDate,
+    plannedMinutes,
+    status: done.includes(scheduledDate) ? SessionStatus.DONE : SessionStatus.PLANNED,
+    ...(done.includes(scheduledDate) ? { completedAt: `${scheduledDate}T12:00:00.000Z` } : {}),
+  }));
 
 export const makeGoal = (overrides: Partial<Goal> = {}): Goal => ({
   id: 'g1',
@@ -57,7 +68,7 @@ export const makeStep = (overrides: Partial<SubActivity> = {}): SubActivity => (
   title: 'Paso',
   complexity: ActivityComplexity.MEDIUM,
   status: SubActivityStatus.PENDING,
-  executionPlan: makePlan(['2026-11-01']),
+  executionPlan: makePlan('p-s1'),
   progress: 0,
   ...overrides,
 });

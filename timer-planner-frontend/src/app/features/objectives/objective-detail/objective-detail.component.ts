@@ -41,6 +41,11 @@ export class ObjectiveDetailComponent implements OnInit {
 
   today = DateUtils.getTodayISO();
 
+  /** Sesiones realizadas y totales de un plan, para «x / y». */
+  sessionCount(planId: string) {
+    return this.plannerService.sessionCounts().get(planId) ?? { done: 0, total: 0 };
+  }
+
   objective = computed(() => this.plannerService.objectives().find((o) => o.id === this.objectiveId));
   
   goal = computed(() => {

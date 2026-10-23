@@ -7,6 +7,7 @@ import {
   Activity, ActivityComplexity, ActivityCriticality, ActivityPriority, ActivityStatus, ActivityType,
   ExecutionPlan, ExecutionPlanType, WeekDay, WEEK_DAYS_ORDER
 } from '../../../core/models/activity.model';
+import { ExecutionSession, SessionStatus } from '../../../core/models/session.model';
 import { DateUtils } from '../../../core/utils/date.utils';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 import { effectiveDeadline, regenerateFutureSessions } from '../../../core/rules';
@@ -127,11 +128,11 @@ export class ActivityFormComponent implements OnInit {
         plan.patternDays.forEach(day => this.patternDaysArray.push(new FormControl(day)));
       }
 
-      // Las sesiones pasadas se conservan solas (RN-51): el formulario solo edita las futuras.
-      if (plan.type === ExecutionPlanType.SPECIFIC_DATES && plan.dates) {
-        plan.dates
-          .filter(date => date >= this.minDate)
-          .forEach(date => this.specificDatesArray.push(new FormControl(date)));
+      // Las sesiones pasadas y realizadas se conservan solas (RN-51): el formulario solo edita las pendientes.
+      if (plan.type === ExecutionPlanType.SPECIFIC_DATES) {
+        this.plannerService.sessionsOf(plan.id)
+          .filter(s => s.scheduledDate >= this.minDate && s.status === SessionStatus.PLANNED)
+          .forEach(s => this.specificDatesArray.push(new FormControl(s.scheduledDate)));
       }
     }
   }
@@ -190,6 +191,7 @@ export class ActivityFormComponent implements OnInit {
     }
 
     let executionPlan: ExecutionPlan | null = null;
+    let sessions: ExecutionSession[] | undefined;
 
     if (newType === ActivityType.SIMPLE) {
       const isPattern = val.planType === ExecutionPlanType.WEEKLY_PATTERN;
@@ -205,21 +207,25 @@ export class ActivityFormComponent implements OnInit {
         return;
       }
 
-      // RN-51: conserva las sesiones pasadas del plan original y regenera las futuras.
-      executionPlan = regenerateFutureSessions(
-        this.originalPlan,
-        {
-          type: val.planType!,
-          patternDays: isPattern ? patternDays : undefined,
-          dates: isPattern ? undefined : specificDates,
-          durationPerExecutionMin: val.duration!
-        },
+      const planId = this.originalPlan?.id ?? crypto.randomUUID();
+      executionPlan = {
+        id: planId,
+        type: val.planType!,
+        patternDays: isPattern ? patternDays : undefined,
+        durationPerExecutionMin: val.duration!,
+      };
+
+      // RN-51: conserva las sesiones pasadas y realizadas y regenera las de hoy y futuras.
+      sessions = regenerateFutureSessions(
+        this.plannerService.sessionsOf(planId),
+        { ...executionPlan, dates: isPattern ? undefined : specificDates },
         this.minDate,
-        deadline
+        deadline,
+        planId
       );
 
       // RN-20: el plan debe generar al menos una sesión desde hoy.
-      if (!executionPlan.dates?.some(d => d >= this.minDate)) {
+      if (!sessions.some(s => s.scheduledDate >= this.minDate)) {
         this.dialog.alert('Atención', 'El plan no genera ninguna fecha de ejecución válida antes del deadline.');
         return;
       }
@@ -231,7 +237,7 @@ export class ActivityFormComponent implements OnInit {
       if (impact.needsConfirmation) {
         const message = newType === ActivityType.SIMPLE
           ? `Esta tarea tiene ${impact.stepsToDelete} paso(s).\nAl convertirla en simple, estos pasos se eliminarán.\n\n¿Confirmas que deseas continuar?`
-          : `Esta tarea tiene ${impact.sessionsToLose} sesión(es) programada(s), ${impact.completedSessionsToLose} completada(s).\nAl convertirla en compuesta, el plan y las ejecuciones se perderán.\n\n¿Confirmas que deseas continuar?`;
+          : `Esta tarea tiene ${impact.sessionsToLose} sesión(es) programada(s), ${impact.completedSessionsToLose} completada(s), y ${impact.workLogsToLose} registro(s) de tiempo.\nAl convertirla en compuesta, el plan, las ejecuciones y el tiempo registrado se perderán.\n\n¿Confirmas que deseas continuar?`;
 
         const confirmed = await this.dialog.confirm('Cambio de Tipo Detectado', message, {
           confirmText: 'Convertir',
@@ -257,8 +263,8 @@ export class ActivityFormComponent implements OnInit {
     };
 
     const conflicts = this.isEditMode
-      ? this.plannerService.updateActivity(activityData)
-      : this.plannerService.addActivity(activityData);
+      ? this.plannerService.updateActivity(activityData, sessions)
+      : this.plannerService.addActivity(activityData, sessions);
 
     // RN-49: el guardado se rechaza y se muestran las fechas en conflicto.
     if (conflicts.length > 0) {

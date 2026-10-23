@@ -1,4 +1,5 @@
-import { ExecutionPlan, ExecutionPlanType, WeekDay } from '../models/activity.model';
+import { ExecutionPlanType, WeekDay } from '../models/activity.model';
+import { ExecutionSession, SessionStatus } from '../models/session.model';
 import { generateDatesFromPattern } from './calendar.rules';
 
 /** Plan que el usuario pide al editar; las fechas del patrón se generan, no se reciben. */
@@ -10,36 +11,40 @@ export interface PlanRequest {
 }
 
 /**
- * Crea o edita un plan conservando el pasado (RN-21, RN-22, RN-51).
- * - Las sesiones anteriores a `today` del plan previo se conservan, estén completadas o no.
- * - Las sesiones desde `today` se regeneran: patrón desde hoy hasta `deadline` (inclusive),
- *   o las fechas elegidas (ordenadas) que no sean pasadas.
- * - Se conservan las ejecuciones completadas que sigan siendo fechas del plan.
+ * Sesiones de un plan tras crearlo o editarlo (RN-21, RN-22, RN-51).
+ * - Se conservan las sesiones anteriores a `today` y las `DONE`, con sus minutos previstos originales.
+ * - Se reemplazan las `PLANNED` de hoy y futuras: patrón desde hoy hasta `deadline` (inclusive),
+ *   o las fechas elegidas que no sean pasadas.
+ * - Una fecha ya conservada no se duplica (una sesión por fecha y plan).
  */
 export function regenerateFutureSessions(
-  previous: ExecutionPlan | null,
+  previous: readonly ExecutionSession[],
   request: PlanRequest,
   today: string,
   deadline: string,
-): ExecutionPlan {
-  const keptPast = (previous?.dates ?? []).filter(d => d < today);
+  planId: string,
+): ExecutionSession[] {
+  const kept = previous.filter(s => s.planId === planId && (s.scheduledDate < today || s.status === SessionStatus.DONE));
+  const keptDates = new Set(kept.map(s => s.scheduledDate));
 
-  const future = request.type === ExecutionPlanType.WEEKLY_PATTERN
+  const target = request.type === ExecutionPlanType.WEEKLY_PATTERN
     ? generateDatesFromPattern(today, deadline, request.patternDays ?? [])
     : (request.dates ?? []).filter(d => d >= today);
 
-  const dates = [...new Set([...keptPast, ...future])].sort();
-  const completedDates = (previous?.completedDates ?? []).filter(d => dates.includes(d));
-  const minutesByDate = Object.fromEntries(
-    Object.entries(previous?.minutesByDate ?? {}).filter(([d]) => completedDates.includes(d)),
-  );
+  const created: ExecutionSession[] = [...new Set(target)]
+    .filter(date => !keptDates.has(date))
+    .map(date => ({
+      id: crypto.randomUUID(),
+      planId,
+      scheduledDate: date,
+      plannedMinutes: request.durationPerExecutionMin,
+      status: SessionStatus.PLANNED,
+    }));
 
-  return {
-    type: request.type,
-    dates,
-    patternDays: request.type === ExecutionPlanType.WEEKLY_PATTERN ? request.patternDays : undefined,
-    durationPerExecutionMin: request.durationPerExecutionMin,
-    completedDates,
-    ...(Object.keys(minutesByDate).length ? { minutesByDate } : {}),
-  };
+  return [...kept, ...created].sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+}
+
+/** Minutos previstos de un conjunto de sesiones (RN-24). */
+export function plannedMinutesOf(sessions: readonly ExecutionSession[]): number {
+  return sessions.reduce((sum, s) => sum + s.plannedMinutes, 0);
 }

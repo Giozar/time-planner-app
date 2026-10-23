@@ -1,4 +1,5 @@
-import { ActivityStatus, ExecutionPlan, SubActivityStatus } from '../models/activity.model';
+import { ActivityStatus, SubActivityStatus } from '../models/activity.model';
+import { ExecutionSession, SessionStatus } from '../models/session.model';
 
 /** Promedio simple redondeado; 0 si no hay valores (RN-32 a RN-35). */
 export function averageProgress(values: readonly number[]): number {
@@ -6,11 +7,11 @@ export function averageProgress(values: readonly number[]): number {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
-/** Progreso de un ítem ejecutable (tarea simple o paso) a partir de su plan (RN-30). */
-export function computeProgress(plan: ExecutionPlan | null): number {
-  const total = plan?.dates?.length ?? 0;
-  if (!plan || total === 0) return 0;
-  return Math.min(100, Math.round((plan.completedDates.length / total) * 100));
+/** Progreso de un ítem ejecutable (tarea simple o paso): sesiones `DONE` sobre todas las de su plan (RN-30). */
+export function computeProgress(sessions: readonly ExecutionSession[]): number {
+  if (sessions.length === 0) return 0;
+  const done = sessions.filter(s => s.status === SessionStatus.DONE).length;
+  return Math.round((done / sessions.length) * 100);
 }
 
 /**

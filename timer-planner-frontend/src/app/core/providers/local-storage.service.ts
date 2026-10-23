@@ -6,6 +6,7 @@ import { Goal } from '../models/goal.model';
 import { Objective } from '../models/objective.model';
 import { Activity, SubActivity } from '../models/activity.model';
 import { DailyRecord } from '../models/daily-record.model';
+import { ExecutionSession, WorkLog } from '../models/session.model';
 
 @Injectable({
   providedIn: 'root'
@@ -17,8 +18,14 @@ export class LocalStorageService extends DataProvider {
     OBJECTIVES: 'time_planner_objectives',
     ACTIVITIES: 'time_planner_activities',
     SUB_ACTIVITIES: 'time_planner_sub_activities',
+    SESSIONS: 'time_planner_sessions',
+    WORK_LOGS: 'time_planner_work_logs',
     RECORDS: 'time_planner_records'
   };
+
+  /** Cambia cuando el formato de los datos deja de ser compatible; los datos anteriores se descartan. */
+  private readonly SCHEMA_KEY = 'time_planner_schema';
+  private readonly SCHEMA_VERSION = '2';
 
   // Inyectamos el ID de la plataforma para saber si estamos en Server o Browser
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
@@ -28,6 +35,10 @@ export class LocalStorageService extends DataProvider {
         if (/^planner(?:_v\d+)?_(?:goals|objectives|activities|sub_activities|records)$/.test(key)) {
           localStorage.removeItem(key);
         }
+      }
+      if (localStorage.getItem(this.SCHEMA_KEY) !== this.SCHEMA_VERSION) {
+        Object.values(this.KEYS).forEach(key => localStorage.removeItem(key));
+        localStorage.setItem(this.SCHEMA_KEY, this.SCHEMA_VERSION);
       }
     }
   }
@@ -90,6 +101,26 @@ export class LocalStorageService extends DataProvider {
 
   saveSubActivities(subActivities: SubActivity[]): Observable<void> {
     this.save(this.KEYS.SUB_ACTIVITIES, subActivities);
+    return of(void 0);
+  }
+
+  // Sesiones programadas
+  getSessions(): Observable<ExecutionSession[]> {
+    return of(this.load<ExecutionSession>(this.KEYS.SESSIONS));
+  }
+
+  saveSessions(sessions: ExecutionSession[]): Observable<void> {
+    this.save(this.KEYS.SESSIONS, sessions);
+    return of(void 0);
+  }
+
+  // Registros de trabajo
+  getWorkLogs(): Observable<WorkLog[]> {
+    return of(this.load<WorkLog>(this.KEYS.WORK_LOGS));
+  }
+
+  saveWorkLogs(workLogs: WorkLog[]): Observable<void> {
+    this.save(this.KEYS.WORK_LOGS, workLogs);
     return of(void 0);
   }
 

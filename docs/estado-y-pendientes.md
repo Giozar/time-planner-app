@@ -10,11 +10,8 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 
 | Tema | Definido | Estado del código |
 |------|----------|-------------------|
-| Sesiones y constancia | Una `ExecutionSession` por fecha con estado `PLANNED` o `DONE`; constancia = exigibles realizadas / exigibles (RN-69, RN-70, CU-28). | ⏳ Pendiente. El plan guarda `dates` y `completedDates`, sin sesiones ni constancia. |
-| Tiempo real | `WorkLog` guarda minutos trabajados, incluso sin sesión (RN-71, CU-27). | ⏳ Pendiente. El tiempo «ejecutado» actual suma duraciones previstas de sesiones marcadas. |
-| Edición del plan y borrado con historial | Se conservan sesiones pasadas y `WorkLog`; borrar un ítem elimina sus sesiones y registros (RN-24, RN-51, RN-74). | ⏳ Pendiente. Hoy se conservan las fechas pasadas de `dates`. |
-| Cierre diario | `DailyRecord` resume sesiones, constancia y minutos reales (RN-41 a RN-44, RN-72). | ⏳ Pendiente. El registro actual guarda conteos de ítems y duraciones previstas. El reemplazo por fecha ya existe. |
-| Agenda y calendario | Muestran el estado de cada sesión; la agenda registra minutos reales (RN-25 a RN-27, RN-66). | ⏳ Pendiente. Las pantallas muestran sesiones desde `dates` y usan `completedDates`. |
+| Constancia y tiempo real en pantalla | Mostrar la constancia de la tarea simple y del paso, registrar tiempo sin sesión y corregir o borrar bloques (RN-70, RN-71, RN-76, CU-27, CU-28). | ⏳ Pendiente. El servicio ya calcula y guarda sesiones y `WorkLog` (`logWork`, `updateWorkLog`, `deleteWorkLog`), pero ninguna pantalla los usa ni muestra la constancia. |
+| Cierre diario | `DailyRecord` resume sesiones, constancia y minutos reales (RN-41 a RN-44, RN-72). | ⏳ Pendiente. El registro actual guarda conteos de ítems y minutos del día, sin porcentaje de constancia ni `closedAt`. |
 | Historial | Lista de resúmenes diarios (CU-21). | ⏳ Pendiente. No existe la pantalla. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
 
@@ -24,7 +21,7 @@ Lo que no aparece en la tabla está implementado y vive en las reglas y en [func
 
 | Tema | Estado |
 |------|--------|
-| Plan 03: avance, constancia y tiempo real | ⏳ Pendiente |
+| Plan 03: constancia, tiempo real y cierre diario en pantalla | ⏳ Pendiente |
 | Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, cierre y reapertura de objetivo, borrado con confirmación escrita, cierre del día repetido, calendario con hover y cambio de mes, y agenda de días pasados con minutos y recálculo del cierre) | ⏳ Pendiente |
 | Aviso de presupuesto de CSS en `objective-detail` (5,6 kB sobre 4 kB) | ⏳ Pendiente |
 | Backend | ⏳ Pendiente; requiere D-01 |

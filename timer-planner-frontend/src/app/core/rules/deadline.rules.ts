@@ -1,5 +1,7 @@
 import { Activity, SubActivity } from '../models/activity.model';
 import { Objective } from '../models/objective.model';
+import { ExecutionPlan } from '../models/activity.model';
+import { ExecutionSession } from '../models/session.model';
 
 export enum DeadlineConflictKind {
   /** Deadline propio de una tarea posterior al de su objetivo. */
@@ -44,8 +46,11 @@ export function validateDeadlines(
   objective: Pick<Objective, 'deadline'>,
   activities: readonly Activity[],
   steps: readonly SubActivity[],
+  sessions: readonly ExecutionSession[],
 ): DeadlineConflict[] {
   const conflicts: DeadlineConflict[] = [];
+  const datesOf = (plan: ExecutionPlan | null) =>
+    plan ? sessions.filter(s => s.planId === plan.id).map(s => s.scheduledDate) : [];
 
   for (const activity of activities) {
     if (activity.deadline && activity.deadline > objective.deadline) {
@@ -58,7 +63,7 @@ export function validateDeadlines(
     }
 
     const activityLimit = effectiveActivityDeadline(activity, objective);
-    const lateActivityDates = (activity.executionPlan?.dates ?? []).filter(d => d > activityLimit);
+    const lateActivityDates = datesOf(activity.executionPlan).filter(d => d > activityLimit);
     if (lateActivityDates.length > 0) {
       conflicts.push({
         kind: DeadlineConflictKind.ACTIVITY_DATES,
@@ -79,7 +84,7 @@ export function validateDeadlines(
       }
 
       const stepLimit = effectiveDeadline(step, activityLimit);
-      const lateStepDates = (step.executionPlan.dates ?? []).filter(d => d > stepLimit);
+      const lateStepDates = datesOf(step.executionPlan).filter(d => d > stepLimit);
       if (lateStepDates.length > 0) {
         conflicts.push({
           kind: DeadlineConflictKind.STEP_DATES,

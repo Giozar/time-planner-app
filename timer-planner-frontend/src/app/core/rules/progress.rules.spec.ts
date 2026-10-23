@@ -1,22 +1,21 @@
 import { ActivityStatus, SubActivityStatus } from '../models/activity.model';
-import { makePlan } from '../../testing/builders';
+import { makeSessions } from '../../testing/builders';
 import { averageProgress, computeProgress, deriveStatus, deriveSubActivityStatus } from './progress.rules';
 
 describe('progress.rules', () => {
   describe('computeProgress (RN-30)', () => {
-    it('es completadas / totales redondeado', () => {
-      expect(computeProgress(makePlan(['a', 'b', 'c'], ['a']))).toBe(33);
-      expect(computeProgress(makePlan(['a', 'b', 'c'], ['a', 'b']))).toBe(67);
-      expect(computeProgress(makePlan(['a', 'b'], ['a', 'b']))).toBe(100);
+    it('es sesiones realizadas / sesiones del plan, redondeado', () => {
+      expect(computeProgress(makeSessions('p', ['a', 'b', 'c'], ['a']))).toBe(33);
+      expect(computeProgress(makeSessions('p', ['a', 'b', 'c'], ['a', 'b']))).toBe(67);
+      expect(computeProgress(makeSessions('p', ['a', 'b'], ['a', 'b']))).toBe(100);
     });
 
-    it('es 0 sin fechas o sin plan', () => {
-      expect(computeProgress(makePlan([]))).toBe(0);
-      expect(computeProgress(null)).toBe(0);
+    it('es 0 sin sesiones', () => {
+      expect(computeProgress([])).toBe(0);
     });
 
-    it('nunca pasa de 100', () => {
-      expect(computeProgress(makePlan(['a'], ['a', 'b', 'c']))).toBe(100);
+    it('el ejemplo de las reglas: 1 de 4 lunes realizados es 25 %', () => {
+      expect(computeProgress(makeSessions('p', ['l1', 'l2', 'l3', 'l4'], ['l2']))).toBe(25);
     });
   });
 

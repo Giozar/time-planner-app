@@ -3,6 +3,7 @@ import { Goal } from '../models/goal.model';
 import { Objective } from '../models/objective.model';
 import { Activity, SubActivity } from '../models/activity.model';
 import { DailyRecord } from '../models/daily-record.model';
+import { ExecutionSession, WorkLog } from '../models/session.model';
 
 export abstract class DataProvider {
   // Metas
@@ -20,6 +21,14 @@ export abstract class DataProvider {
   // Subactividades
   abstract getSubActivities(): Observable<SubActivity[]>;
   abstract saveSubActivities(subActivities: SubActivity[]): Observable<void>;
+
+  // Sesiones programadas
+  abstract getSessions(): Observable<ExecutionSession[]>;
+  abstract saveSessions(sessions: ExecutionSession[]): Observable<void>;
+
+  // Registros de trabajo (tiempo real)
+  abstract getWorkLogs(): Observable<WorkLog[]>;
+  abstract saveWorkLogs(workLogs: WorkLog[]): Observable<void>;
 
   // Registros
   abstract getRecords(): Observable<DailyRecord[]>;

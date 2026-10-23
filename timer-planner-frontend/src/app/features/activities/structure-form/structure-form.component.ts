@@ -9,6 +9,7 @@ import {
 import { regenerateFutureSessions, effectiveActivityDeadline, effectiveDeadline } from '../../../core/rules';
 import { ACTIVITY_COMPLEXITY_LABELS, EXECUTION_PLAN_TYPE_LABELS, WEEK_DAY_LABELS } from '../../../core/i18n/labels';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
+import { SessionStatus } from '../../../core/models/session.model';
 import { DateUtils } from '../../../core/utils/date.utils';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 
@@ -108,11 +109,11 @@ export class StructureFormComponent implements OnInit {
 
     if (sub.executionPlan.type === ExecutionPlanType.WEEKLY_PATTERN && sub.executionPlan.patternDays) {
       sub.executionPlan.patternDays.forEach(day => this.patternDaysArray.push(new FormControl(day)));
-    } else if (sub.executionPlan.type === ExecutionPlanType.SPECIFIC_DATES && sub.executionPlan.dates) {
-      // Las sesiones pasadas se conservan solas (RN-51): el formulario solo edita las futuras.
-      sub.executionPlan.dates
-        .filter(date => date >= this.minDate)
-        .forEach(date => this.specificDatesArray.push(new FormControl(date)));
+    } else if (sub.executionPlan.type === ExecutionPlanType.SPECIFIC_DATES) {
+      // Las sesiones pasadas y realizadas se conservan solas (RN-51): el formulario solo edita las pendientes.
+      this.plannerService.sessionsOf(sub.executionPlan.id)
+        .filter(s => s.scheduledDate >= this.minDate && s.status === SessionStatus.PLANNED)
+        .forEach(s => this.specificDatesArray.push(new FormControl(s.scheduledDate)));
     }
   }
 
@@ -178,20 +179,24 @@ export class StructureFormComponent implements OnInit {
       return;
     }
 
-    // RN-51: conserva las sesiones pasadas y regenera las futuras hasta el deadline efectivo.
-    const executionPlan = regenerateFutureSessions(
-      this.originalPlan,
-      {
-        type: val.planType!,
-        patternDays: isPattern ? patternDays : undefined,
-        dates: isPattern ? undefined : specificDates,
-        durationPerExecutionMin: val.duration!
-      },
+    const planId = this.originalPlan?.id ?? crypto.randomUUID();
+    const executionPlan: ExecutionPlan = {
+      id: planId,
+      type: val.planType!,
+      patternDays: isPattern ? patternDays : undefined,
+      durationPerExecutionMin: val.duration!,
+    };
+
+    // RN-51: conserva las sesiones pasadas y realizadas y regenera las de hoy y futuras hasta el deadline efectivo.
+    const sessions = regenerateFutureSessions(
+      this.plannerService.sessionsOf(planId),
+      { ...executionPlan, dates: isPattern ? undefined : specificDates },
       this.minDate,
-      effectiveDeadline({ deadline: ownDeadline }, this.parentDeadline)
+      effectiveDeadline({ deadline: ownDeadline }, this.parentDeadline),
+      planId
     );
 
-    if (!executionPlan.dates?.some(d => d >= this.minDate)) {
+    if (!sessions.some(s => s.scheduledDate >= this.minDate)) {
       this.dialog.alert('Atención', 'El plan no genera ninguna fecha de ejecución válida antes del deadline.');
       return;
     }
@@ -208,8 +213,8 @@ export class StructureFormComponent implements OnInit {
     };
 
     const conflicts = this.isEditMode
-      ? this.plannerService.updateSubActivity(subData)
-      : this.plannerService.addSubActivity(subData);
+      ? this.plannerService.updateSubActivity(subData, sessions)
+      : this.plannerService.addSubActivity(subData, sessions);
 
     // RN-48 / RN-49: el guardado se rechaza y se muestran las fechas en conflicto.
     if (conflicts.length > 0) {

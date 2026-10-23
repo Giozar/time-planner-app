@@ -28,7 +28,7 @@ Definida en la sección 4.1 de `../../docs/analisis-reglas-de-negocio.md`. Resum
 | Elemento | Convención | Ejemplo |
 |----------|------------|---------|
 | Clases, tipos y enums | PascalCase, en inglés | `ActivityStatus` |
-| Campos, variables y funciones | camelCase, en inglés | `completedDates` |
+| Campos, variables y funciones | camelCase, en inglés | `scheduledDate` |
 | Valores de enum | UPPER_SNAKE_CASE, en inglés | `IN_PROGRESS` |
 | Textos de interfaz | Español, en `core/i18n`, nunca en la lógica | `"En progreso"` |
 

@@ -12,6 +12,7 @@ import {
   TaskSourceType,
 } from '../models/activity.model';
 import { DailyRecord } from '../models/daily-record.model';
+import { ExecutionSession, SessionStatus, WorkLog } from '../models/session.model';
 import { AgendaItem } from '../models/agenda-item.model';
 import { CalendarEntry } from '../models/calendar-entry.model';
 import { DeletableType, DeletionImpact, TypeChangeImpact } from '../models/deletion-impact.model';
@@ -28,12 +29,19 @@ import {
   deriveSubActivityStatus,
   isFutureDate,
   isValidISODate,
+  plannedMinutesOf,
   reopenIfBelowComplete,
   validateDeadlines,
 } from '../rules';
 
-const totalTimeMin = (plan: ExecutionPlan | null): number =>
-  plan ? (plan.dates?.length ?? 0) * plan.durationPerExecutionMin : 0;
+/** Dueño de un plan de ejecución: una tarea simple o un paso. */
+interface PlanOwner {
+  id: string;
+  title: string;
+  sourceType: TaskSourceType;
+  activity: Activity;
+  step?: SubActivity;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -46,6 +54,8 @@ export class PlannerService {
   private objectivesSignal = signal<Objective[]>([]);
   private activitiesSignal = signal<Activity[]>([]);
   private subActivitiesSignal = signal<SubActivity[]>([]);
+  private sessionsSignal = signal<ExecutionSession[]>([]);
+  private workLogsSignal = signal<WorkLog[]>([]);
   private recordsSignal = signal<DailyRecord[]>([]);
 
   constructor() {
@@ -58,12 +68,16 @@ export class PlannerService {
       objectives: this.dataProvider.getObjectives(),
       activities: this.dataProvider.getActivities(),
       subActivities: this.dataProvider.getSubActivities(),
+      sessions: this.dataProvider.getSessions(),
+      workLogs: this.dataProvider.getWorkLogs(),
       records: this.dataProvider.getRecords(),
     }).subscribe(data => {
       this.goalsSignal.set(data.goals);
       this.objectivesSignal.set(data.objectives);
       this.activitiesSignal.set(data.activities);
       this.subActivitiesSignal.set(data.subActivities);
+      this.sessionsSignal.set(data.sessions);
+      this.workLogsSignal.set(data.workLogs);
       this.recordsSignal.set(data.records);
     });
   }
@@ -73,7 +87,48 @@ export class PlannerService {
   public objectives = this.objectivesSignal.asReadonly();
   public activities = this.activitiesSignal.asReadonly();
   public subActivities = this.subActivitiesSignal.asReadonly();
+  public sessions = this.sessionsSignal.asReadonly();
+  public workLogs = this.workLogsSignal.asReadonly();
   public records = this.recordsSignal.asReadonly();
+
+  /** Sesiones de un plan, ordenadas por fecha. */
+  sessionsOf(planId: string): ExecutionSession[] {
+    return this.sessionsSignal().filter(s => s.planId === planId).sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
+  }
+
+  /** Realizadas y totales por plan, para mostrar «x / y» sin recorrer las sesiones en cada pantalla. */
+  public sessionCounts = computed<ReadonlyMap<string, { done: number; total: number }>>(() => {
+    const counts = new Map<string, { done: number; total: number }>();
+    for (const s of this.sessionsSignal()) {
+      const c = counts.get(s.planId) ?? { done: 0, total: 0 };
+      c.total++;
+      if (s.status === SessionStatus.DONE) c.done++;
+      counts.set(s.planId, c);
+    }
+    return counts;
+  });
+
+  /** Tarea simple o paso dueño de cada plan. */
+  private planOwners = computed<ReadonlyMap<string, PlanOwner>>(() => {
+    const owners = new Map<string, PlanOwner>();
+    const activities = this.activitiesSignal();
+    for (const activity of activities) {
+      if (activity.type === ActivityType.SIMPLE && activity.executionPlan) {
+        owners.set(activity.executionPlan.id, {
+          id: activity.id, title: activity.title, sourceType: TaskSourceType.ACTIVITY, activity,
+        });
+      }
+    }
+    for (const step of this.subActivitiesSignal()) {
+      const activity = activities.find(a => a.id === step.activityId);
+      if (activity) {
+        owners.set(step.executionPlan.id, {
+          id: step.id, title: step.title, sourceType: TaskSourceType.SUBACTIVITY, activity, step,
+        });
+      }
+    }
+    return owners;
+  });
 
   /**
    * Tareas cuyas sesiones se muestran (RN-29, RN-66): excluye las de metas PAUSED/IDEA y las tareas PAUSED.
@@ -113,49 +168,41 @@ export class PlannerService {
   /** Agenda de la fecha elegida (RN-25 a RN-29, RN-75). */
   public agendaTasks = computed<AgendaItem[]>(() => this.agendaFor(this.selectedDateSignal()));
 
-  public agendaMetrics = computed(() => this.metricsOf(this.agendaTasks()));
+  public agendaMetrics = computed(() => this.metricsOf(this.agendaTasks(), this.selectedDateSignal()));
 
   /** Sesiones de `date` de tareas simples y pasos visibles. */
   private agendaFor(date: string): AgendaItem[] {
     const visible = this.visibleActivityIds();
-    const activities = this.activitiesSignal();
-    const isVisible = (activity: Activity) => visible.has(activity.id);
-    const toItem = (
-      id: string, title: string, plan: ExecutionPlan, sourceType: TaskSourceType, parentId: string | null,
-    ): AgendaItem => {
-      const isCompleted = plan.completedDates.includes(date);
-      return {
-        id, title, sourceType, parentId, isCompleted,
-        estimatedDurationMin: plan.durationPerExecutionMin,
-        executedMinutes: isCompleted ? plan.minutesByDate?.[date] ?? plan.durationPerExecutionMin : 0,
-      };
-    };
-
+    const owners = this.planOwners();
+    const logs = this.workLogsSignal();
     const items: AgendaItem[] = [];
 
-    for (const act of activities) {
-      const plan = act.executionPlan;
-      if (act.type === ActivityType.SIMPLE && plan?.dates?.includes(date) && isVisible(act)) {
-        items.push(toItem(act.id, act.title, plan, TaskSourceType.ACTIVITY, null));
-      }
-    }
+    for (const session of this.sessionsSignal()) {
+      const owner = owners.get(session.planId);
+      if (session.scheduledDate !== date || !owner || !visible.has(owner.activity.id)) continue;
 
-    for (const sub of this.subActivitiesSignal()) {
-      const parent = activities.find(a => a.id === sub.activityId);
-      if (parent && sub.executionPlan.dates?.includes(date) && isVisible(parent)) {
-        items.push(toItem(sub.id, sub.title, sub.executionPlan, TaskSourceType.SUBACTIVITY, sub.activityId));
-      }
+      const isCompleted = session.status === SessionStatus.DONE;
+      items.push({
+        id: owner.id,
+        title: owner.title,
+        sourceType: owner.sourceType,
+        parentId: owner.step ? owner.activity.id : null,
+        isCompleted,
+        estimatedDurationMin: session.plannedMinutes,
+        executedMinutes: logs.filter(l => l.sessionId === session.id).reduce((sum, l) => sum + l.minutes, 0),
+      });
     }
 
     return items;
   }
 
-  private metricsOf(tasks: AgendaItem[]) {
+  /** `executedTimeMin` suma todo el `WorkLog` de la fecha, también el trabajo sin sesión (RN-72). */
+  private metricsOf(tasks: AgendaItem[], date: string) {
     const total = tasks.length;
     const completed = tasks.filter(t => t.isCompleted).length;
     const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
     const plannedTimeMin = tasks.reduce((acc, t) => acc + t.estimatedDurationMin, 0);
-    const executedTimeMin = tasks.reduce((acc, t) => acc + t.executedMinutes, 0);
+    const executedTimeMin = this.workLogsSignal().filter(l => l.date === date).reduce((acc, l) => acc + l.minutes, 0);
     return { total, completed, percentage, remaining: total - completed, plannedTimeMin, executedTimeMin };
   }
 
@@ -174,49 +221,28 @@ export class PlannerService {
       if (day) day.push(entry); else entries.set(entry.date, [entry]);
     };
 
-    for (const activity of this.activitiesSignal()) {
-      const objective = objectives.find(o => o.id === activity.objectiveId);
+    const owners = this.planOwners();
+    for (const session of this.sessionsSignal()) {
+      const owner = owners.get(session.planId);
+      if (!owner || !visible.has(owner.activity.id)) continue;
+      const objective = objectives.find(o => o.id === owner.activity.objectiveId);
       const goal = goals.find(g => g.id === objective?.goalId);
-      if (!visible.has(activity.id) || !objective || !goal) continue;
+      if (!objective || !goal) continue;
 
-      const activityLimit = effectiveActivityDeadline(activity, objective);
-      const context = {
+      const activityLimit = effectiveActivityDeadline(owner.activity, objective);
+      add({
         goalTitle: goal.title,
         objectiveTitle: objective.title,
         objectiveDeadline: objective.deadline,
-        activityTitle: activity.title,
-      };
-
-      if (activity.type === ActivityType.SIMPLE && activity.executionPlan) {
-        const plan = activity.executionPlan;
-        for (const date of plan.dates ?? []) {
-          add({
-            ...context,
-            date,
-            id: activity.id,
-            sourceType: TaskSourceType.ACTIVITY,
-            title: activity.title,
-            isCompleted: plan.completedDates.includes(date),
-            durationMin: plan.durationPerExecutionMin,
-            effectiveDeadline: activityLimit,
-          });
-        }
-      }
-
-      for (const step of this.stepsOf(activity.id)) {
-        for (const date of step.executionPlan.dates ?? []) {
-          add({
-            ...context,
-            date,
-            id: step.id,
-            sourceType: TaskSourceType.SUBACTIVITY,
-            title: step.title,
-            isCompleted: step.executionPlan.completedDates.includes(date),
-            durationMin: step.executionPlan.durationPerExecutionMin,
-            effectiveDeadline: effectiveDeadline(step, activityLimit),
-          });
-        }
-      }
+        activityTitle: owner.activity.title,
+        date: session.scheduledDate,
+        id: owner.id,
+        sourceType: owner.sourceType,
+        title: owner.title,
+        isCompleted: session.status === SessionStatus.DONE,
+        durationMin: session.plannedMinutes,
+        effectiveDeadline: owner.step ? effectiveDeadline(owner.step, activityLimit) : activityLimit,
+      });
     }
 
     for (const day of entries.values()) {
@@ -288,36 +314,45 @@ export class PlannerService {
 
   // --- TAREAS ---
 
-  /** Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda. */
-  addActivity(activity: Activity): DeadlineConflict[] {
-    const candidate = this.normalizeActivity(activity);
-    const conflicts = this.conflictsFor(candidate.objectiveId, { activity: candidate });
+  /**
+   * `sessions` son las del plan de la tarea (ver `regenerateFutureSessions`).
+   * Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda.
+   */
+  addActivity(activity: Activity, sessions: ExecutionSession[] = []): DeadlineConflict[] {
+    const candidate = this.normalizeActivity(activity, sessions);
+    const conflicts = this.conflictsFor(candidate.objectiveId, { activity: candidate, sessions });
     if (conflicts.length > 0) return conflicts;
 
     this.activitiesSignal.update(a => [...a, candidate]);
+    this.replaceSessions(candidate.executionPlan?.id, sessions);
     this.commit();
     return [];
   }
 
   /**
-   * Guarda la tarea. Si cambia de tipo (RN-39, RN-40): compuesta → simple elimina sus pasos;
-   * simple → compuesta descarta su plan. La confirmación previa es del llamador (`typeChangeImpact`).
+   * Guarda la tarea. Si `sessions` se indica, reemplaza las sesiones de su plan.
+   * Si cambia de tipo (RN-39, RN-40): compuesta → simple elimina sus pasos con sus sesiones y tiempo;
+   * simple → compuesta descarta su plan, sesiones y tiempo. La confirmación previa es del llamador (`typeChangeImpact`).
    * Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda.
    */
-  updateActivity(updated: Activity): DeadlineConflict[] {
-    const candidate = this.normalizeActivity(updated);
+  updateActivity(updated: Activity, sessions?: ExecutionSession[]): DeadlineConflict[] {
+    const previous = this.activitiesSignal().find(a => a.id === updated.id);
+    const keptSessions = sessions ?? this.sessionsOf(updated.executionPlan?.id ?? '');
+    const candidate = this.normalizeActivity(updated, keptSessions);
     const keepsSteps = candidate.type === ActivityType.COMPOSITE;
 
     const conflicts = this.conflictsFor(candidate.objectiveId, {
       activity: candidate,
+      sessions: candidate.executionPlan ? keptSessions : [],
       dropStepsOf: keepsSteps ? undefined : candidate.id, // pasar a simple elimina sus pasos
     });
     if (conflicts.length > 0) return conflicts;
 
-    if (!keepsSteps) {
-      this.subActivitiesSignal.update(subs => subs.filter(s => s.activityId !== candidate.id));
-    }
+    if (!keepsSteps) this.purgeSteps(this.stepsOf(candidate.id).map(s => s.id));
+    if (previous?.executionPlan && !candidate.executionPlan) this.purgeItems([previous.id], [previous.executionPlan.id]);
+
     this.activitiesSignal.update(acts => acts.map(a => a.id === candidate.id ? candidate : a));
+    if (candidate.executionPlan && sessions) this.replaceSessions(candidate.executionPlan.id, sessions);
     this.commit();
     return [];
   }
@@ -326,22 +361,27 @@ export class PlannerService {
   typeChangeImpact(activityId: string, newType: ActivityType): TypeChangeImpact {
     const activity = this.activitiesSignal().find(a => a.id === activityId);
     const none: TypeChangeImpact = {
-      stepsToDelete: 0, sessionsToLose: 0, completedSessionsToLose: 0, needsConfirmation: false,
+      stepsToDelete: 0, sessionsToLose: 0, completedSessionsToLose: 0, workLogsToLose: 0, needsConfirmation: false,
     };
     if (!activity || activity.type === newType) return none;
 
     if (newType === ActivityType.SIMPLE) {
-      const stepsToDelete = this.stepsOf(activityId).length;
-      return { ...none, stepsToDelete, needsConfirmation: stepsToDelete > 0 };
+      const steps = this.stepsOf(activityId);
+      const stepIds = steps.map(s => s.id);
+      const workLogsToLose = this.workLogsSignal().filter(l => stepIds.includes(l.sourceId)).length;
+      return { ...none, stepsToDelete: steps.length, workLogsToLose, needsConfirmation: steps.length > 0 };
     }
 
-    const sessionsToLose = activity.executionPlan?.dates?.length ?? 0;
-    const completedSessionsToLose = activity.executionPlan?.completedDates.length ?? 0;
+    const planSessions = activity.executionPlan ? this.sessionsOf(activity.executionPlan.id) : [];
+    const sessionsToLose = planSessions.length;
+    const completedSessionsToLose = planSessions.filter(s => s.status === SessionStatus.DONE).length;
+    const workLogsToLose = this.workLogsSignal().filter(l => l.sourceId === activityId).length;
     return {
       ...none,
       sessionsToLose,
       completedSessionsToLose,
-      needsConfirmation: sessionsToLose > 0 || completedSessionsToLose > 0,
+      workLogsToLose,
+      needsConfirmation: sessionsToLose > 0 || workLogsToLose > 0,
     };
   }
 
@@ -365,16 +405,17 @@ export class PlannerService {
   // --- PASOS ---
 
   /** Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda. */
-  addSubActivity(sub: SubActivity): DeadlineConflict[] {
-    return this.saveSubActivity(sub, subs => [...subs, sub]);
+  addSubActivity(sub: SubActivity, sessions: ExecutionSession[] = []): DeadlineConflict[] {
+    return this.saveSubActivity(sub, sessions, subs => [...subs, sub]);
   }
 
-  updateSubActivity(updated: SubActivity): DeadlineConflict[] {
-    return this.saveSubActivity(updated, subs => subs.map(s => s.id === updated.id ? updated : s));
+  /** `sessions`, si se indica, reemplaza las del plan del paso. */
+  updateSubActivity(updated: SubActivity, sessions?: ExecutionSession[]): DeadlineConflict[] {
+    return this.saveSubActivity(updated, sessions, subs => subs.map(s => s.id === updated.id ? updated : s));
   }
 
   deleteSubActivity(id: string) {
-    this.subActivitiesSignal.update(subs => subs.filter(s => s.id !== id));
+    this.purgeSteps([id]);
     this.commit();
   }
 
@@ -430,32 +471,59 @@ export class PlannerService {
   // --- EJECUCIÓN ---
 
   /**
-   * Marca o desmarca la sesión de `date` (hoy por defecto la fecha de la agenda), pasada o de hoy (RN-27).
-   * `minutes` son los minutos reales; si falta, los previstos. Las fechas futuras se ignoran.
+   * Marca o desmarca la sesión de `date` (la de la agenda por defecto), de hoy o pasada (RN-27).
+   * Marcar crea un `WorkLog` vinculado con `minutes` o, si falta, los minutos previstos;
+   * desmarcar vuelve la sesión a `PLANNED` y elimina los bloques vinculados.
+   * Las fechas futuras, sin sesión o con minutos no válidos se ignoran.
    * Un día ya cerrado no se actualiza solo: se recalcula al volver a cerrarlo (RN-44).
    */
   toggleTaskExecution(id: string, sourceType: TaskSourceType, minutes?: number, date = this.selectedDateSignal()) {
     if (isFutureDate(date, DateUtils.getTodayISO())) return;
-    if (minutes !== undefined && (!Number.isInteger(minutes) || minutes <= 0)) return;
+    if (minutes !== undefined && !this.isValidMinutes(minutes)) return;
 
-    const toggle = (plan: ExecutionPlan): ExecutionPlan => {
-      const { [date]: _removed, ...otherMinutes } = plan.minutesByDate ?? {};
-      if (plan.completedDates.includes(date)) {
-        return { ...plan, completedDates: plan.completedDates.filter(d => d !== date), minutesByDate: otherMinutes };
-      }
-      return {
-        ...plan,
-        completedDates: [...plan.completedDates, date],
-        minutesByDate: minutes === undefined ? otherMinutes : { ...otherMinutes, [date]: minutes },
-      };
-    };
+    const plan = this.planOf(id, sourceType);
+    const session = plan && this.sessionsSignal().find(s => s.planId === plan.id && s.scheduledDate === date);
+    if (!session) return;
 
-    if (sourceType === TaskSourceType.ACTIVITY) {
-      this.activitiesSignal.update(acts => acts.map(a =>
-        a.id === id && a.executionPlan ? { ...a, executionPlan: toggle(a.executionPlan) } : a));
+    if (session.status === SessionStatus.DONE) {
+      this.updateSession(session.id, { status: SessionStatus.PLANNED, completedAt: undefined });
+      this.workLogsSignal.update(logs => logs.filter(l => l.sessionId !== session.id));
     } else {
-      this.subActivitiesSignal.update(subs => subs.map(s =>
-        s.id === id ? { ...s, executionPlan: toggle(s.executionPlan) } : s));
+      this.updateSession(session.id, { status: SessionStatus.DONE, completedAt: new Date().toISOString() });
+      this.workLogsSignal.update(logs => [...logs, {
+        id: crypto.randomUUID(), sourceType, sourceId: id, date, minutes: minutes ?? session.plannedMinutes, sessionId: session.id,
+      }]);
+    }
+    this.commit();
+  }
+
+  /** Registra tiempo trabajado sin sesión, hoy o en una fecha pasada (RN-71). */
+  logWork(id: string, sourceType: TaskSourceType, minutes: number, date = DateUtils.getTodayISO()): boolean {
+    if (!this.isValidMinutes(minutes) || isFutureDate(date, DateUtils.getTodayISO()) || !isValidISODate(date)) return false;
+    if (!this.planOf(id, sourceType)) return false;
+
+    this.workLogsSignal.update(logs => [...logs, { id: crypto.randomUUID(), sourceType, sourceId: id, date, minutes }]);
+    this.commit();
+    return true;
+  }
+
+  /** Corrige los minutos de un bloque (RN-76). */
+  updateWorkLog(id: string, minutes: number): boolean {
+    if (!this.isValidMinutes(minutes) || !this.workLogsSignal().some(l => l.id === id)) return false;
+    this.workLogsSignal.update(logs => logs.map(l => l.id === id ? { ...l, minutes } : l));
+    this.commit();
+    return true;
+  }
+
+  /** Borra un bloque; si era el último de una sesión `DONE`, la devuelve a `PLANNED` (RN-76). */
+  deleteWorkLog(id: string) {
+    const log = this.workLogsSignal().find(l => l.id === id);
+    if (!log) return;
+
+    this.workLogsSignal.update(logs => logs.filter(l => l.id !== id));
+    const stillLinked = log.sessionId && this.workLogsSignal().some(l => l.sessionId === log.sessionId);
+    if (log.sessionId && !stillLinked) {
+      this.updateSession(log.sessionId, { status: SessionStatus.PLANNED, completedAt: undefined });
     }
     this.commit();
   }
@@ -470,7 +538,7 @@ export class PlannerService {
   }
 
   private saveRecord(date: string, notes: string): DailyRecord {
-    const metrics = this.metricsOf(this.agendaFor(date));
+    const metrics = this.metricsOf(this.agendaFor(date), date);
     const existing = this.recordsSignal().find(r => r.date === date);
 
     const record: DailyRecord = {
@@ -511,9 +579,43 @@ export class PlannerService {
   }
 
   /** `recurrence` se calcula del plan (RN-47); una compuesta no tiene plan ni recurrencia. */
-  private normalizeActivity(activity: Activity): Activity {
+  private normalizeActivity(activity: Activity, sessions: readonly ExecutionSession[]): Activity {
     const plan = activity.type === ActivityType.COMPOSITE ? null : activity.executionPlan;
-    return { ...activity, executionPlan: plan, recurrence: deriveRecurrence(activity.type, plan) };
+    return { ...activity, executionPlan: plan, recurrence: deriveRecurrence(activity.type, plan, sessions.length) };
+  }
+
+  private isValidMinutes(minutes: number): boolean {
+    return Number.isInteger(minutes) && minutes > 0;
+  }
+
+  private planOf(id: string, sourceType: TaskSourceType): ExecutionPlan | null {
+    if (sourceType === TaskSourceType.ACTIVITY) {
+      const activity = this.activitiesSignal().find(a => a.id === id);
+      return activity?.type === ActivityType.SIMPLE ? activity.executionPlan : null;
+    }
+    return this.subActivitiesSignal().find(s => s.id === id)?.executionPlan ?? null;
+  }
+
+  private updateSession(id: string, changes: Partial<ExecutionSession>) {
+    this.sessionsSignal.update(sessions => sessions.map(s => s.id === id ? { ...s, ...changes } : s));
+  }
+
+  /** Sustituye todas las sesiones de un plan por `sessions`. */
+  private replaceSessions(planId: string | undefined, sessions: readonly ExecutionSession[]) {
+    if (!planId) return;
+    this.sessionsSignal.update(all => [...all.filter(s => s.planId !== planId), ...sessions]);
+  }
+
+  /** Elimina tareas simples/pasos con su plan: sus sesiones y su tiempo trabajado (RN-74). */
+  private purgeItems(itemIds: string[], planIds: string[]) {
+    this.sessionsSignal.update(all => all.filter(s => !planIds.includes(s.planId)));
+    this.workLogsSignal.update(all => all.filter(l => !itemIds.includes(l.sourceId)));
+  }
+
+  private purgeSteps(stepIds: string[]) {
+    const steps = this.subActivitiesSignal().filter(s => stepIds.includes(s.id));
+    this.purgeItems(stepIds, steps.map(s => s.executionPlan.id));
+    this.subActivitiesSignal.update(subs => subs.filter(s => !stepIds.includes(s.id)));
   }
 
   /**
@@ -522,7 +624,11 @@ export class PlannerService {
    */
   private conflictsFor(
     objectiveId: string,
-    change: { objective?: Objective; activity?: Activity; step?: SubActivity; dropStepsOf?: string },
+    change: {
+      objective?: Objective; activity?: Activity; step?: SubActivity; dropStepsOf?: string;
+      /** Sesiones candidatas del plan de `activity` o `step`; reemplazan las guardadas. */
+      sessions?: readonly ExecutionSession[];
+    },
   ): DeadlineConflict[] {
     const objective = change.objective ?? this.objectivesSignal().find(o => o.id === objectiveId);
     if (!objective) return [];
@@ -536,23 +642,36 @@ export class PlannerService {
       .filter(s => ids.includes(s.activityId) && s.activityId !== change.dropStepsOf && s.id !== change.step?.id);
     if (change.step) steps.push(change.step);
 
-    return validateDeadlines(objective, activities, steps);
+    const changedPlanId = change.activity?.executionPlan?.id ?? change.step?.executionPlan.id;
+    const sessions = [
+      ...this.sessionsSignal().filter(s => s.planId !== changedPlanId),
+      ...(change.sessions ?? this.sessionsSignal().filter(s => s.planId === changedPlanId)),
+    ];
+
+    return validateDeadlines(objective, activities, steps, sessions);
   }
 
-  private saveSubActivity(sub: SubActivity, apply: (subs: SubActivity[]) => SubActivity[]): DeadlineConflict[] {
+  private saveSubActivity(
+    sub: SubActivity,
+    sessions: ExecutionSession[] | undefined,
+    apply: (subs: SubActivity[]) => SubActivity[],
+  ): DeadlineConflict[] {
     const parent = this.activitiesSignal().find(a => a.id === sub.activityId);
     if (!parent) return [];
 
-    const conflicts = this.conflictsFor(parent.objectiveId, { step: sub });
+    const conflicts = this.conflictsFor(parent.objectiveId, { step: sub, sessions });
     if (conflicts.length > 0) return conflicts;
 
     this.subActivitiesSignal.update(apply);
+    if (sessions) this.replaceSessions(sub.executionPlan.id, sessions);
     this.commit();
     return [];
   }
 
   private removeActivities(ids: string[]) {
-    this.subActivitiesSignal.update(subs => subs.filter(s => !ids.includes(s.activityId)));
+    this.purgeSteps(this.subActivitiesSignal().filter(s => ids.includes(s.activityId)).map(s => s.id));
+    const planIds = this.activitiesSignal().filter(a => ids.includes(a.id) && a.executionPlan).map(a => a.executionPlan!.id);
+    this.purgeItems(ids, planIds);
     this.activitiesSignal.update(acts => acts.filter(a => !ids.includes(a.id)));
   }
 
@@ -567,8 +686,14 @@ export class PlannerService {
    * Es la única función de recálculo: se ejecuta tras cada mutación.
    */
   private cascade() {
+    const byPlan = new Map<string, ExecutionSession[]>();
+    for (const session of this.sessionsSignal()) {
+      byPlan.set(session.planId, [...(byPlan.get(session.planId) ?? []), session]);
+    }
+    const sessionsOfPlan = (planId: string) => byPlan.get(planId) ?? [];
+
     const steps = this.subActivitiesSignal().map(s => {
-      const progress = computeProgress(s.executionPlan);
+      const progress = computeProgress(sessionsOfPlan(s.executionPlan.id));
       return { ...s, progress, status: deriveSubActivityStatus(progress) };
     });
 
@@ -580,15 +705,16 @@ export class PlannerService {
           ...a,
           progress,
           status: deriveStatus(progress, a.status),
-          totalTimeRequiredMin: own.reduce((sum, s) => sum + totalTimeMin(s.executionPlan), 0),
+          totalTimeRequiredMin: own.reduce((sum, s) => sum + plannedMinutesOf(sessionsOfPlan(s.executionPlan.id)), 0),
         };
       }
-      const progress = computeProgress(a.executionPlan);
+      const ownSessions = a.executionPlan ? sessionsOfPlan(a.executionPlan.id) : [];
+      const progress = computeProgress(ownSessions);
       return {
         ...a,
         progress,
         status: deriveStatus(progress, a.status),
-        totalTimeRequiredMin: totalTimeMin(a.executionPlan),
+        totalTimeRequiredMin: plannedMinutesOf(ownSessions),
       };
     });
 
@@ -618,5 +744,7 @@ export class PlannerService {
     this.dataProvider.saveObjectives(this.objectivesSignal()).subscribe();
     this.dataProvider.saveActivities(this.activitiesSignal()).subscribe();
     this.dataProvider.saveSubActivities(this.subActivitiesSignal()).subscribe();
+    this.dataProvider.saveSessions(this.sessionsSignal()).subscribe();
+    this.dataProvider.saveWorkLogs(this.workLogsSignal()).subscribe();
   }
 }

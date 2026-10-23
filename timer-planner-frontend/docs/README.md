@@ -20,7 +20,7 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 
 ## Pendiente
 
-- **Código:** funciona con el modelo anterior; falta el plan 03 (avance, constancia y tiempo real).
+- **Código:** funciona con el modelo anterior; falta el plan 03 (constancia, tiempo real y cierre diario en pantalla).
 
 - **Recorrido manual** en el navegador (`pnpm ng serve`) de los casos de uso implementados. Las pruebas automáticas cubren la lógica, no la interfaz.
 - **Aviso de presupuesto de CSS** en `objective-detail` (5,6 kB sobre 4 kB).
@@ -35,7 +35,7 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 | Si cambia... | Se actualiza |
 |--------------|--------------|
 | El avance de una fase | La tabla de fases del plan y la sección «Pendiente» de este README. Al terminar, no se marca como hecho: se pasa a las reglas y se borra de los pendientes (ver `Agents-documentacion.md`) |
-| El estado de una feature | La columna Estado de `funcionalidad.md` |
+| El estado de una feature | La columna Falta de `funcionalidad.md` |
 | La estructura de carpetas o capas | `arquitectura.md` (estructura actual) |
 | Una regla de negocio | `../../docs/analisis-reglas-de-negocio.md` (fuente de verdad: solo reglas acordadas) y, si cambia el mapa, `funcionalidad.md` |
 | Lo implementado frente a las reglas | «Comparación con el código» de `../../docs/estado-y-pendientes.md` |

@@ -132,8 +132,7 @@
                                         <span class="mini-complexity {{ sub.complexity }}">{{ sub.complexity | label: complexityLabels
                                             }}</span>
                                         <span class="sub-progress-text">
-                                            ({{ sub.executionPlan.completedDates.length }} / {{
-                                            sub.executionPlan.dates?.length }})
+                                            ({{ sessionCount(sub.executionPlan.id).done }} / {{ sessionCount(sub.executionPlan.id).total }})
                                         </span>
                                     </span>
 
