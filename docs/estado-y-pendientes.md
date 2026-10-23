@@ -58,9 +58,7 @@ Surgen de RN-67 a RN-74 y afectan al plan 03.
 
 | ID | Pregunta | Reglas relacionadas |
 |----|----------|---------------------|
-| D-11 | Al editar un plan, ¿la sesión `PLANNED` **de hoy** se reemplaza o se conserva? RN-21 genera desde hoy y RN-51 solo sustituye «futuras». | RN-21, RN-51 |
 | D-12 | ¿Las sesiones `PLANNED` de días en que la meta o la tarea estaba pausada cuentan como no realizadas en la constancia? | RN-57, RN-59, RN-70 |
-| D-14 | ¿Se pueden editar o borrar bloques de `WorkLog` ya registrados? | RN-27, RN-71, CU-27 |
 | D-17 | ¿Se muestra la constancia de tarea compuesta, objetivo y meta? RN-70 dice que «puede calcularse». | RN-70, CU-28 |
 | D-18 | ¿Se puede registrar trabajo sin sesión (CU-27) en ítems de una meta `PAUSED` o `IDEA`, de una tarea `PAUSED` o ya al 100 %? | RN-57, RN-59, RN-71 |
 

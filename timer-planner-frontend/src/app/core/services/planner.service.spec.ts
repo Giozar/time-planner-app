@@ -284,13 +284,15 @@ describe('PlannerService', () => {
       expect(service.closeDay('x', '2026-10-30')).toBeNull();
     });
 
-    it('un día cerrado se recalcula solo al marcar y conserva sus notas (RN-44)', () => {
+    it('un día cerrado no se actualiza solo: se recalcula al volver a cerrarlo (RN-44)', () => {
       seedHierarchy();
       service.addActivity(simple('a1', [PAST]));
       const closed = service.closeDay('mis notas', PAST)!;
       service.setSelectedDate(PAST);
       service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 50);
+      expect(service.records()[0]).toMatchObject({ completedItems: 0, executedTimeMin: 0 });
 
+      service.closeDay('mis notas', PAST);
       expect(service.records()).toHaveLength(1);
       expect(service.records()[0]).toMatchObject({
         id: closed.id, notes: 'mis notas', completedItems: 1, executedTimeMin: 50,

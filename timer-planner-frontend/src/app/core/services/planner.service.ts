@@ -432,7 +432,7 @@ export class PlannerService {
   /**
    * Marca o desmarca la sesión de `date` (hoy por defecto la fecha de la agenda), pasada o de hoy (RN-27).
    * `minutes` son los minutos reales; si falta, los previstos. Las fechas futuras se ignoran.
-   * Si el día ya estaba cerrado, su registro se recalcula (RN-44).
+   * Un día ya cerrado no se actualiza solo: se recalcula al volver a cerrarlo (RN-44).
    */
   toggleTaskExecution(id: string, sourceType: TaskSourceType, minutes?: number, date = this.selectedDateSignal()) {
     if (isFutureDate(date, DateUtils.getTodayISO())) return;
@@ -458,7 +458,6 @@ export class PlannerService {
         s.id === id ? { ...s, executionPlan: toggle(s.executionPlan) } : s));
     }
     this.commit();
-    this.refreshClosedDay(date);
   }
 
   /**
@@ -468,12 +467,6 @@ export class PlannerService {
   closeDay(notes: string, date = this.selectedDateSignal()): DailyRecord | null {
     if (isFutureDate(date, DateUtils.getTodayISO())) return null;
     return this.saveRecord(date, notes);
-  }
-
-  /** Recalcula el cierre de `date` si existe, conservando sus notas (RN-44). */
-  private refreshClosedDay(date: string) {
-    const existing = this.recordsSignal().find(r => r.date === date);
-    if (existing) this.saveRecord(date, existing.notes ?? '');
   }
 
   private saveRecord(date: string, notes: string): DailyRecord {

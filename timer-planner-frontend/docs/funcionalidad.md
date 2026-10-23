@@ -35,7 +35,7 @@ Reglas que no pertenecen a una pantalla sino a la lógica compartida.
 - La pantalla de **historial** (CU-21) se crea en la Fase 3 del plan 03.
 - El estado `ARCHIVED` no existe en el MVP.
 - **Calendario:** la cuadrícula muestra hasta 3 sesiones por celda y «+N más»; las completadas aparecen tachadas y los días de otros meses atenuados. En pantallas de 700 px o menos las sesiones se muestran como puntos y el panel del día lista todo. Entrada «Calendario» del menú, entre «Agenda Hoy» y «Mis Metas».
-- **Agenda por fecha:** barra con día anterior, siguiente, selector de fecha y «Hoy»; la fecha viaja en `?date=`. En días pasados, marcar pide los minutos reales (previstos por defecto); hoy se marca de un clic. Las fechas futuras son de solo lectura y no tienen botón de cierre. El resumen de cierre muestra las notas ya guardadas de esa fecha.
+- **Agenda por fecha:** barra con día anterior, siguiente, selector de fecha y «Hoy»; la fecha viaja en `?date=`. En días pasados, marcar pide los minutos reales (previstos por defecto); hoy se marca de un clic y desmarcar borra esos minutos. Las fechas futuras son de solo lectura y no tienen botón de cierre. El resumen de cierre muestra las notas ya guardadas de esa fecha.
 - **Diálogos:** el borrado exige escribir el título (`requireText`) y los conflictos de deadline se listan antes de guardar.
 
 ## Pendiente por definir

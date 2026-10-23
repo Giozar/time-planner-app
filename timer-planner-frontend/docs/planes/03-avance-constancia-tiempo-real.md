@@ -43,7 +43,7 @@ Están en [estado-y-pendientes.md](../../../docs/estado-y-pendientes.md#decision
 
 | Fase | Decisiones |
 |------|------------|
-| 1 | D-11 (sesión de hoy al editar el plan) y D-14 (corregir o borrar bloques de `WorkLog`) |
+| 1 | Ninguna |
 | 2 | D-12 (constancia durante una pausa), D-17 (constancia de los padres) y D-18 (trabajo sin sesión en ítems pausados o al 100 %) |
 | 3 | D-02 (destino tras cerrar el día) |
 
