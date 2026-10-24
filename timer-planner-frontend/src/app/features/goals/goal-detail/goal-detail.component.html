@@ -27,7 +27,7 @@
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" [style.width.%]="currentGoal.progress"></div>
       </div>
-      <span class="progress-text">{{ currentGoal.progress }}% Completado</span>
+      <span class="progress-text">{{ currentGoal.progress }}% Completado · Constancia: {{ currentGoal.id | consistency }}</span>
     </div>
   </header>
 
@@ -74,7 +74,7 @@
                   [class.completed]="objective.progress === 100">
                 </div>
               </div>
-              <span class="percentage-text">{{ objective.progress }}%</span>
+              <span class="percentage-text">{{ objective.progress }}% · {{ objective.id | consistency }}</span>
             </div>
           </div>
         </div>

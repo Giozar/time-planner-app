@@ -6,10 +6,8 @@ Mapa de qué reglas y casos de uso corresponden a cada parte del frontend. **No 
 
 | Feature | Carpeta | Casos de uso | Reglas principales | Falta | Fase |
 |---------|---------|--------------|--------------------|--------|-------|
-| Tareas | `features/objectives` (`objective-detail`) | CU-27, CU-28 | RN-70, RN-71, RN-76 | ⏳ Pendiente: constancia y tiempo real | Plan 03, Fase 1 |
-| Agenda diaria | `features/daily` (`daily-dashboard`) | CU-27, CU-28 | RN-70, RN-71, RN-76 | ⏳ Pendiente: tiempo sin sesión, corregir bloques y constancia del día | Plan 03, Fase 1 |
-| Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44, RN-72 | ⏳ Pendiente: resumen con constancia y minutos reales | Plan 03, Fase 2 |
-| Historial | Por crear | CU-21, CU-28 | RN-11, RN-43, RN-70, RN-72, RN-74 | ⏳ Pendiente | Plan 03, Fase 2 |
+| Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44, RN-72 | ⏳ Pendiente: resumen con constancia y minutos reales | Plan 03 |
+| Historial | Por crear | CU-21, CU-28 | RN-11, RN-43, RN-70, RN-72, RN-74 | ⏳ Pendiente | Plan 03 |
 
 **Falta:** solo lo pendiente; lo demás está implementado y descrito en las reglas. Ver el [plan 03](planes/03-avance-constancia-tiempo-real.md).
 

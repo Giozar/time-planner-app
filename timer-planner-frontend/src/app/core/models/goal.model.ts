@@ -1,3 +1,5 @@
+import { PausePeriod } from './pause.model';
+
 export enum GoalHorizon {
   SHORT_TERM = 'SHORT_TERM',
   MEDIUM_TERM = 'MEDIUM_TERM',
@@ -20,5 +22,6 @@ export interface Goal {
   horizon: GoalHorizon | null; // null mientras sea IDEA
   progress: number;
   status: GoalStatus;
+  pauses?: PausePeriod[]; // historial de pausas (RN-70)
   createdAt: Date;
 }

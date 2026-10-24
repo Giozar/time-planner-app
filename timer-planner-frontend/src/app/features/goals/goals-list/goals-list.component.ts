@@ -8,12 +8,13 @@ import { NativeDialogService } from '../../../core/services/native-dialog.servic
 import { Goal, GoalStatus } from '../../../core/models/goal.model';
 import { DeletableType } from '../../../core/models/deletion-impact.model';
 import { GOAL_HORIZON_LABELS, GOAL_STATUS_LABELS } from '../../../core/i18n/labels';
+import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-goals-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe],
   templateUrl: './goals-list.component.html',
   styleUrl: './goals-list.component.css'
 })

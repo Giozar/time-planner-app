@@ -10,7 +10,6 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 
 | Tema | Definido | Estado del código |
 |------|----------|-------------------|
-| Constancia y tiempo real en pantalla | Mostrar la constancia en todos los niveles (con historial de pausas), registrar tiempo sin sesión y corregir o borrar bloques (RN-70, RN-71, RN-76, CU-27, CU-28). | ⏳ Pendiente. El servicio ya calcula y guarda sesiones y `WorkLog` (`logWork`, `updateWorkLog`, `deleteWorkLog`), pero ninguna pantalla los usa ni muestra la constancia. |
 | Cierre diario | `DailyRecord` resume sesiones, constancia y minutos reales (RN-41 a RN-44, RN-72). | ⏳ Pendiente. El registro actual guarda conteos de ítems y minutos del día, sin porcentaje de constancia ni `closedAt`. |
 | Historial | Lista de resúmenes diarios (CU-21). | ⏳ Pendiente. No existe la pantalla. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
@@ -21,9 +20,9 @@ Lo que no aparece en la tabla está implementado y vive en las reglas y en [func
 
 | Tema | Estado |
 |------|--------|
-| Plan 03: constancia, tiempo real y cierre diario en pantalla | ⏳ Pendiente |
+| Plan 03: cierre diario con constancia y minutos reales; historial | ⏳ Pendiente |
 | Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, cierre y reapertura de objetivo, borrado con confirmación escrita, cierre del día repetido, calendario con hover y cambio de mes, y agenda de días pasados con minutos y recálculo del cierre) | ⏳ Pendiente |
-| Aviso de presupuesto de CSS en `objective-detail` (5,6 kB sobre 4 kB) | ⏳ Pendiente |
+| Avisos de presupuesto al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (503 kB sobre 500 kB) | ⏳ Pendiente |
 | Backend | ⏳ Pendiente; requiere D-01 |
 | Agente planificador del backend (`timer-planner-backend/Agents/funcionalidad/`) | ⏳ Pendiente; se crea al empezar el backend |
 

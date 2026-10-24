@@ -20,10 +20,10 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 
 ## Pendiente
 
-- **Código:** funciona con el modelo anterior; falta el plan 03 (constancia, tiempo real y cierre diario en pantalla).
+- **Código:** funciona con el modelo anterior; falta el plan 03 (cierre diario con constancia y minutos reales, e historial).
 
 - **Recorrido manual** en el navegador (`pnpm ng serve`) de los casos de uso implementados. Las pruebas automáticas cubren la lógica, no la interfaz.
-- **Aviso de presupuesto de CSS** en `objective-detail` (5,6 kB sobre 4 kB).
+- **Avisos de presupuesto** al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (503 kB sobre 500 kB).
 - **Decisiones por definir (`D-xx`) y correcciones a las reglas (`C-xx`):** están en [estado-y-pendientes.md](../../docs/estado-y-pendientes.md).
 
 ## Mantenimiento de la documentación

@@ -29,10 +29,26 @@ import {
   deriveSubActivityStatus,
   isFutureDate,
   isValidISODate,
+  ConsistencyEntry,
+  computeConsistency,
+  endPause,
   plannedMinutesOf,
+  startPause,
   reopenIfBelowComplete,
   validateDeadlines,
 } from '../rules';
+
+/** Tarea simple o paso donde se puede registrar tiempo. */
+export interface ExecutableItem {
+  id: string;
+  sourceType: TaskSourceType;
+  label: string;
+}
+
+export interface DayWorkLog {
+  log: WorkLog;
+  label: string;
+}
 
 /** Dueño de un plan de ejecución: una tarea simple o un paso. */
 interface PlanOwner {
@@ -249,6 +265,70 @@ export class PlannerService {
       day.sort((a, b) => a.title.localeCompare(b.title, 'es'));
     }
     return entries;
+  });
+
+  /**
+   * Constancia por id de tarea, paso, objetivo y meta (RN-70): sesiones realizadas sobre las exigibles,
+   * o `null` si todavía no hay ninguna. Los padres usan todas las sesiones de sus descendientes.
+   */
+  public consistency = computed<ReadonlyMap<string, number | null>>(() => {
+    const today = DateUtils.getTodayISO();
+    const todayClosed = this.recordsSignal().some(r => r.date === today);
+    const sessions = this.sessionsSignal();
+    const goals = this.goalsSignal();
+    const objectives = this.objectivesSignal();
+    const result = new Map<string, number | null>();
+    const score = (id: string, entries: ConsistencyEntry[]) => {
+      result.set(id, computeConsistency(entries, today, todayClosed));
+      return entries;
+    };
+    const entriesOf = (plan: ExecutionPlan | null, pauses: ConsistencyEntry['pauses']): ConsistencyEntry[] =>
+      plan ? sessions.filter(s => s.planId === plan.id).map(session => ({ session, pauses })) : [];
+
+    const byObjective = new Map<string, ConsistencyEntry[]>();
+    const byGoal = new Map<string, ConsistencyEntry[]>();
+
+    for (const activity of this.activitiesSignal()) {
+      const objective = objectives.find(o => o.id === activity.objectiveId);
+      const goal = goals.find(g => g.id === objective?.goalId);
+      if (!objective || !goal) continue;
+
+      const pauses = [...(goal.pauses ?? []), ...(activity.pauses ?? [])];
+      const own = activity.type === ActivityType.SIMPLE
+        ? entriesOf(activity.executionPlan, pauses)
+        : this.stepsOf(activity.id).flatMap(step => score(step.id, entriesOf(step.executionPlan, pauses)));
+      score(activity.id, own);
+
+      byObjective.set(objective.id, [...(byObjective.get(objective.id) ?? []), ...own]);
+      byGoal.set(goal.id, [...(byGoal.get(goal.id) ?? []), ...own]);
+    }
+
+    for (const objective of objectives) score(objective.id, byObjective.get(objective.id) ?? []);
+    for (const goal of goals) score(goal.id, byGoal.get(goal.id) ?? []);
+    return result;
+  });
+
+  /** Tareas simples y pasos donde se puede registrar tiempo (CU-27), con su nombre completo. */
+  public executableItems = computed<ExecutableItem[]>(() => {
+    const items: ExecutableItem[] = [];
+    for (const activity of this.activitiesSignal()) {
+      if (activity.type === ActivityType.SIMPLE) {
+        items.push({ id: activity.id, sourceType: TaskSourceType.ACTIVITY, label: activity.title });
+      }
+    }
+    for (const step of this.subActivitiesSignal()) {
+      const parent = this.activitiesSignal().find(a => a.id === step.activityId);
+      items.push({ id: step.id, sourceType: TaskSourceType.SUBACTIVITY, label: `${parent?.title ?? ''} › ${step.title}` });
+    }
+    return items.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+  });
+
+  /** Bloques de tiempo de la fecha elegida, con el nombre del ítem (CU-27, RN-76). */
+  public dayWorkLogs = computed<DayWorkLog[]>(() => {
+    const labels = new Map(this.executableItems().map(i => [i.id, i.label]));
+    return this.workLogsSignal()
+      .filter(l => l.date === this.selectedDateSignal())
+      .map(log => ({ log, label: labels.get(log.sourceId) ?? '' }));
   });
 
   // --- METAS ---
@@ -569,12 +649,24 @@ export class PlannerService {
   private setGoalStatus(id: string, from: GoalStatus, to: GoalStatus) {
     const goal = this.goalsSignal().find(g => g.id === id);
     if (goal?.status !== from) return;
-    this.goalsSignal.update(goals => goals.map(g => g.id === id ? { ...g, status: to } : g));
+    const today = DateUtils.getTodayISO();
+    this.goalsSignal.update(goals => goals.map(g => {
+      if (g.id !== id) return g;
+      const pauses = to === GoalStatus.PAUSED ? startPause(g.pauses, today)
+        : from === GoalStatus.PAUSED ? endPause(g.pauses, today) : g.pauses;
+      return { ...g, status: to, pauses };
+    }));
     this.commit();
   }
 
   private setActivityStatus(id: string, status: ActivityStatus) {
-    this.activitiesSignal.update(acts => acts.map(a => a.id === id ? { ...a, status } : a));
+    const today = DateUtils.getTodayISO();
+    this.activitiesSignal.update(acts => acts.map(a => {
+      if (a.id !== id) return a;
+      const pauses = status === ActivityStatus.PAUSED ? startPause(a.pauses, today)
+        : a.status === ActivityStatus.PAUSED ? endPause(a.pauses, today) : a.pauses;
+      return { ...a, status, pauses };
+    }));
     this.commit();
   }
 

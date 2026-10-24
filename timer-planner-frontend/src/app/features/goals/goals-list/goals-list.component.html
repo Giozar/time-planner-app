@@ -39,6 +39,10 @@
           <span>Progreso</span>
           <span>{{ goal.progress }}%</span>
         </div>
+        <div class="progress-info">
+          <span>Constancia</span>
+          <span>{{ goal.id | consistency }}</span>
+        </div>
         <div class="progress-bar-bg">
           <div class="progress-bar-fill" [style.width.%]="goal.progress"></div>
         </div>

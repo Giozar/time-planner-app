@@ -27,7 +27,7 @@
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" [style.width.%]="currentObj.progress"></div>
             </div>
-            <span class="progress-text">{{ currentObj.progress }}% Completado</span>
+            <span class="progress-text">{{ currentObj.progress }}% Completado · Constancia: {{ currentObj.id | consistency }}</span>
         </div>
     </header>
 
@@ -95,7 +95,7 @@
                                     [class.completed]="activity.progress === 100">
                                 </div>
                             </div>
-                            <span class="percentage-text">{{ activity.progress }}%</span>
+                            <span class="percentage-text">{{ activity.progress }}% · {{ activity.id | consistency }}</span>
                         </div>
                     </div>
                 </div>
@@ -132,7 +132,7 @@
                                         <span class="mini-complexity {{ sub.complexity }}">{{ sub.complexity | label: complexityLabels
                                             }}</span>
                                         <span class="sub-progress-text">
-                                            ({{ sessionCount(sub.executionPlan.id).done }} / {{ sessionCount(sub.executionPlan.id).total }})
+                                            ({{ sessionCount(sub.executionPlan.id).done }} / {{ sessionCount(sub.executionPlan.id).total }}) · {{ sub.id | consistency }}
                                         </span>
                                     </span>
 

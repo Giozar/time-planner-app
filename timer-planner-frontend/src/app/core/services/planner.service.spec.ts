@@ -469,6 +469,84 @@ describe('PlannerService', () => {
     });
   });
 
+  describe('constancia y pausas (RN-57, RN-59, RN-70)', () => {
+    it('calcula la constancia por tarea, objetivo y meta con las sesiones exigibles', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-12', '2026-10-19', '2026-10-26'], ['2026-10-19']));
+      expect(service.consistency().get('a1')).toBe(50);
+      expect(service.consistency().get('o1')).toBe(50);
+      expect(service.consistency().get('g1')).toBe(50);
+    });
+
+    it('una tarea sin sesiones exigibles no tiene datos', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      expect(service.consistency().get('a1')).toBeNull();
+    });
+
+    it('la compuesta usa las sesiones de todos sus pasos', () => {
+      seedHierarchy();
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      addStep(step({ id: 's1', activityId: 'k' }, ['2026-10-10', '2026-10-11'], ['2026-10-10']));
+      addStep(step({ id: 's2', activityId: 'k' }, ['2026-10-12', '2026-10-13'], []));
+      expect(service.consistency().get('s1')).toBe(50);
+      expect(service.consistency().get('s2')).toBe(0);
+      expect(service.consistency().get('k')).toBe(25);
+    });
+
+    it('pausar registra el periodo y las sesiones pausadas no cuentan; reanudar lo cierra', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-10', '2026-10-21', '2026-10-22']));
+      vi.setSystemTime(new Date('2026-10-20T12:00:00'));
+      service.pauseActivity('a1');
+      vi.setSystemTime(new Date('2026-10-22T12:00:00'));
+      service.resumeActivity('a1');
+
+      expect(service.activities()[0].pauses).toEqual([{ from: '2026-10-20', to: '2026-10-21' }]);
+      // 10-10 sin pausa y no realizada; 10-21 pausada; hoy sin cerrar → 0 de 1
+      expect(service.consistency().get('a1')).toBe(0);
+    });
+
+    it('pausar una meta cubre a todas sus tareas', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-10']));
+      vi.setSystemTime(new Date('2026-10-01T12:00:00'));
+      service.pauseGoal('g1');
+      vi.setSystemTime(new Date(`${TODAY}T12:00:00`));
+
+      expect(service.goals()[0].pauses).toEqual([{ from: '2026-10-01' }]);
+      expect(service.consistency().get('a1')).toBeNull();
+    });
+
+    it('cerrar el día hace que la sesión de hoy cuente como no realizada', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY]));
+      expect(service.consistency().get('a1')).toBeNull();
+      service.closeDay('x');
+      expect(service.consistency().get('a1')).toBe(0);
+    });
+  });
+
+  describe('tiempo del día (CU-27, RN-76, D-18)', () => {
+    it('lista los bloques de la fecha con el nombre del ítem', () => {
+      seedHierarchy();
+      addActivity(makeActivity({ id: 'k', title: 'Compuesta', type: ActivityType.COMPOSITE }));
+      addStep(step({ id: 's1', activityId: 'k', title: 'Paso' }));
+      service.logWork('s1', TaskSourceType.SUBACTIVITY, 25);
+
+      expect(service.dayWorkLogs().map(e => [e.label, e.log.minutes])).toEqual([['Compuesta › Paso', 25]]);
+      service.setSelectedDate('2026-10-20');
+      expect(service.dayWorkLogs()).toEqual([]);
+    });
+
+    it('permite registrar tiempo en tareas pausadas, de metas pausadas y al 100 %', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY], [TODAY], { status: ActivityStatus.PAUSED }));
+      service.pauseGoal('g1');
+      expect(service.logWork('a1', TaskSourceType.ACTIVITY, 15)).toBe(true);
+    });
+  });
+
   describe('cierre del día (RN-41 a RN-44)', () => {
     it('crea el registro con las métricas y el tiempo real ejecutado', () => {
       seedHierarchy();

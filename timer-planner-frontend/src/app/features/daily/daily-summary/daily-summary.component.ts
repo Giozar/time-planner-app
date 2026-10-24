@@ -2,6 +2,7 @@ import { Component, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { DateUtils } from '../../../core/utils/date.utils';
 import { PlannerService } from '../../../core/services/planner.service';
 
 @Component({
@@ -37,6 +38,8 @@ export class DailySummaryComponent {
 
     // Feedback simple (podríamos usar un toast/alerta mejor después)
     alert('¡Día registrado exitosamente!');
-    this.router.navigate(['/goals']);
+    // CU-19: vuelve a la agenda de la fecha cerrada.
+    const date = this.selectedDate();
+    this.router.navigate(['/daily'], { queryParams: { date: date === DateUtils.getTodayISO() ? null : date } });
   }
 }

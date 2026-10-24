@@ -1,3 +1,5 @@
+import { PausePeriod } from './pause.model';
+
 export enum ActivityType {
   SIMPLE = 'SIMPLE',
   COMPOSITE = 'COMPOSITE',
@@ -102,6 +104,7 @@ export interface Activity {
   totalTimeRequiredMin?: number;
   progress: number;
   status: ActivityStatus; // Nunca OVERDUE almacenado
+  pauses?: PausePeriod[]; // historial de pausas (RN-70)
 }
 
 /**

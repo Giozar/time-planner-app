@@ -10,12 +10,13 @@ import { DeletableType } from '../../../core/models/deletion-impact.model';
 import {
   GOAL_HORIZON_LABELS, GOAL_STATUS_LABELS, OBJECTIVE_NATURE_LABELS, OBJECTIVE_STATUS_LABELS,
 } from '../../../core/i18n/labels';
+import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-goal-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe],
   templateUrl: './goal-detail.component.html',
   styleUrl: './goal-detail.component.css',
 })

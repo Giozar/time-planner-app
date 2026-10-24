@@ -12,12 +12,13 @@ import {
   ACTIVITY_COMPLEXITY_LABELS, ACTIVITY_CRITICALITY_LABELS, ACTIVITY_PRIORITY_LABELS,
   ACTIVITY_RECURRENCE_LABELS, ACTIVITY_STATUS_LABELS, OBJECTIVE_NATURE_LABELS, OBJECTIVE_STATUS_LABELS,
 } from '../../../core/i18n/labels';
+import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-objective-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe],
   templateUrl: './objective-detail.component.html',
   styleUrl: './objective-detail.component.css'
 })
