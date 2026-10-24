@@ -51,6 +51,7 @@ Antes de responder qué está definido, qué falta o qué sigue, lee `docs/estad
 - **Identificadores:** RN, CU, P, D y C no se renumeran ni se reutilizan, porque el código, las pruebas y los planes los citan. Un número eliminado se agrega a la lista de «Identificadores retirados» de `docs/estado-y-pendientes.md`: solo el número y, si se resolvió en una regla, esa RN entre paréntesis. Sin fechas, motivos ni explicaciones. El siguiente elemento usa un número nuevo.
 - **Sin historial:** no se anotan fechas de aplicación, qué se corrigió, qué decidió el usuario ni cómo se llegó a algo. Eso vive en git.
 - **Sin duplicar:** cada dato vive en un solo documento; los demás enlazan o citan el ID.
+- **Citar secciones:** se escribe «sección 3.3», nunca el signo «§», ni en documentos ni en comentarios del código.
 - **Planes terminados:** se borran. Git guarda la historia; la documentación solo describe lo vigente y lo que falta.
 
 ## Revisión después de cada cambio

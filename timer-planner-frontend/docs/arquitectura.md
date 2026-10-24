@@ -16,7 +16,7 @@ src/app/
 │   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves time_planner_*)
 │   ├── rules/         calendar, calendar-view, closure, consistency, progress, recurrence, deadline, session, objective (funciones puras)
 │   ├── services/      planner.service.ts, native-dialog.service.ts
-│   └── utils/         date.utils.ts (getTodayISO, calculateProgress)
+│   └── utils/         date.utils.ts (getTodayISO)
 ├── features/
 │   ├── activities/    activity-form, structure-form
 │   ├── calendar/      calendar-view

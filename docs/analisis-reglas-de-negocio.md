@@ -301,7 +301,7 @@ Se numeran para referenciarlas desde la implementación y las pruebas.
 | RN-26 | Una sesión de la agenda está realizada cuando su estado es `DONE`; eso no implica que la tarea o el paso estén terminados. |
 | RN-27 | Se puede marcar o desmarcar una sesión de hoy o de una fecha pasada, sin límite hacia atrás. Las sesiones futuras no se marcan, pero se pueden mover (RN-82). Al marcarla se registran minutos en `WorkLog` de la fecha de la sesión: hoy se registran los minutos previstos sin preguntar; en una fecha pasada se piden los minutos reales, con los previstos como valor inicial. Desmarcarla elimina los minutos registrados con ella; volver a marcarla los registra de nuevo. |
 | RN-28 | "Hoy" se calcula en la **zona horaria local** del usuario. |
-| RN-75 | **Navegar entre fechas.** La agenda permite ir al día anterior o siguiente, elegir una fecha y volver a hoy. Se puede consultar cualquier fecha; las futuras son de solo lectura (RN-27). La fecha elegida forma parte de la dirección de la pantalla, por lo que se puede abrir y compartir. |
+| RN-75 | **Navegar entre fechas.** La agenda permite ir al día anterior o siguiente, elegir una fecha y volver a hoy. Se puede consultar cualquier fecha; en las futuras no se marcan sesiones ni se registra tiempo (RN-27, RN-71), pero sus sesiones se pueden mover (RN-82). La fecha elegida forma parte de la dirección de la pantalla, por lo que se puede abrir y compartir. |
 | RN-76 | **Corregir tiempo real.** Los bloques de `WorkLog` se pueden editar (minutos) o borrar en hoy y en fechas pasadas. Borrar el último bloque vinculado a una sesión `DONE` la devuelve a `PLANNED`. |
 | RN-29 | La agenda excluye los ítems de metas `PAUSED` o `IDEA` y de tareas `PAUSED` (RN-57, RN-59). No filtra por otros estados. |
 | RN-82 | **Mover una sesión.** Una sesión `PLANNED` de hoy o futura de una tarea simple o un paso abierto se puede mover a otra fecha de hoy en adelante, sin pasar su deadline efectivo (RN-48), aunque ese día ya tenga otra sesión del mismo ítem. Solo cambia esa sesión: conserva sus minutos previstos, el resto del plan no cambia y el avance tampoco (RN-30). No se mueven sesiones `DONE`, pasadas, cubiertas por un cierre manual (RN-79) ni de elementos cerrados (RN-80). Ejemplo: «Correr» es cada lunes; este lunes no se puede y esa sesión pasa al domingo. |
@@ -482,8 +482,8 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 - Un paso cerrado solo edita nombre y complejidad (RN-80).
 
 #### CU-17 — Ver agenda de una fecha
-- Muestra la fecha completa, sus sesiones, minutos previstos y constancia del día. Una barra permite ir al día anterior o siguiente, elegir una fecha y volver a hoy. Cada sesión permite registrar minutos reales al marcarla `DONE`; en fechas futuras solo se consulta.
-- **Reglas:** RN-25, RN-26, RN-28, RN-29, RN-57, RN-59, RN-75.
+- Muestra la fecha completa, sus sesiones, minutos previstos y constancia del día. Una barra permite ir al día anterior o siguiente, elegir una fecha y volver a hoy. Cada sesión permite registrar minutos reales al marcarla `DONE`; en fechas futuras no se marca, pero sus sesiones se pueden mover (CU-30).
+- **Reglas:** RN-25, RN-26, RN-28, RN-29, RN-57, RN-59, RN-75, RN-82.
 
 #### CU-18 — Marcar ejecución
 - **Entrada:** `sessionId` (sesión de hoy o pasada); en una fecha pasada también `minutes` (entero positivo, con los minutos previstos como valor inicial). Hoy se usan los minutos previstos.

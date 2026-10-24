@@ -410,14 +410,25 @@ describe('PlannerService', () => {
 
     it('oculta tareas pausadas y reanudar deriva el estado del progreso (RN-59)', () => {
       seedHierarchy();
-      addActivity(simple('a1', [TODAY]));
+      addActivity(simple('a1', [TODAY, '2026-10-30']));
       service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
       service.pauseActivity('a1');
       expect(service.activities()[0].status).toBe(ActivityStatus.PAUSED);
       expect(service.agendaTasks()).toHaveLength(0);
 
       service.resumeActivity('a1');
+      expect(service.activities()[0].status).toBe(ActivityStatus.IN_PROGRESS);
+    });
+
+    it('una tarea pausada que llega a 100 % queda completada; una cerrada no se pausa (RN-31, RN-77)', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY]));
+      service.pauseActivity('a1');
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
       expect(service.activities()[0].status).toBe(ActivityStatus.COMPLETED);
+
+      service.pauseActivity('a1');
+      expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.COMPLETED, pauses: [{ from: TODAY }] });
     });
 
     it('oculta las ideas (RN-55) y una idea con horizonte y tareas pasa a ACTIVE', () => {
@@ -723,7 +734,7 @@ describe('PlannerService', () => {
     });
   });
 
-  describe('tiempo del día (CU-27, RN-76, D-18)', () => {
+  describe('tiempo del día (CU-27, RN-71, RN-76)', () => {
     it('lista los bloques de la fecha con el nombre del ítem', () => {
       seedHierarchy();
       addActivity(makeActivity({ id: 'k', title: 'Compuesta', type: ActivityType.COMPOSITE }));

@@ -47,6 +47,10 @@ describe('progress.rules', () => {
       expect(deriveStatus(100, ActivityStatus.PAUSED, true)).toBe(ActivityStatus.COMPLETED);
       expect(deriveStatus(40, ActivityStatus.PAUSED, true)).toBe(ActivityStatus.OVERDUE);
     });
+
+    it('llegar a 100 % la completa aunque esté pausada (RN-31, RN-77)', () => {
+      expect(deriveStatus(100, ActivityStatus.PAUSED)).toBe(ActivityStatus.COMPLETED);
+    });
   });
 
   describe('deriveSubActivityStatus (RN-31)', () => {

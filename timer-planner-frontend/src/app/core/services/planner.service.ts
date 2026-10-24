@@ -183,7 +183,7 @@ export class PlannerService {
   private selectedDateSignal = signal<string>(DateUtils.getTodayISO());
   public selectedDate = this.selectedDateSignal.asReadonly();
 
-  /** Las fechas futuras son de solo lectura (RN-27). */
+  /** En fechas futuras no se marcan sesiones ni se registra tiempo (RN-27, RN-71); sí se mueven (RN-82). */
   public isSelectedDateReadOnly = computed(() => isFutureDate(this.selectedDateSignal(), DateUtils.getTodayISO()));
 
   /** Cambia la fecha de la agenda. Devuelve `false` si no es una fecha válida. */
@@ -503,8 +503,10 @@ export class PlannerService {
     };
   }
 
-  /** Solo oculta la tarea de la agenda (RN-59). */
+  /** Solo oculta la tarea de la agenda (RN-59). Una tarea cerrada no se pausa. */
   pauseActivity(id: string) {
+    const activity = this.activitiesSignal().find(a => a.id === id);
+    if (!activity || isClosed(activity)) return;
     this.setActivityStatus(id, ActivityStatus.PAUSED);
   }
 

@@ -17,13 +17,13 @@ export function computeProgress(sessions: readonly ExecutionSession[]): number {
 /**
  * Estado de una tarea según su progreso (RN-31, RN-32).
  * `closed`: la simple tiene cierre guardado o la compuesta tiene todos sus pasos cerrados (RN-77, RN-78);
- * queda `COMPLETED` al 100 % y `OVERDUE` si no. El cierre prevalece sobre la pausa.
- * `PAUSED` es una decisión del usuario, no del progreso: se conserva mientras no esté cerrada (RN-59).
+ * queda `COMPLETED` al 100 % y `OVERDUE` si no. Llegar a 100 % también la cierra como completada (RN-77).
+ * El cierre prevalece sobre la pausa: `PAUSED` es una decisión del usuario y se conserva mientras no esté cerrada (RN-59).
  */
 export function deriveStatus(progress: number, current?: ActivityStatus, closed = false): ActivityStatus {
   if (closed) return progress >= 100 ? ActivityStatus.COMPLETED : ActivityStatus.OVERDUE;
-  if (current === ActivityStatus.PAUSED) return ActivityStatus.PAUSED;
   if (progress >= 100) return ActivityStatus.COMPLETED;
+  if (current === ActivityStatus.PAUSED) return ActivityStatus.PAUSED;
   return progress <= 0 ? ActivityStatus.PENDING : ActivityStatus.IN_PROGRESS;
 }
 
