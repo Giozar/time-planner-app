@@ -29,7 +29,7 @@ Solo cuando el usuario aprueba el plan y pide implementarlo.
 1. Antes de empezar una fase, di en pocas líneas qué vas a hacer y qué archivos vas a tocar.
 2. Implementa **una sola fase** y actualiza su documentación en el mismo cambio.
 3. **Detente.** Resume qué archivos cambiaron y qué queda, y espera a que el usuario revise y haga su commit. No empieces la siguiente fase hasta que diga «sigue».
-4. Los comandos (pruebas, compilación, búsquedas) siguen la regla de autorización de `../Agents/reglas/Agents-alcance.md`, también dentro de una fase aprobada.
+4. Los comandos siguen `../Agents/reglas/Agents-alcance.md`, también dentro de una fase aprobada: leer y buscar es libre; pruebas, compilación y lo que modifique archivos piden autorización.
 
 ## Formato de un plan
 

@@ -21,8 +21,8 @@ Al formular los tipos y alcances (`type(scope):`), debes diferenciar explícitam
 ## 2. Permisos y Restricciones de Ejecución
 
 ### Reglas estrictas de comandos Git:
-1. **Inspección no destructiva (con autorización, según `Agents/reglas/Agents-alcance.md`):**
-   - Ante la petición de redactar un commit, explica qué comandos de lectura vas a usar y para qué; al autorizarlos, inspecciona el estado de Git con:
+1. **Inspección no destructiva (libre, según `Agents/reglas/Agents-alcance.md`):**
+   - Ante la petición de redactar un commit, inspecciona el estado de Git sin pedir permiso con:
      - `git status`
      - `git diff --staged` o `git diff --cached`
      - `git diff`

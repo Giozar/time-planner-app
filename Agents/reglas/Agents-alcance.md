@@ -11,7 +11,8 @@ Aplican a todos los agentes de `time-planner-app`, en la raíz y en cada proyect
 
 ## Comandos
 
-- **No ejecutes ningún comando sin autorización del usuario.** Primero explica qué comando es, qué hace y por qué lo necesitas; ejecútalo solo cuando el usuario lo autorice.
+- **Leer es libre.** Puedes leer cualquier archivo de `time-planner-app`, desde la raíz, y ejecutar sin pedir permiso los comandos que solo leen: `ls`, `find`, `grep`, `cat`, `head`, `wc`, `git status`, `git log`, `git diff` y `git show`.
+- **Lo demás necesita autorización.** Un comando que modifique o borre archivos, instale dependencias, ejecute scripts, pruebas o compilación, o cambie el estado de git, primero se explica: qué es, qué hace y por qué lo necesitas. Ejecútalo solo cuando el usuario lo autorice.
 - Para git aplica además `Agents/tecnologia/Agents-git-monorepo.md`.
 
 ## Documentación

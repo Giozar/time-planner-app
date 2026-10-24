@@ -49,13 +49,12 @@ Ninguna está decidida. Mientras no se decida, el código no la implementa por s
 |----|-----------|---------------------------------|
 | C-13 | Sección 7.1 (Diagrama ER y tablas) | Las secciones 3.1, 3.3 y RN-70 definen `pauses: [{ from, to? }]` en `Goal` y `Activity`, pero en las tablas `GOAL` y `ACTIVITY` de la sección 7.1 no aparece columna ni tabla para persistir los periodos de pausa. Agregar su representación en el modelo de BD (por ejemplo `jsonb` o tabla de pausas). |
 
-## Identificadores retirados
+## Números libres
 
-No se reutilizan.
+Se pueden reutilizar para un elemento nuevo; al usar uno, se quita de aquí (ver el agente de documentación).
 
 - **RN:** RN-23, RN-38, RN-45, RN-46, RN-73.
 - **CU:** CU-20.
 - **P:** P-01, P-02.
-- **D:** D-02 (CU-19), D-03 (RN-78), D-06 (RN-80), D-10 (RN-30), D-11 (RN-51), D-12 (RN-70), D-13 (RN-44), D-14 (RN-76), D-15 (RN-27), D-16 (RN-30), D-17 (RN-70), D-18 (RN-71).
+- **D:** D-02, D-03, D-06, D-10 a D-18.
 - **C:** C-01 a C-12.
-- **Valores de enum:** `NOT_NEEDED`.

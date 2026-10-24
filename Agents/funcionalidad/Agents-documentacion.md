@@ -48,7 +48,7 @@ Antes de responder qué está definido, qué falta o qué sigue, lee `docs/estad
 ## Convenciones
 
 - **Sin «hecho»:** no se documenta lo terminado. Solo existe ⏳ Pendiente; nada de «en curso», «en revisión» ni «completada». Al terminar algo se añade a las reglas (ya es concreto) y se borra de pendientes, planes, comparación y README, sin dejar rastro de que se hizo.
-- **Identificadores:** RN, CU, P, D y C no se renumeran ni se reutilizan, porque el código, las pruebas y los planes los citan. Un número eliminado se agrega a la lista de «Identificadores retirados» de `docs/estado-y-pendientes.md`: solo el número y, si se resolvió en una regla, esa RN entre paréntesis. Sin fechas, motivos ni explicaciones. El siguiente elemento usa un número nuevo.
+- **Identificadores:** cada RN, CU, P, D y C es único: dos elementos vigentes nunca comparten número, y los existentes no se renumeran porque el código, las pruebas y los planes los citan. Un número liberado se agrega a «Números libres» de `docs/estado-y-pendientes.md` (solo el número, sin fechas ni motivos) y se puede reutilizar para un elemento nuevo. Antes de reutilizarlo, comprueba que no lo cite el código, las pruebas ni la documentación; al usarlo, quítalo de la lista.
 - **Sin historial:** no se anotan fechas de aplicación, qué se corrigió, qué decidió el usuario ni cómo se llegó a algo. Eso vive en git.
 - **Sin duplicar:** cada dato vive en un solo documento; los demás enlazan o citan el ID.
 - **Citar secciones:** se escribe «sección 3.3», nunca el signo «§», ni en documentos ni en comentarios del código.
@@ -57,7 +57,7 @@ Antes de responder qué está definido, qué falta o qué sigue, lee `docs/estad
 ## Revisión después de cada cambio
 
 1. El documento de reglas no tiene estados, propuestas ni referencias al código.
-2. Toda RN o CU citada existe y no está retirada; las P, D y C citadas como pendientes siguen abiertas.
+2. Toda RN o CU citada existe y no está en «Números libres»; las P, D y C citadas como pendientes siguen abiertas.
 3. El estado de cada plan coincide con `funcionalidad.md`, el README del frontend y `estado-y-pendientes.md`.
 4. No hay enlaces relativos rotos.
 5. Ninguna regla está definida en dos lugares, ni con el mismo texto ni con uno distinto.
