@@ -5,7 +5,7 @@ export enum SessionStatus {
   DONE = 'DONE',
 }
 
-/** Fecha programada de un plan de ejecución (§3.6). Una `PLANNED` pasada es no realizada (RN-69). */
+/** Fecha programada de un plan de ejecución (sección 3.6). Una `PLANNED` pasada es no realizada (RN-69). */
 export interface ExecutionSession {
   id: string;
   planId: string;
@@ -16,7 +16,7 @@ export interface ExecutionSession {
   completedAt?: string; // ISO; solo cuando está DONE
 }
 
-/** Bloque de tiempo realmente trabajado en una tarea simple o paso (§3.7, RN-71). */
+/** Bloque de tiempo realmente trabajado en una tarea simple o paso (sección 3.7, RN-71). */
 export interface WorkLog {
   id: string;
   sourceType: TaskSourceType;

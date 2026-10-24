@@ -10,6 +10,7 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 
 | Tema | Definido | Estado del código |
 |------|----------|-------------------|
+| Fecha de finalización (`completedAt`) | Tarea simple y paso fijan `completedAt` al llegar a 100 % y lo limpian si baja; en compuesta se calcula desde sus pasos (sección 3.3, sección 3.4, RN-67). | ⏳ Pendiente. `Activity` y `SubActivity` guardan `closure`, pero no tienen `completedAt`. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
 
 Lo que no aparece en la tabla está implementado y vive en las reglas y en [funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md).
@@ -35,16 +36,18 @@ Ninguna está decidida. Mientras no se decida, el código no la implementa por s
 
 | ID | Pregunta | Reglas relacionadas |
 |----|----------|---------------------|
-| D-01 | Autenticación y número de usuarios; motor de base de datos y ORM. | §7.2 punto 1, §7.4 |
+| D-01 | Autenticación y número de usuarios; motor de base de datos y ORM. | sección 7.2 punto 1, sección 7.4 |
 | D-04 | Si se permitirá pausar objetivos y su efecto en agenda y calendario. El código contiene `ObjectiveStatus.PAUSED`, pero ninguna regla lo usa. | RN-29, RN-57, RN-59 |
 | D-05 | En qué momento una idea acepta objetivos y tareas y pasa a meta activa. RN-55 la activa al tener horizonte y tareas; CU-02 crea `ACTIVE` una meta nueva con horizonte. Tampoco está definido qué pasa si se quita el horizonte a una meta activa. | RN-55, CU-02, CU-22 |
 | D-07 | Si objetivos, tareas y pasos necesitan orden manual. | — |
 | D-08 | Respaldos y recuperación de elementos borrados (fuera del MVP). | RN-52 |
-| D-09 | Endpoint de consulta del calendario por rango de fechas. | RN-66, §7.2 punto 11, §8 |
+| D-09 | Endpoint de consulta del calendario por rango de fechas y cómo expone la API la constancia calculada de un ítem o padre (CU-28). | RN-66, RN-70, CU-28, sección 7.2 punto 11, sección 8 |
 
 ## Correcciones pendientes en el documento de reglas
 
-Ninguna.
+| ID | Ubicación | Problema y corrección propuesta |
+|----|-----------|---------------------------------|
+| C-13 | Sección 7.1 (Diagrama ER y tablas) | Las secciones 3.1, 3.3 y RN-70 definen `pauses: [{ from, to? }]` en `Goal` y `Activity`, pero en las tablas `GOAL` y `ACTIVITY` de la sección 7.1 no aparece columna ni tabla para persistir los periodos de pausa. Agregar su representación en el modelo de BD (por ejemplo `jsonb` o tabla de pausas). |
 
 ## Identificadores retirados
 

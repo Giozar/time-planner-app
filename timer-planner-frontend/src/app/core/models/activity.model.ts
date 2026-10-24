@@ -89,7 +89,7 @@ export const WEEK_DAYS_ORDER: readonly WeekDay[] = [
 ];
 
 // Contrato de Ejecución
-/** Plan de ejecución (§3.5). Sus fechas viven en `ExecutionSession`, enlazadas por `id`. */
+/** Plan de ejecución (sección 3.5). Sus fechas viven en `ExecutionSession`, enlazadas por `id`. */
 export interface ExecutionPlan {
   id: string;
   type: ExecutionPlanType;
