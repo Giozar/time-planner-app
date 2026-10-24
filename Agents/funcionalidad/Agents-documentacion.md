@@ -22,7 +22,9 @@ Mantiene la documentación del monorepo coherente. Sabe qué va en cada document
 | `AGENTS.md` (raíz) | Solo el aviso de leer `Agents/Agents.md`. | Cualquier otra instrucción. |
 | `Agents/` (raíz y de cada proyecto) | Instrucciones de trabajo de los agentes y dónde buscar cada cosa. | Reglas de negocio ni estado del trabajo. |
 
-Antes de responder qué está definido, qué falta o qué sigue, lee `docs/estado-y-pendientes.md` y después solo las RN o CU que cite.
+Lee solo lo que la pregunta necesita:
+- **Cómo funciona algo existente:** la fila de su feature en `funcionalidad.md`, solo esas RN y CU, y el código necesario.
+- **Qué falta, qué está por definir o qué sigue:** `docs/estado-y-pendientes.md` y después solo las RN o CU que cite.
 
 ## Qué documento tocar según el cambio
 

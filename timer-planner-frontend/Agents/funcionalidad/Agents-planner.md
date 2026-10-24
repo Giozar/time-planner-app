@@ -15,6 +15,8 @@ Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que emp
 
 ## Cómo planifica
 
+Antes de estos pasos, evalúa el tamaño del cambio y pregunta si quiere plan (ver «Primero, evalúa el tamaño del cambio», abajo).
+
 1. Si la petición es una funcionalidad nueva, sigue el flujo «Propuesta nueva» de `../Agents/funcionalidad/Agents-documentacion.md` antes de planificar.
 2. Identifica la feature en `docs/funcionalidad.md` y las RN/CU que le aplican.
 3. Lee solo esas reglas en el documento de reglas de negocio.
@@ -23,11 +25,20 @@ Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que emp
 6. Revisa el código actual de la feature, lo mínimo necesario.
 7. Entrega el plan con el formato de abajo: muéstralo al usuario y **espera su aprobación**. Guardar el plan no autoriza a implementarlo.
 
-Un cambio pequeño (un arreglo o un ajuste de pantalla) no necesita plan guardado: se comprueban los conflictos (paso 4), se dice qué se va a hacer y se trata como una sola fase.
+### Primero, evalúa el tamaño del cambio
+
+Antes de planificar, lee rápido los archivos que habría que modificar y dile al usuario qué tan grande es el cambio y qué archivos toca.
+
+- **Pequeño:** afecta a una sola feature, toca pocos archivos (como referencia, hasta tres) y no cambia reglas, modelos, estructura de carpetas ni API. Por ejemplo, un texto, un botón o un arreglo dentro de un componente. Dile algo como: «Creo que es un cambio pequeño y no necesita plan, pero si quieres te lo hago. ¿Quieres un plan?». **Pregunta siempre y espera su respuesta.**
+  - Si no quiere plan: comprueba los conflictos (paso 4) y, cuando lo confirme, impleméntalo como una sola fase.
+  - Si quiere plan: sigue los pasos de arriba.
+- **Grande:** si falla alguno de esos puntos, dile que necesita un plan de ejecución y sigue los pasos de arriba.
+
+Con o sin plan, al terminar no queda rastro de lo ejecutado: el plan se borra al implementar su última fase (ver «Formato de un plan»).
 
 ## Cómo implementa por fases
 
-Solo cuando el usuario aprueba el plan y pide implementarlo. Sigue «Implementación» de `../Agents/reglas/Agents-alcance.md`: sin conflictos con las reglas, una fase a la vez, aviso de «Terminó la fase N de M» y espera hasta que el usuario diga que continúes o que está listo; el commit lo hace él o lo pide al agente de git.
+Cuando el usuario aprueba el plan y pide implementarlo, o cuando confirma un cambio pequeño sin plan. Sigue «Implementación» de `../Agents/reglas/Agents-alcance.md`: sin conflictos con las reglas, una fase a la vez, aviso de «Terminó la fase N de M» y espera hasta que el usuario diga que continúes o que está listo; el commit lo hace él o lo pide al agente de git.
 
 Los comandos también siguen ese archivo dentro de una fase aprobada: leer y buscar es libre; pruebas, compilación y lo que modifique archivos piden autorización.
 
