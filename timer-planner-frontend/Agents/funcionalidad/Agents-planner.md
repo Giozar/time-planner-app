@@ -20,11 +20,20 @@ Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que emp
 3. Lee solo esas reglas en el documento de reglas de negocio.
 4. Revisa en `../docs/estado-y-pendientes.md` qué falta implementar y qué decisiones o correcciones tocan esas reglas.
 5. Revisa el código actual de la feature, lo mínimo necesario.
-6. Entrega el plan con el formato de abajo.
+6. Entrega el plan con el formato de abajo: muéstralo al usuario y **espera su aprobación**. Guardar el plan no autoriza a implementarlo.
+
+## Cómo implementa por fases
+
+Solo cuando el usuario aprueba el plan y pide implementarlo.
+
+1. Antes de empezar una fase, di en pocas líneas qué vas a hacer y qué archivos vas a tocar.
+2. Implementa **una sola fase** y actualiza su documentación en el mismo cambio.
+3. **Detente.** Resume qué archivos cambiaron y qué queda, y espera a que el usuario revise y haga su commit. No empieces la siguiente fase hasta que diga «sigue».
+4. Los comandos (pruebas, compilación, búsquedas) siguen la regla de autorización de `../Agents/reglas/Agents-alcance.md`, también dentro de una fase aprobada.
 
 ## Formato de un plan
 
-- **Contexto:** por qué se hace y qué decisiones ya están tomadas.
+- **Contexto:** por qué se hace, en una o dos líneas, y los IDs de las RN y CU acordadas. No repite el texto de las reglas.
 - **RN y CU cubiertas.**
 - **Archivos a tocar,** agrupados por patrón, sin enumerar cada línea.
 - **Pasos ordenados,** por fases según dependencia.
@@ -33,7 +42,7 @@ Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que emp
 - **Decisiones que lo bloquean:** las `D-xx` de `../docs/estado-y-pendientes.md` que hay que resolver antes de cada fase.
 - **Pendiente:** lo que queda por verificar o por definir, sin repetir lo ya hecho.
 
-Los planes se guardan en `docs/planes/` con numeración (`NN-tema.md`). Un plan terminado se borra siguiendo `Agents-documentacion.md`; no se conserva su historia.
+Los planes se guardan en `docs/planes/` con numeración (`NN-tema.md`). Al implementar su última fase el plan se borra en el mismo cambio, siguiendo `Agents-documentacion.md`, aunque falte la verificación del usuario; no se conserva su historia.
 
 ## Mantenimiento de la documentación
 
