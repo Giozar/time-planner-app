@@ -20,7 +20,7 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 
 ## Pendiente
 
-- **Código:** funciona con el modelo anterior; falta el plan 03 (cierre diario con constancia y minutos reales, e historial).
+- **Código:** falta el plan 03 (pantalla de historial).
 
 - **Recorrido manual** en el navegador (`pnpm ng serve`) de los casos de uso implementados. Las pruebas automáticas cubren la lógica, no la interfaz.
 - **Avisos de presupuesto** al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (503 kB sobre 500 kB).

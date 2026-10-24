@@ -8,17 +8,17 @@
   <div class="stats-grid">
     <div class="stat-card">
       <span class="value">{{ metrics().completed }} / {{ metrics().total }}</span>
-      <span class="label">Items Completados</span>
+      <span class="label">Sesiones realizadas</span>
     </div>
 
     <div class="stat-card highlight">
-      <span class="value">{{ metrics().percentage }}%</span>
-      <span class="label">Ejecución Total</span>
+      <span class="value">{{ metrics().total === 0 ? 'Sin datos' : metrics().percentage + ' %' }}</span>
+      <span class="label">Constancia del día</span>
     </div>
 
     <div class="stat-card">
       <span class="value">{{ metrics().executedTimeMin }} / {{ metrics().plannedTimeMin }} min</span>
-      <span class="label">Tiempo Ejecutado / Planeado</span>
+      <span class="label">Tiempo real / previsto</span>
     </div>
   </div>
 

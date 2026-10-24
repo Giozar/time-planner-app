@@ -301,7 +301,7 @@ describe('PlannerService', () => {
     it('cierra una fecha pasada y rechaza una futura', () => {
       seedHierarchy();
       addActivity(simple('a1', [PAST]));
-      expect(service.closeDay('x', PAST)).toMatchObject({ date: PAST, plannedItems: 1, completedItems: 0 });
+      expect(service.closeDay('x', PAST)).toMatchObject({ date: PAST, plannedSessions: 1, completedSessions: 0, adherencePercentage: 0 });
       expect(service.closeDay('x', '2026-10-30')).toBeNull();
     });
 
@@ -311,12 +311,12 @@ describe('PlannerService', () => {
       const closed = service.closeDay('mis notas', PAST)!;
       service.setSelectedDate(PAST);
       service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 50);
-      expect(service.records()[0]).toMatchObject({ completedItems: 0, executedTimeMin: 0 });
+      expect(service.records()[0]).toMatchObject({ completedSessions: 0, actualMinutes: 0 });
 
       service.closeDay('mis notas', PAST);
       expect(service.records()).toHaveLength(1);
       expect(service.records()[0]).toMatchObject({
-        id: closed.id, notes: 'mis notas', completedItems: 1, executedTimeMin: 50,
+        id: closed.id, notes: 'mis notas', completedSessions: 1, actualMinutes: 50,
       });
     });
 
@@ -555,7 +555,19 @@ describe('PlannerService', () => {
       const record = service.closeDay('buen día')!;
 
       expect(record).toMatchObject({
-        date: TODAY, plannedItems: 1, completedItems: 1, plannedTimeMin: 60, executedTimeMin: 60, notes: 'buen día',
+        date: TODAY, plannedSessions: 1, completedSessions: 1, adherencePercentage: 100,
+        plannedMinutes: 60, actualMinutes: 60, notes: 'buen día',
+      });
+      expect(record.closedAt).toEqual(expect.any(String));
+    });
+
+    it('la constancia es null si el día no tuvo sesiones y cuenta el tiempo sin sesión (RN-72)', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-12']));
+      service.logWork('a1', TaskSourceType.ACTIVITY, 25, TODAY);
+
+      expect(service.closeDay('')).toMatchObject({
+        plannedSessions: 0, adherencePercentage: null, plannedMinutes: 0, actualMinutes: 25,
       });
     });
 

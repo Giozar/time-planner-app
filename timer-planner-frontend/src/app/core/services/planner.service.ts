@@ -624,13 +624,13 @@ export class PlannerService {
     const record: DailyRecord = {
       id: existing?.id ?? crypto.randomUUID(),
       date,
-      plannedItems: metrics.total,
-      completedItems: metrics.completed,
-      executionPercentage: metrics.percentage,
-      plannedTimeMin: metrics.plannedTimeMin,
-      executedTimeMin: metrics.executedTimeMin,
+      plannedSessions: metrics.total,
+      completedSessions: metrics.completed,
+      adherencePercentage: metrics.total === 0 ? null : metrics.percentage,
+      plannedMinutes: metrics.plannedTimeMin,
+      actualMinutes: metrics.executedTimeMin,
       notes,
-      createdAt: new Date(),
+      closedAt: new Date().toISOString(),
     };
 
     this.recordsSignal.update(records => existing
