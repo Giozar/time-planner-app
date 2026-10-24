@@ -2,6 +2,7 @@ import { Component, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MatIconModule } from '@angular/material/icon';
 import { PlannerService } from '../../../core/services/planner.service';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 import { DayWorkLog } from '../../../core/services/planner.service';
@@ -12,7 +13,7 @@ import { DateUtils } from '../../../core/utils/date.utils';
 @Component({
   selector: 'app-daily-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, MatIconModule],
   templateUrl: './daily-dashboard.component.html',
   styleUrl: './daily-dashboard.component.css'
 })
@@ -81,6 +82,10 @@ export class DailyDashboardComponent {
     this.router.navigate([], { queryParams: { date }, queryParamsHandling: 'merge' });
   }
 
+  openPicker(picker: HTMLInputElement) {
+    picker.showPicker();
+  }
+
   onDatePicked(value: string) {
     if (value) this.goTo(value);
   }
@@ -88,7 +93,8 @@ export class DailyDashboardComponent {
   /** En días pasados se piden los minutos reales, con los previstos por defecto (RN-27, RN-71). */
   async toggleTask(task: AgendaItem, event: Event) {
     const checkbox = event.target as HTMLInputElement;
-    if (this.readOnly()) {
+    // Fechas futuras y sesiones cubiertas por un cierre manual no se marcan (RN-27, RN-79).
+    if (this.readOnly() || task.isCovered) {
       checkbox.checked = task.isCompleted;
       return;
     }

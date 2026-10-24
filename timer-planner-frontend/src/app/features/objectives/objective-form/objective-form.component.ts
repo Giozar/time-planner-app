@@ -7,6 +7,7 @@ import { DateUtils } from '../../../core/utils/date.utils';
 import { PlannerService } from '../../../core/services/planner.service';
 import { Objective, ObjectiveNature, ObjectiveStatus } from '../../../core/models/objective.model';
 import { OBJECTIVE_NATURE_LABELS } from '../../../core/i18n/labels';
+import { isClosed } from '../../../core/rules';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
@@ -30,6 +31,8 @@ export class ObjectiveFormComponent implements OnInit {
   readonly natureLabels = OBJECTIVE_NATURE_LABELS;
 
   isEditMode = false;
+  /** Cerrado: su deadline ya no se edita (RN-80). */
+  closed = false;
   objectiveId: string | null = null;
   goalId: string | null = null;
 
@@ -66,6 +69,8 @@ export class ObjectiveFormComponent implements OnInit {
       this.originalProgress = objective.progress;
       this.originalStatus = objective.status;
       this.originalDeadline = objective.deadline;
+      this.closed = isClosed(objective);
+      if (this.closed) this.objectiveForm.get('deadline')?.disable();
     } else {
       this.router.navigate(['/goals']);
     }
@@ -73,7 +78,7 @@ export class ObjectiveFormComponent implements OnInit {
 
   onSubmit() {
     if (this.objectiveForm.valid && this.goalId) {
-      const formValue = this.objectiveForm.value;
+      const formValue = this.objectiveForm.getRawValue();
       const deadline = formValue.deadline!;
 
       // RN-14: un deadline nuevo o modificado no puede ser anterior a hoy.

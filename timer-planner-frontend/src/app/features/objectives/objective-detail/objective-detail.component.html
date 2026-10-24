@@ -54,10 +54,15 @@
                                 class="icon-btn-small">
                                 <mat-icon>edit</mat-icon>
                             </a>
+                            @if (!isClosed(activity)) {
                             <button class="icon-btn-small-danger" (click)="togglePause(activity)"
                                 [title]="activity.status === ActivityStatus.PAUSED ? 'Reanudar Tarea' : 'Pausar Tarea'">
                                 <mat-icon>{{ activity.status === ActivityStatus.PAUSED ? 'play_arrow' : 'pause' }}</mat-icon>
                             </button>
+                            <button class="icon-btn-small" (click)="closeActivity(activity)" title="Cerrar Tarea">
+                                <mat-icon>task_alt</mat-icon>
+                            </button>
+                            }
                             <button class="icon-btn-small-danger" (click)="onDeleteActivity(activity)"
                                 title="Eliminar Tarea">
                                 <mat-icon>delete</mat-icon>
@@ -128,7 +133,16 @@
                                         <mat-icon>delete</mat-icon>
                                     </button>
 
+                                    @if (!isClosed(sub)) {
+                                    <button class="action-icon-btn" (click)="closeStep(sub)" title="Cerrar Paso">
+                                        <mat-icon>task_alt</mat-icon>
+                                    </button>
+                                    }
+
                                     <span class="sub-details">
+                                        @if (isClosed(sub)) {
+                                        <span class="status {{ sub.status }}">{{ sub.status | label: stepStatusLabels }}</span>
+                                        }
                                         <span class="mini-complexity {{ sub.complexity }}">{{ sub.complexity | label: complexityLabels
                                             }}</span>
                                         <span class="sub-progress-text">

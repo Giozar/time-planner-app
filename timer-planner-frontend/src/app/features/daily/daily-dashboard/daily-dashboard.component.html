@@ -3,7 +3,24 @@
     <header class="daily-header">
         <div>
             <h1>{{ isToday() ? 'Agenda de Hoy' : 'Agenda del día' }}</h1>
-            <p class="date-display">{{ displayDate() | date:'fullDate' }}</p>
+
+            <nav class="date-nav" aria-label="Navegar entre días">
+                <button type="button" class="step-btn" (click)="shiftDay(-1)" aria-label="Día anterior">
+                    <mat-icon fontIcon="chevron_left"></mat-icon>
+                </button>
+                <button type="button" class="date-btn" (click)="openPicker(picker)" aria-label="Elegir fecha">
+                    <mat-icon fontIcon="event"></mat-icon>
+                    <span>{{ displayDate() | date:'EEE d MMM y' }}</span>
+                </button>
+                <input #picker type="date" class="picker-input" tabindex="-1" aria-hidden="true"
+                    [value]="selectedDate()" (change)="onDatePicked(picker.value)">
+                <button type="button" class="step-btn" (click)="shiftDay(1)" aria-label="Día siguiente">
+                    <mat-icon fontIcon="chevron_right"></mat-icon>
+                </button>
+                @if (!isToday()) {
+                <button type="button" class="today-btn" (click)="goTo(null)">Hoy</button>
+                }
+            </nav>
         </div>
 
         <div class="metrics-card">
@@ -18,16 +35,6 @@
         </div>
     </header>
 
-    <nav class="date-nav" aria-label="Navegar entre días">
-        <button type="button" class="nav-btn" (click)="shiftDay(-1)" aria-label="Día anterior">◀</button>
-        <input type="date" class="date-picker" [value]="selectedDate()" (change)="onDatePicked($any($event.target).value)"
-            aria-label="Elegir fecha">
-        <button type="button" class="nav-btn" (click)="shiftDay(1)" aria-label="Día siguiente">▶</button>
-        @if (!isToday()) {
-        <button type="button" class="nav-today" (click)="goTo(null)">Hoy</button>
-        }
-    </nav>
-
     @if (readOnly()) {
     <p class="readonly-note">Es una fecha futura: solo puedes consultarla.</p>
     }
@@ -37,7 +44,8 @@
         <div class="task-item" [class.completed]="task.isCompleted">
 
             <label class="checkbox-wrapper">
-                <input type="checkbox" [checked]="task.isCompleted" [disabled]="readOnly()" (change)="toggleTask(task, $event)">
+                <input type="checkbox" [checked]="task.isCompleted" [disabled]="readOnly() || task.isCovered"
+                    (change)="toggleTask(task, $event)">
                 <span class="checkmark"></span>
             </label>
 
@@ -45,7 +53,8 @@
                 <div class="task-main">
                     <span class="task-title">{{ task.title }}</span>
                     <span class="task-time">
-                        @if (task.isCompleted) { {{ task.executedMinutes }} / }{{ task.estimatedDurationMin }} min
+                        @if (task.isCovered) { Cerrada antes }
+                        @else { @if (task.isCompleted) { {{ task.executedMinutes }} / }{{ task.estimatedDurationMin }} min }
                     </span>
                 </div>
             </div>

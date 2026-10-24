@@ -21,12 +21,6 @@ h1 {
   color: #2c3e50;
 }
 
-.date-display {
-  margin: 0.5rem 0 0;
-  color: #7f8c8d;
-  text-transform: capitalize;
-}
-
 .metrics-card {
   display: flex;
   gap: 1.5rem;
@@ -187,12 +181,75 @@ h1 {
   box-shadow: 0 6px 12px rgba(44, 62, 80, 0.3);
 }
 
-/* Navegación entre días */
+/* Navegación entre días: una sola píldora dentro de la cabecera */
 .date-nav {
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0.25rem;
+  background: #f0f2f5;
+  border-radius: 50px;
+}
+
+.step-btn,
+.date-btn,
+.today-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  background: transparent;
+  color: #2c3e50;
+  cursor: pointer;
+  border-radius: 50px;
+  transition: background 0.2s;
+}
+
+.step-btn {
+  padding: 0.3rem;
+}
+
+.date-btn {
+  padding: 0.35rem 0.8rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.today-btn {
+  padding: 0.35rem 0.9rem;
+  background: #3498db;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.step-btn:hover,
+.date-btn:hover {
+  background: #dfe4ea;
+}
+
+.today-btn:hover {
+  background: #2980b9;
+}
+
+.date-nav mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* El selector nativo se abre desde el botón de fecha */
+.picker-input {
+  position: absolute;
+  left: 2.5rem;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .nav-btn,
@@ -208,13 +265,6 @@ h1 {
 .nav-btn:hover,
 .nav-today:hover {
   border-color: #3498db;
-}
-
-.date-picker {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 0.5rem;
-  color: #2c3e50;
 }
 
 .readonly-note {

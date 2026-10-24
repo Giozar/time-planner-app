@@ -24,7 +24,8 @@
         <div class="form-group">
             <label for="deadline">Fecha límite (Deadline) <span class="req">*</span></label>
             <input id="deadline" type="date" formControlName="deadline" [min]="minDate">
-            <p class="hint">Es el tope de todas las tareas y pasos de este objetivo.</p>
+            <p class="hint">{{ closed ? 'El objetivo está cerrado: su fecha límite ya no se edita.'
+                : 'Es el tope de todas las tareas y pasos de este objetivo.' }}</p>
         </div>
 
         <div class="actions">

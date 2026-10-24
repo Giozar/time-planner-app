@@ -16,17 +16,20 @@ export function computeProgress(sessions: readonly ExecutionSession[]): number {
 
 /**
  * Estado de una tarea según su progreso (RN-31, RN-32).
- * `PAUSED` es una decisión del usuario, no del progreso: se conserva (RN-59).
- * `OVERDUE` nunca se devuelve: es derivado (ver `isOverdue`).
+ * `closed`: la simple tiene cierre guardado o la compuesta tiene todos sus pasos cerrados (RN-77, RN-78);
+ * queda `COMPLETED` al 100 % y `OVERDUE` si no. El cierre prevalece sobre la pausa.
+ * `PAUSED` es una decisión del usuario, no del progreso: se conserva mientras no esté cerrada (RN-59).
  */
-export function deriveStatus(progress: number, current?: ActivityStatus): ActivityStatus {
+export function deriveStatus(progress: number, current?: ActivityStatus, closed = false): ActivityStatus {
+  if (closed) return progress >= 100 ? ActivityStatus.COMPLETED : ActivityStatus.OVERDUE;
   if (current === ActivityStatus.PAUSED) return ActivityStatus.PAUSED;
   if (progress >= 100) return ActivityStatus.COMPLETED;
   return progress <= 0 ? ActivityStatus.PENDING : ActivityStatus.IN_PROGRESS;
 }
 
-/** Estado de un paso según su progreso (RN-31). */
-export function deriveSubActivityStatus(progress: number): SubActivityStatus {
+/** Estado de un paso según su progreso (RN-31); `closed` si tiene cierre guardado (RN-77). */
+export function deriveSubActivityStatus(progress: number, closed = false): SubActivityStatus {
   if (progress >= 100) return SubActivityStatus.COMPLETED;
+  if (closed) return SubActivityStatus.OVERDUE;
   return progress <= 0 ? SubActivityStatus.PENDING : SubActivityStatus.IN_PROGRESS;
 }

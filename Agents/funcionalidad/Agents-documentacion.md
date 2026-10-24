@@ -19,7 +19,7 @@ Mantiene la documentación del monorepo coherente. Sabe qué va en cada document
 | `timer-planner-frontend/docs/funcionalidad.md` | Qué RN y CU aplican a cada feature y su estado. | El texto de las reglas. |
 | `timer-planner-frontend/docs/README.md` | Índice, estado general y tabla de mantenimiento del frontend. | Detalle de fases (va en los planes). |
 | `timer-planner-frontend/docs/arquitectura.md`, `buenas-practicas.md` | Estructura del código y convenciones. | Reglas de negocio. |
-| `AGENTS.md` y `CLAUDE.md` (raíz) | Solo el aviso de leer `Agents/Agents.md`. | Cualquier otra instrucción. |
+| `AGENTS.md` (raíz) | Solo el aviso de leer `Agents/Agents.md`. | Cualquier otra instrucción. |
 | `Agents/` (raíz y de cada proyecto) | Instrucciones de trabajo de los agentes y dónde buscar cada cosa. | Reglas de negocio ni estado del trabajo. |
 
 Antes de responder qué está definido, qué falta o qué sigue, lee `docs/estado-y-pendientes.md` y después solo las RN o CU que cite.

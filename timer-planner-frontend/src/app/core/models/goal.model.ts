@@ -10,6 +10,7 @@ export enum GoalStatus {
   IDEA = 'IDEA',
   ACTIVE = 'ACTIVE',
   PAUSED = 'PAUSED',
+  FINISHED = 'FINISHED', // todos sus objetivos cerrados (RN-78)
 }
 
 /**

@@ -26,6 +26,7 @@ export const GOAL_STATUS_LABELS: Record<GoalStatus, string> = {
   [GoalStatus.IDEA]: 'Idea',
   [GoalStatus.ACTIVE]: 'Activa',
   [GoalStatus.PAUSED]: 'Pausada',
+  [GoalStatus.FINISHED]: 'Finalizada',
 };
 
 export const OBJECTIVE_NATURE_LABELS: Record<ObjectiveNature, string> = {
@@ -43,6 +44,7 @@ export const OBJECTIVE_STATUS_LABELS: Record<ObjectiveStatus, string> = {
   [ObjectiveStatus.ACTIVE]: 'Activo',
   [ObjectiveStatus.PAUSED]: 'Pausado',
   [ObjectiveStatus.COMPLETED]: 'Completado',
+  [ObjectiveStatus.OVERDUE]: 'Vencido',
 };
 
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
@@ -62,6 +64,7 @@ export const SUBACTIVITY_STATUS_LABELS: Record<SubActivityStatus, string> = {
   [SubActivityStatus.PENDING]: 'Pendiente',
   [SubActivityStatus.IN_PROGRESS]: 'En progreso',
   [SubActivityStatus.COMPLETED]: 'Completada',
+  [SubActivityStatus.OVERDUE]: 'Vencida',
 };
 
 export const ACTIVITY_PRIORITY_LABELS: Record<ActivityPriority, string> = {

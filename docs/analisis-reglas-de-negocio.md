@@ -19,7 +19,7 @@
 
 ## 1. Visión general del dominio
 
-Time Planner es un planificador personal jerárquico. El usuario define **metas** de vida/carrera, las descompone en **objetivos**, y cada objetivo en **tareas** que se planifican en el calendario. Cada día, el usuario ve su **agenda de hoy**, marca lo que ejecutó y al final **cierra el día**, generando un registro histórico.
+Time Planner es un planificador personal jerárquico. El usuario define **metas** de vida/carrera, las descompone en **objetivos**, y cada objetivo en **tareas** que se planifican en el calendario. Cada día, el usuario ve su **agenda de hoy**, marca lo que ejecutó y al final **cierra el día** (si no lo hace, se cierra solo al día siguiente), generando un registro histórico. Pasos, tareas y objetivos se **cierran** a mano cuando el usuario los termina o solos al día siguiente de su fecha límite; la meta queda finalizada cuando se cierran todos sus objetivos.
 
 ### Jerarquía
 
@@ -45,6 +45,7 @@ Solo las tareas simples y los pasos son **ítems ejecutables**. Sus sesiones rea
 - **Tiempo real:** suma de los minutos de `WorkLog`, incluidos los trabajos sin sesión programada. Nunca se deduce de la duración prevista.
 - **Fechas:** `YYYY-MM-DD` en la zona local del usuario; las fechas de calendario no son marcas de tiempo.
 - **Cierre diario:** un resumen por fecha. El detalle de sesiones y minutos permanece en `ExecutionSession` y `WorkLog`; al volver a cerrar la misma fecha se actualiza el resumen.
+- **Cierre de elementos:** un paso, una tarea o un objetivo cerrado queda **completado** (100 %) o **vencido** (se cerró con menos). Para su padre, los dos cuentan como cerrados (RN-77, RN-78).
 
 **Ejemplo:** hay cuatro lunes planeados de 60 minutos. Ya pasaron dos: el primero no se realizó y el segundo sí, con 90 minutos reales. La tarea va al **25 % de avance** (1 de 4 sesiones), con **50 % de constancia** (1 de 2 sesiones exigibles) y **90 minutos reales**. Si después marca los lunes que faltan, llega al 100 %.
 
@@ -59,7 +60,7 @@ Solo las tareas simples y los pasos son **ítems ejecutables**. Sus sesiones rea
 | `id`, `title`, `createdAt` | UUID, texto, fecha/hora | Identidad y título de al menos 3 caracteres. |
 | `horizon` | `GoalHorizon` o `null` | Sin horizonte, la meta se crea como `IDEA` (RN-55). |
 | `progress` | entero 0–100 | Promedio simple del avance de sus objetivos; 0 si no hay. |
-| `status` | `GoalStatus` | `IDEA`, `ACTIVE` o `PAUSED`. |
+| `status` | `GoalStatus` | `IDEA`, `ACTIVE`, `PAUSED` o `FINISHED` (todos sus objetivos cerrados, RN-78). |
 | `pauses` | lista de periodos `{ from, to? }` | Historial de pausas; `to` falta mientras sigue pausada (RN-70). |
 
 La meta no tiene deadline, constancia almacenada ni minutos reales propios.
@@ -72,7 +73,7 @@ La meta no tiene deadline, constancia almacenada ni minutos reales propios.
 | `nature` | `ObjectiveNature` | Por defecto `OTHER`. |
 | `deadline` | fecha local | Obligatorio; limita tareas, pasos y sesiones. |
 | `progress` | entero 0–100 | Promedio simple del avance de sus tareas; 0 si no hay. |
-| `status` | `ObjectiveStatus` | El cierre `COMPLETED` es manual y exige 100 %. |
+| `status` | `ObjectiveStatus` | `ACTIVE`; cerrado cuando todas sus tareas lo están: `COMPLETED` al 100 % y `OVERDUE` si no (RN-63, RN-78). |
 
 No almacena constancia ni minutos reales; se consultan desde sus ítems ejecutables.
 
@@ -87,9 +88,10 @@ No almacena constancia ni minutos reales; se consultan desde sus ítems ejecutab
 | `deadline` | fecha local opcional | Si falta, hereda el del objetivo; nunca lo supera. |
 | `executionPlan` | `ExecutionPlan` o `null` | Obligatorio en simple; `null` en compuesta. |
 | `totalTimeRequiredMin` | entero calculado | Simple: suma de `plannedMinutes` de sus sesiones. Compuesta: suma de `plannedMinutes` de las sesiones de sus pasos (RN-24). |
-| `progress` | entero 0–100 | Simple: calculado con sus sesiones (RN-30). Compuesta: promedio de pasos. |
+| `progress` | entero 0–100 | Simple: calculado con sus sesiones (RN-30), o 100 si se cerró a mano (RN-77). Compuesta: promedio de pasos. |
 | `completedAt` | fecha/hora opcional | En simple se almacena: se fija al llegar a 100 % y se limpia si baja. En compuesta no se almacena: se calcula como el `completedAt` más reciente de sus pasos cuando todos están al 100 %. |
-| `status` | `ActivityStatus` | Derivado del avance, salvo pausa manual; `OVERDUE` es visual. |
+| `status` | `ActivityStatus` | Derivado del avance, del cierre y de la pausa manual (RN-31, RN-32). `COMPLETED` y `OVERDUE` son los estados cerrados. |
+| `closure` | `{ type: ClosureType, closedOn }` opcional | Solo en simple: cierre manual o automático y su fecha (RN-77). La compuesta no lo guarda: se cierra con sus pasos (RN-78). |
 | `pauses` | lista de periodos `{ from, to? }` | Historial de pausas de la tarea; `to` falta mientras sigue pausada (RN-70). |
 
 ### 3.4 SubActivity (Paso)
@@ -100,9 +102,10 @@ No almacena constancia ni minutos reales; se consultan desde sus ítems ejecutab
 | `deadline` | fecha local opcional | Hereda el efectivo de la tarea; nunca lo supera. |
 | `complexity` | `ActivityComplexity` | Por defecto `MEDIUM`. |
 | `executionPlan` | `ExecutionPlan` | Obligatorio. |
-| `progress` | entero 0–100 | Calculado con sus sesiones (RN-30); los minutos no lo cambian. |
+| `progress` | entero 0–100 | Calculado con sus sesiones (RN-30), o 100 si se cerró a mano (RN-77); los minutos no lo cambian. |
 | `completedAt` | fecha/hora opcional | Se fija al llegar a 100 % y se limpia si baja. |
-| `status` | `SubActivityStatus` | Derivado del avance. |
+| `status` | `SubActivityStatus` | Derivado del avance y del cierre (RN-31). `COMPLETED` y `OVERDUE` son los estados cerrados. |
+| `closure` | `{ type: ClosureType, closedOn }` opcional | Cierre manual o automático y su fecha (RN-77). |
 
 ### 3.5 ExecutionPlan (Plan de ejecución)
 
@@ -155,7 +158,7 @@ Guarda un resumen, no duplica el detalle de sesiones y bloques de trabajo. Si se
 
 ### 3.9 Proyecciones de agenda y calendario
 
-La **agenda** muestra las sesiones de la fecha elegida (hoy por defecto) que cumplen la visibilidad de RN-29, con minutos previstos y estado; permite registrar minutos reales y marcar la sesión realizada en hoy y en fechas pasadas (RN-27, RN-75). El **calendario** muestra esas sesiones en sus fechas programadas, incluidas las pasadas, y su jerarquía; es solo de consulta. La constancia y el tiempo real se calculan desde sesiones y `WorkLog`, respectivamente.
+La **agenda** muestra las sesiones de la fecha elegida (hoy por defecto) que cumplen la visibilidad de RN-29, con minutos previstos y estado; permite registrar minutos reales y marcar la sesión realizada en hoy y en fechas pasadas (RN-27, RN-75), salvo las cubiertas por un cierre manual, que se muestran completas (RN-79). El **calendario** muestra esas sesiones en sus fechas programadas, incluidas las pasadas, y su jerarquía; es solo de consulta. La constancia y el tiempo real se calculan desde sesiones y `WorkLog`, respectivamente.
 
 ## 4. Catálogos / enumeraciones
 
@@ -181,6 +184,7 @@ La **agenda** muestra las sesiones de la fecha elegida (hoy por defecto) que cum
 | `GoalStatus` | `IDEA` | Idea |
 | `GoalStatus` | `ACTIVE` | Activa |
 | `GoalStatus` | `PAUSED` | Pausada |
+| `GoalStatus` | `FINISHED` | Finalizada |
 | `ObjectiveNature` | `PERSONAL` | Personal |
 | `ObjectiveNature` | `PROFESSIONAL` | Profesional |
 | `ObjectiveNature` | `HEALTH` | Salud |
@@ -191,16 +195,20 @@ La **agenda** muestra las sesiones de la fecha elegida (hoy por defecto) que cum
 | `ObjectiveNature` | `OTHER` | Otro |
 | `ObjectiveStatus` | `ACTIVE` | Activo |
 | `ObjectiveStatus` | `COMPLETED` | Completado |
+| `ObjectiveStatus` | `OVERDUE` | Vencido |
 | `ActivityType` | `SIMPLE` | Simple |
 | `ActivityType` | `COMPOSITE` | Compuesta |
 | `ActivityStatus` | `PENDING` | Pendiente |
 | `ActivityStatus` | `IN_PROGRESS` | En progreso |
 | `ActivityStatus` | `COMPLETED` | Completada |
 | `ActivityStatus` | `PAUSED` | Pausada |
-| `ActivityStatus` | `OVERDUE` | Vencida (derivado, no se almacena) |
+| `ActivityStatus` | `OVERDUE` | Vencida |
 | `SubActivityStatus` | `PENDING` | Pendiente |
 | `SubActivityStatus` | `IN_PROGRESS` | En progreso |
 | `SubActivityStatus` | `COMPLETED` | Completada |
+| `SubActivityStatus` | `OVERDUE` | Vencida |
+| `ClosureType` | `MANUAL` | Cerrada por el usuario |
+| `ClosureType` | `AUTOMATIC` | Cerrada al vencer |
 | `ActivityPriority` | `HIGH` | Alta |
 | `ActivityPriority` | `MEDIUM` | Media |
 | `ActivityPriority` | `LOW` | Baja |
@@ -300,14 +308,14 @@ Se numeran para referenciarlas desde la implementación y las pruebas.
 
 | ID | Regla |
 |----|-------|
-| RN-30 | **Progreso de tarea simple o paso** = `round(sesiones DONE / sesiones del plan × 100)`; 0 si no tiene sesiones. Cambia al marcar o desmarcar una sesión, de cualquier fecha; los minutos no lo cambian. La aplicación no juzga qué tan bien se hizo cada sesión: eso queda en el usuario. |
-| RN-31 | **Estado de ítem ejecutable:** `PENDING` si progreso = 0, `COMPLETED` si progreso = 100 y `IN_PROGRESS` en otro caso; se respeta una pausa manual de tarea. |
-| RN-32 | **Progreso de tarea compuesta** = promedio simple (redondeado) del progreso de sus pasos; 0 si no tiene pasos. Estado: `PENDING` si progreso = 0, `COMPLETED` si es 100 y `IN_PROGRESS` en otro caso. |
+| RN-30 | **Progreso de tarea simple o paso** = `round(sesiones DONE / sesiones del plan × 100)`; 0 si no tiene sesiones; 100 si se cerró a mano (RN-77). Cambia al marcar o desmarcar una sesión, de cualquier fecha; los minutos no lo cambian. La aplicación no juzga qué tan bien se hizo cada sesión: eso queda en el usuario. |
+| RN-31 | **Estado de ítem ejecutable:** `COMPLETED` si progreso = 100. Si tiene cierre guardado y no llega a 100, `OVERDUE` (RN-77). Si no, `PENDING` si progreso = 0 e `IN_PROGRESS` en otro caso; se respeta una pausa manual de tarea mientras no esté cerrada. |
+| RN-32 | **Progreso de tarea compuesta** = promedio simple (redondeado) del progreso de sus pasos; 0 si no tiene pasos. Estado: con todos sus pasos cerrados, `COMPLETED` si es 100 y `OVERDUE` si no (RN-78); si no, `PENDING` si progreso = 0, `COMPLETED` si es 100 y `IN_PROGRESS` en otro caso. |
 | RN-33 | **Progreso de objetivo** = promedio simple del progreso de sus tareas; 0 si no tiene. |
 | RN-34 | **Progreso de meta** = promedio simple del progreso de sus objetivos; 0 si no tiene. |
 | RN-35 | Los promedios son **no ponderados**: no consideran duración, complejidad, prioridad ni número de sesiones. |
 | RN-36 | El progreso agregado se recalcula hacia arriba (paso → tarea → objetivo → meta) al marcar o desmarcar una sesión o al crear, editar o eliminar hijos. |
-| RN-37 | Ningún avance se edita a mano: el de tareas simples y pasos sale de sus sesiones (RN-30) y el de sus padres se agrega. Los estados de pausa y cierre siguen sus reglas propias. |
+| RN-37 | Ningún avance se edita a mano: el de tareas simples y pasos sale de sus sesiones (RN-30) o de su cierre manual (RN-77), y el de sus padres se agrega. Los estados de pausa y cierre siguen sus reglas propias. |
 
 ### 5.7 Cambio de tipo de tarea
 
@@ -323,7 +331,7 @@ Se numeran para referenciarlas desde la implementación y las pruebas.
 | RN-41 | Al cerrar el día se guarda un `DailyRecord` con el resumen de sesiones, minutos previstos, minutos reales y notas opcionales. |
 | RN-42 | `plannedMinutes` suma los minutos previstos de las sesiones visibles de la fecha cerrada; `actualMinutes` suma los `WorkLog.minutes` de esa fecha, incluidos los trabajos sin sesión programada. |
 | RN-43 | **Un registro por fecha.** Cerrar un día que ya tiene registro reemplaza sus métricas, notas y fecha de cierre; conserva el mismo `id`. El historial conserva una sola fila por día con el cierre más reciente. |
-| RN-44 | **Cerrar un día** se puede hacer con hoy o con cualquier fecha pasada. No bloquea ni modifica las tareas: sus sesiones se pueden seguir marcando después. Si cambian, el cierre no se actualiza solo: al volver a cerrar ese día se recalcula y se sobrescribe (RN-43). |
+| RN-44 | **Cerrar un día** se puede hacer con hoy o con cualquier fecha pasada; si no se cierra, se cierra solo al día siguiente (RN-81). No bloquea ni modifica las tareas: sus sesiones se pueden seguir marcando después. Si cambian, el cierre no se actualiza solo: al volver a cerrar ese día se recalcula y se sobrescribe (RN-43). |
 
 ### 5.9 Recurrencia, planificación y deadlines
 
@@ -339,18 +347,18 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 | RN-50 | **Tarea compuesta.** `executionPlan` y `recurrence` son `null`. Su progreso sale de sus pasos (RN-32). Cada paso tiene su propio plan obligatorio, con programación independiente de los demás pasos. |
 | RN-51 | **Editar un plan.** Se conservan las sesiones pasadas, las `DONE` y los `WorkLog`. Se sustituyen las sesiones `PLANNED` de hoy y futuras (el plan nuevo se genera desde hoy, RN-21), así que el avance se recalcula sobre el plan nuevo (RN-30). |
 | RN-52 | **Borrado con historial.** Cualquier elemento (meta, objetivo, tarea o paso) se puede borrar, aunque esté completado o tenga hijos. El borrado es en cascada (RN-07 a RN-09) y exige confirmación escrita (RN-62). Los respaldos quedan fuera del MVP. |
-| RN-53 | **Agregar hijos.** Se pueden agregar pasos, tareas u objetivos a un padre existente, aunque ya tenga progreso. El progreso del padre se recalcula sobre todos sus hijos, así que puede bajar. |
+| RN-53 | **Agregar hijos.** Se pueden agregar pasos, tareas u objetivos a un padre existente, aunque ya tenga progreso o esté cerrado; un padre cerrado se reabre (RN-64). El progreso del padre se recalcula sobre todos sus hijos, así que puede bajar. |
 | RN-54 | **Borrar hijos no completados.** Es posible borrar un elemento que no está completado. Solo se recalcula el progreso de sus ancestros. |
 | RN-55 | **Idea.** Una meta puede existir en estado `IDEA`: sin tareas programadas, sin agenda y sin horizonte obligatorio. Pasa a `ACTIVE` cuando se le asigna horizonte y se crean sus tareas con deadline. |
 | RN-56 | **La meta no tiene fecha.** Una meta no lleva deadline ni fecha objetivo; solo se clasifica por `horizon` (corto, mediano o largo plazo). Los deadlines que obligan son los del objetivo y, dentro de él, los de tareas y pasos (RN-14, RN-48, RN-65). |
 | RN-57 | **Pausa de meta.** Pausar una meta cambia solo su estado a `PAUSED`. Se oculta su agenda, pero no se modifican deadlines, sesiones ni progreso de sus hijos. |
-| RN-58 | **Tareas vencidas.** Una tarea no completada con deadline efectivo ya pasado se muestra como `OVERDUE`. Es un estado derivado, no se almacena. Al reanudar la meta, el usuario replanifica esas tareas. |
+| RN-58 | **Vencidos.** `OVERDUE` es el estado guardado de un paso, una tarea o un objetivo cerrado con menos de 100 % (RN-77, RN-78), también si estaba pausado. Lo que vence ya no se replanifica: lo que sí se hizo se marca en su día pasado (RN-27) y el avance se recalcula sin reabrirlo. Una tarea compuesta sin pasos con deadline pasado se muestra vencida, aunque no se cierra. |
 | RN-59 | **Pausa de tarea (MVP).** Igual que la pausa de meta: solo oculta la tarea de la agenda. No cambia su deadline, sus sesiones ni su progreso. |
-| RN-60 | **Postergar sin penalización.** El usuario puede editar el deadline de cualquier elemento no completado sin restricciones de tiempo, salvo las de RN-48 y RN-49. Postergar no reduce el progreso ni borra historial. Las tareas `OVERDUE` son solo una etiqueta visual. |
+| RN-60 | **Postergar sin penalización.** El usuario puede editar el deadline de cualquier elemento no cerrado sin restricciones de tiempo, salvo las de RN-48 y RN-49. Postergar no reduce el progreso ni borra historial. Un elemento cerrado ya no se posterga (RN-80). |
 | RN-61 | **Historial para estadísticas.** Los elementos no completados, pausados o vencidos se conservan, salvo borrado explícito (RN-52). Esto permitirá analizar a futuro qué metas se terminaron y cuáles no (fuera del MVP). |
 | RN-62 | **Confirmación de borrado.** Borrar exige escribir el título exacto del elemento. Aplica a meta, objetivo, tarea y paso. Antes de confirmar se muestra qué se va a borrar: cuántos hijos y cuántos elementos completados. |
-| RN-63 | **Cierre de objetivo.** `COMPLETED` no es automático. El usuario decide cuándo cerrar el objetivo, y solo se permite si su progreso es 100%. Llegar a 100% no lo cierra: queda `ACTIVE` hasta que el usuario lo cierre. Un objetivo cerrado puede seguir recibiendo tareas o pasos mientras los deadlines lo permitan (RN-53). |
-| RN-64 | **Reapertura automática.** Si un objetivo `COMPLETED` baja de 100% porque recibe tareas o pasos, se borra un hijo completado o se desmarca una sesión, vuelve a `ACTIVE` automáticamente. Su progreso lo mantiene por debajo de 100%, así que no puede seguir cerrado. |
+| RN-63 | **Cierre de objetivo.** El objetivo se cierra cuando todas sus tareas están cerradas (RN-78): queda `COMPLETED` si su progreso es 100 % y `OVERDUE` si no. El usuario también puede cerrarlo a mano en cualquier momento: sus tareas simples y pasos abiertos se cierran como completados (RN-77). Un objetivo cerrado puede seguir recibiendo tareas o pasos mientras los deadlines lo permitan (RN-53). |
+| RN-64 | **Reapertura automática.** Un padre cerrado (tarea compuesta, objetivo o meta finalizada) vuelve a abrirse en cuanto deja de tener todos sus hijos cerrados: al recibir un hijo nuevo, al borrar sus hijos o al desmarcar una sesión de un ítem que estaba al 100 % sin cierre guardado. Su avance se recalcula y puede bajar. Una tarea simple o un paso con cierre guardado no se reabre. |
 | RN-65 | **Deadline del objetivo.** Cada objetivo tiene un `deadline` obligatorio, porque una meta puede tener varios objetivos y cada uno con su propio plazo. Es el tope de todas sus tareas y pasos (RN-48). Se puede postergar o adelantar sin restricciones de tiempo (RN-60), salvo que el guardado se rechaza si alguna tarea, paso o ejecución quedaría fuera del nuevo límite (RN-49). |
 | RN-66 | **Calendario.** Muestra las `ExecutionSession` programadas de tareas simples y pasos, pasadas y futuras. Aplica la visibilidad de RN-29. Es solo de consulta: no se marca ejecución desde el calendario. Al pasar el cursor, enfocar o tocar una sesión se muestra su jerarquía y los deadlines del objetivo y del ítem. Permite navegar por mes y año sin límite. |
 
@@ -359,12 +367,22 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 | ID | Regla |
 |----|-------|
 | RN-67 | **Finalización del resultado.** Cuando el avance de una tarea simple o paso llega a 100 %, se fija `completedAt`; si baja, se borra. En tarea compuesta se calcula desde sus pasos y no se almacena (§3.3). |
-| RN-68 | **Medidas separadas.** El avance cuenta las sesiones realizadas sobre todas las del plan; la constancia, sobre las exigibles (RN-70); el tiempo real suma minutos (RN-71). Registrar minutos sin sesión no marca ninguna sesión ni cambia el avance. El objetivo conserva su cierre manual al llegar al 100 % (RN-63). |
-| RN-69 | **Estado de sesión.** Cada fecha programada tiene una `ExecutionSession` única. `PLANNED` es la inicial; `DONE` significa que se trabajó ese día y tiene `completedAt`. Una `PLANNED` pasada, o de hoy tras cerrar el día, se muestra como no realizada. |
-| RN-70 | **Constancia.** `round(DONE / (DONE + no realizadas) × 100)` sobre las sesiones exigibles del ítem; devuelve `null` si no hay ninguna. Incluye las `DONE` hasta hoy y las `PLANNED` de fechas pasadas; una `PLANNED` de hoy cuenta al cerrar el día. Excluye sesiones futuras y las de fechas en que la meta o la tarea estaba pausada (según su historial de pausas, RN-57, RN-59). Se muestra también en tarea compuesta, objetivo y meta, calculada con todas las sesiones de sus descendientes ejecutables, sin promediar porcentajes. |
+| RN-68 | **Medidas separadas.** El avance cuenta las sesiones realizadas sobre todas las del plan; la constancia, sobre las exigibles (RN-70); el tiempo real suma minutos (RN-71). Registrar minutos sin sesión no marca ninguna sesión ni cambia el avance. El cierre de cada nivel sigue RN-77 y RN-78. |
+| RN-69 | **Estado de sesión.** Cada fecha programada tiene una `ExecutionSession` única. `PLANNED` es la inicial; `DONE` significa que se trabajó ese día y tiene `completedAt`. Una `PLANNED` pasada, o de hoy tras cerrar el día, se muestra como no realizada, salvo que esté cubierta por un cierre manual (RN-79). |
+| RN-70 | **Constancia.** `round(DONE / (DONE + no realizadas) × 100)` sobre las sesiones exigibles del ítem; devuelve `null` si no hay ninguna. Incluye las `DONE` hasta hoy y las `PLANNED` de fechas pasadas; una `PLANNED` de hoy cuenta al cerrar el día. Excluye sesiones futuras, las cubiertas por un cierre manual (RN-79) y las de fechas en que la meta o la tarea estaba pausada (según su historial de pausas, RN-57, RN-59). Se muestra también en tarea compuesta, objetivo y meta, calculada con todas las sesiones de sus descendientes ejecutables, sin promediar porcentajes. |
 | RN-71 | **Tiempo real.** Cada `WorkLog` guarda minutos enteros positivos trabajados en una fecha, hoy o pasada pero nunca futura, para una tarea simple o un paso. Puede no estar ligado a una sesión. Si se vincula, la sesión debe estar `DONE` y deben coincidir ítem y fecha. Marcar una sesión `DONE` crea al menos un `WorkLog` vinculado; varios bloques del mismo día se suman. El tiempo planeado nunca sustituye al real. |
-| RN-72 | **Cierre diario.** `DailyRecord` guarda sesiones planeadas y realizadas, porcentaje de constancia del día, minutos planeados, suma de `WorkLog.minutes`, notas y `closedAt`. El porcentaje es `null` si no hubo sesiones planeadas. Se toma de las sesiones visibles de la agenda de ese día; los minutos reales incluyen también trabajo sin sesión programada. Un nuevo cierre en la misma fecha reemplaza el resumen y conserva el `id` (RN-43); los cambios posteriores se reflejan al volver a cerrar ese día (RN-44). |
+| RN-72 | **Cierre diario.** `DailyRecord` guarda sesiones planeadas y realizadas, porcentaje de constancia del día, minutos planeados, suma de `WorkLog.minutes`, notas y `closedAt`. El porcentaje es `null` si no hubo sesiones planeadas. Se toma de las sesiones visibles de la agenda de ese día, sin las cubiertas por un cierre manual (RN-79); los minutos reales incluyen también trabajo sin sesión programada. Un nuevo cierre en la misma fecha reemplaza el resumen y conserva el `id` (RN-43); los cambios posteriores se reflejan al volver a cerrar ese día (RN-44). |
 | RN-74 | **Historial y borrado.** Editar un plan conserva las sesiones pasadas y los `WorkLog` ya registrados; solo reemplaza las sesiones `PLANNED` de hoy y futuras (RN-51). Borrar un ítem elimina sus sesiones y `WorkLog` asociados, pero no modifica los resúmenes `DailyRecord` ya cerrados (RN-11, RN-52). |
+
+### 5.11 Cierre de elementos y de días
+
+| ID | Regla |
+|----|-------|
+| RN-77 | **Dos formas de cerrar una tarea simple o un paso.** **Manual:** el usuario la cierra cuando quiera, antes de su deadline o ese mismo día; queda `COMPLETED` con avance 100 % aunque le falten sesiones. **Automática:** si al día siguiente de su deadline efectivo no está cerrada ni al 100 %, se cierra sola con el avance que tenga y queda `OVERDUE`. Se guarda el tipo de cierre y su fecha (`closedOn`: hoy en el manual, el día siguiente al deadline en el automático). Si un `OVERDUE` llega a 100 % al marcar días pasados, pasa a `COMPLETED`. Llegar a 100 % por sesiones también la cierra como completada, sin guardar cierre. |
+| RN-78 | **Cierre en cascada.** Completado y vencido cuentan como cerrados para el padre. La tarea compuesta se cierra cuando todos sus pasos están cerrados; el objetivo, cuando todas sus tareas lo están; la meta activa queda `FINISHED` cuando todos sus objetivos lo están. Cada padre queda `COMPLETED` si su avance (promedio de sus hijos) es 100 % y `OVERDUE` si no. Un padre sin hijos no se cierra. Cerrar a mano una tarea compuesta o un objetivo cierra como completados sus pasos y tareas simples abiertos. La meta no se cierra a mano; una meta pausada o una idea no se finalizan. |
+| RN-79 | **Sesiones cubiertas por un cierre manual.** Las sesiones no realizadas posteriores al día del cierre manual se muestran completas en la agenda y en el calendario, pero no se marcan, no registran minutos y no cuentan para la constancia ni para el cierre del día. Ejemplo: «Correr» tiene cuatro lunes; el usuario corre el domingo antes del último, registra ese tiempo sin sesión (CU-27) y la cierra: queda al 100 % y el último lunes aparece completo. |
+| RN-80 | **Editar algo cerrado.** En un paso, una tarea o un objetivo cerrado se pueden editar el título, la clasificación y los textos. El tipo de tarea, el deadline y el plan no, porque cambian los números. Las sesiones pasadas no cubiertas (RN-79) se pueden seguir marcando o desmarcando para corregir un olvido (RN-27): el avance se recalcula y el padre se actualiza; un elemento con cierre guardado no se reabre (RN-64). |
+| RN-81 | **Cierre automático del día.** Un día pasado con sesiones visibles o tiempo registrado que no se cerró se cierra solo al día siguiente, sin notas. Después se puede volver a cerrar desde su agenda para escribir notas o recalcular (RN-43, RN-44). |
 
 ---
 
@@ -403,6 +421,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 | CU-26 | Ver calendario | `/calendar` |
 | CU-27 | Registrar tiempo real sin sesión | Agenda o detalle del ítem ejecutable |
 | CU-28 | Consultar constancia | Detalle del ítem o historial |
+| CU-29 | Cerrar tarea o paso | `/objectives/:id` |
 
 ### Detalle de casos de uso principales
 
@@ -450,12 +469,14 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 #### CU-12 — Editar tarea
 - Carga los datos existentes y conserva el avance, las sesiones pasadas y los registros de trabajo.
 - Si es simple, regenera solo las sesiones futuras (RN-51).
+- Si está cerrada, solo se editan título y clasificación; tipo, deadline y plan quedan fijos (RN-80).
 - Si cambia **compuesta → simple** con pasos → RN-39. Si cambia **simple → compuesta** → RN-40.
 
 #### CU-14 / CU-15 — Crear / editar paso
 - **Entrada:** `title`, `complexity`, `deadline` (opcional; si se omite hereda el de la tarea), `duration` (≥5, default 45), `planType`, días o fechas.
 - Mismo flujo de generación de fechas que CU-10 (RN-17 a RN-21).
-- **Post:** recalcula tarea padre → objetivo → meta (RN-32 a RN-34).
+- **Post:** recalcula tarea padre → objetivo → meta (RN-32 a RN-34). Un paso nuevo reabre su tarea si estaba cerrada (RN-64).
+- Un paso cerrado solo edita nombre y complejidad (RN-80).
 
 #### CU-17 — Ver agenda de una fecha
 - Muestra la fecha completa, sus sesiones, minutos previstos y constancia del día. Una barra permite ir al día anterior o siguiente, elegir una fecha y volver a hoy. Cada sesión permite registrar minutos reales al marcarla `DONE`; en fechas futuras solo se consulta.
@@ -467,6 +488,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 
 #### CU-19 — Cerrar día
 - Muestra sesiones planeadas y realizadas, constancia del día, minutos previstos y reales y un campo de notas. Se abre con la fecha de la agenda que se estaba viendo. Al confirmar guarda o actualiza el `DailyRecord` de esa fecha (RN-41 a RN-44, RN-72) y vuelve a la agenda de esa fecha.
+- Los días pasados que no se cerraron se cierran solos, sin notas (RN-81); volver a cerrarlos permite escribir notas.
 
 #### CU-21 — Consultar historial
 - Lista los resúmenes diarios por fecha. El detalle de una fecha se consulta desde sus sesiones y registros de trabajo; si se borró un ítem, permanece el resumen diario (RN-11, RN-74).
@@ -479,15 +501,21 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 #### CU-23 — Pausar y reanudar
 - **Meta:** cambia `status` a `PAUSED`. Se oculta su agenda; deadlines y progreso no cambian (RN-57).
 - **Tarea:** cambia `status` a `PAUSED`. Se oculta de la agenda (RN-59).
-- **Reanudar:** la meta vuelve a `ACTIVE`; la tarea recalcula su estado desde su avance (RN-31). Las tareas que vencieron durante la pausa quedan como `OVERDUE` y se replanifican (RN-58).
+- **Reanudar:** la meta vuelve a `ACTIVE`; la tarea recalcula su estado desde su avance (RN-31). Las tareas y pasos que vencieron durante la pausa ya se cerraron como `OVERDUE` (RN-58, RN-77).
 
 #### CU-25 — Cerrar objetivo
-- **Precondición:** progreso del objetivo = 100% (RN-63).
-- **Flujo:** el usuario pulsa "Cerrar objetivo" → `status=COMPLETED`. Si el progreso no es 100%, la acción se rechaza.
-- Un objetivo cerrado sigue visible y puede recibir tareas o pasos (RN-63). Si baja de 100%, vuelve a `ACTIVE` automáticamente (RN-64).
+- **Precondición:** el objetivo está abierto y tiene tareas.
+- **Flujo:** el usuario pulsa "Cerrar objetivo" y confirma → sus tareas simples y pasos abiertos se cierran como completados (RN-77) y el objetivo queda `COMPLETED` (RN-63, RN-78).
+- También se cierra solo cuando todas sus tareas están cerradas: `COMPLETED` al 100 % y `OVERDUE` si no.
+- Un objetivo cerrado sigue visible y puede recibir tareas o pasos (RN-53); al recibirlos se reabre (RN-64). Su deadline ya no se edita (RN-80).
+
+#### CU-29 — Cerrar tarea o paso
+- **Precondición:** la tarea o el paso está abierto.
+- **Flujo:** el usuario pulsa "Cerrar" en la tarea o el paso y confirma → la tarea simple o el paso queda `COMPLETED` al 100 % aunque le falten sesiones; una tarea compuesta cierra sus pasos abiertos (RN-77, RN-78). Las sesiones posteriores aparecen completas y no cuentan (RN-79).
+- Si nadie lo cierra, se cierra solo al día siguiente de su deadline efectivo, como `OVERDUE` (RN-77).
 
 #### CU-24 — Postergar
-- Editar el deadline de un elemento no completado. No reduce progreso ni borra historial (RN-60). Respetan RN-48 y RN-49.
+- Editar el deadline de un elemento no cerrado. No reduce progreso ni borra historial (RN-60). Respetan RN-48 y RN-49.
 
 #### CU-26 — Ver calendario
 - **Entrada:** mes y año a mostrar (por defecto el actual). Navegación: mes anterior/siguiente, año anterior/siguiente y "Hoy".
@@ -564,6 +592,8 @@ erDiagram
         int total_time_required_min "calculado"
         smallint progress
         activity_status status
+        closure_type closure_type "nullable, solo simple"
+        date closed_on "nullable, solo simple"
         timestamptz completed_at "nullable, solo simple"
         timestamptz created_at
         timestamptz updated_at
@@ -576,6 +606,8 @@ erDiagram
         date deadline "nullable, hereda de la tarea o del objetivo"
         smallint progress
         sub_activity_status status
+        closure_type closure_type "nullable"
+        date closed_on "nullable"
         timestamptz completed_at "nullable"
         timestamptz created_at
         timestamptz updated_at
@@ -641,6 +673,7 @@ erDiagram
 9. **`DAILY_RECORD`:** `UNIQUE (user_id, date)`, un resumen por día; los `WORK_LOG` y las sesiones guardan el detalle. `closed_at` se actualiza al volver a cerrar el mismo día (RN-43, RN-72).
 10. **IDs:** UUID. Definir si los genera el cliente o el servidor al diseñar la API.
 11. **Calendario (RN-66):** se resuelve con `EXECUTION_SESSION` filtrada por rango de `scheduled_date` y los joins de la jerarquía (meta › objetivo › tarea › paso), excluyendo metas `PAUSED`/`IDEA` y tareas `PAUSED` igual que la agenda. El índice `(scheduled_date)` lo cubre.
+12. **Cierre (RN-77 a RN-81):** `closure_type` y `closed_on` se guardan solo en tarea simple y paso; el estado de tarea compuesta, objetivo y meta se recalcula desde sus hijos en la misma transacción. El cierre automático de elementos con deadline pasado y de días sin `DAILY_RECORD` lo aplica el servicio al calcular "hoy" del usuario.
 
 ### 7.3 Índices recomendados
 
@@ -692,7 +725,8 @@ Rutas anidadas para creación y listado por padre; operaciones sobre un recurso 
 | GET | `/goals/:goalId/objectives` | CU-03 |
 | POST | `/goals/:goalId/objectives` | CU-06 — `{ title, nature, deadline }` |
 | GET | `/objectives/:id` | CU-07 — incluye tareas y pasos |
-| PATCH | `/objectives/:id` | CU-08, CU-24 — si `deadline` deja hijos fuera del límite, responde con la lista de fechas en conflicto (RN-49) |
+| PATCH | `/objectives/:id` | CU-08, CU-24 — si `deadline` deja hijos fuera del límite, responde con la lista de fechas en conflicto (RN-49); en un objetivo cerrado no cambia el `deadline` (RN-80) |
+| POST | `/objectives/:id/close` | CU-25 — cierra como completadas sus tareas simples y pasos abiertos (RN-63, RN-77) |
 | DELETE | `/objectives/:id` | CU-09 |
 
 ### Tareas
@@ -701,7 +735,8 @@ Rutas anidadas para creación y listado por padre; operaciones sobre un recurso 
 | GET | `/objectives/:objectiveId/activities` | CU-07 |
 | POST | `/objectives/:objectiveId/activities` | CU-10 / CU-11 |
 | GET | `/activities/:id` | — |
-| PATCH | `/activities/:id` | CU-12, CU-23, CU-24. Pausar: `status: PAUSED`; reanudar: el estado se recalcula desde el progreso (RN-31). Si hay pérdida de datos (compuesta→simple con pasos, o simple→compuesta con sesiones o `WorkLog`), exige `confirmDataLoss: true` o responde `409` (RN-39, RN-40). |
+| PATCH | `/activities/:id` | CU-12, CU-23, CU-24. Pausar: `status: PAUSED`; reanudar: el estado se recalcula desde el progreso (RN-31). Si hay pérdida de datos (compuesta→simple con pasos, o simple→compuesta con sesiones o `WorkLog`), exige `confirmDataLoss: true` o responde `409` (RN-39, RN-40). En una tarea cerrada no cambian tipo, `deadline` ni plan (RN-80). |
+| POST | `/activities/:id/close` | CU-29 — simple: queda completada; compuesta: cierra sus pasos abiertos (RN-77, RN-78) |
 | DELETE | `/activities/:id` | CU-13 |
 
 Ejemplo de cuerpo (tarea simple):
@@ -727,20 +762,21 @@ Ejemplo de cuerpo (tarea simple):
 |--------|------|-------------|
 | GET | `/activities/:activityId/sub-activities` | CU-07 |
 | POST | `/activities/:activityId/sub-activities` | CU-14 (400/422 si la tarea no es compuesta) |
-| PATCH | `/sub-activities/:id` | CU-15 |
+| PATCH | `/sub-activities/:id` | CU-15 (cerrado: no cambian `deadline` ni plan, RN-80) |
+| POST | `/sub-activities/:id/close` | CU-29 — queda completado (RN-77) |
 | DELETE | `/sub-activities/:id` | CU-16 |
 
 ### Sesiones, tiempo real y cierre diario
 | Método | Ruta | Caso de uso | Notas |
 |--------|------|-------------|-------|
 | GET | `/daily?date=` | CU-17 | Devuelve sesiones visibles de la fecha (hoy si se omite), sus estados, trabajo registrado y métricas. "Hoy" según `user.timezone`. |
-| POST | `/execution-sessions/:id/complete` | CU-18, RN-27/69/71 | `{ minutes? }`: obligatorio en fecha pasada; hoy se usan los previstos. Sesión de hoy o pasada (`422` si es futura): crea `WorkLog` en la fecha de la sesión, marca `DONE` y recalcula `progress` en una transacción (RN-30). |
+| POST | `/execution-sessions/:id/complete` | CU-18, RN-27/69/71 | `{ minutes? }`: obligatorio en fecha pasada; hoy se usan los previstos. Sesión de hoy o pasada (`422` si es futura o está cubierta por un cierre manual, RN-79): crea `WorkLog` en la fecha de la sesión, marca `DONE` y recalcula `progress` en una transacción (RN-30). |
 | DELETE | `/execution-sessions/:id/completion` | CU-18 | Vuelve a `PLANNED`, elimina los `WorkLog` vinculados a la sesión (RN-27) y recalcula `progress`. |
 | POST | `/work-logs` | RN-71 | `{ sourceType, sourceId, minutes, sessionId?, date? }`; `date` es hoy si se omite y nunca futura. Registra trabajo con o sin sesión. |
 | GET | `/work-logs?date=` | RN-71 | Detalle del tiempo real de la fecha. |
 | PATCH | `/work-logs/:id` | RN-76 | `{ minutes }`. Corrige los minutos de un bloque. |
 | DELETE | `/work-logs/:id` | RN-76 | Borra el bloque; si era el último de una sesión `DONE`, la devuelve a `PLANNED`. |
-| POST | `/daily/records` | CU-19 | `{ date?, notes? }` (hoy si se omite; no futura) → calcula el resumen con sesiones y `WorkLog`. Upsert por fecha (RN-43, RN-72). |
+| POST | `/daily/records` | CU-19 | `{ date?, notes? }` (hoy si se omite; no futura) → calcula el resumen con sesiones y `WorkLog`. Upsert por fecha (RN-43, RN-72). Los días pasados sin registro los cierra el servidor (RN-81). |
 | GET | `/daily/records?from=&to=` | CU-21 | Historial. |
 
 ### Validación (DTOs con `class-validator`)

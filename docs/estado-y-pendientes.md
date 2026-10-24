@@ -17,8 +17,8 @@ Lo que no aparece en la tabla está implementado y vive en las reglas y en [func
 
 | Tema | Estado |
 |------|--------|
-| Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, cierre y reapertura de objetivo, borrado con confirmación escrita, cierre del día repetido, historial, calendario con hover y cambio de mes, y agenda de días pasados con minutos y recálculo del cierre) | ⏳ Pendiente |
-| Avisos de presupuesto al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (506 kB sobre 500 kB) | ⏳ Pendiente |
+| Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, borrado con confirmación escrita, cierre del día repetido, historial, calendario con hover y cambio de mes, agenda de días pasados con minutos y recálculo del cierre, y cierre de elementos: manual de paso, tarea y objetivo, automático al vencer, sesiones cubiertas en agenda y calendario, cascada hasta la meta finalizada, reapertura al agregar hijos, formularios bloqueados de lo cerrado y cierre automático de días al abrir la app) | ⏳ Pendiente |
+| Avisos de presupuesto al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (513 kB sobre 500 kB) | ⏳ Pendiente |
 | Backend | ⏳ Pendiente; requiere D-01 |
 | Agente planificador del backend (`timer-planner-backend/Agents/funcionalidad/`) | ⏳ Pendiente; se crea al empezar el backend |
 
@@ -35,10 +35,8 @@ Ninguna está decidida. Mientras no se decida, el código no la implementa por s
 | ID | Pregunta | Reglas relacionadas |
 |----|----------|---------------------|
 | D-01 | Autenticación y número de usuarios; motor de base de datos y ORM. | §7.2 punto 1, §7.4 |
-| D-03 | Si un objetivo con deadline pasado necesita un estado visual de vencido (hoy solo existe para tareas). | RN-58, RN-65 |
 | D-04 | Si se permitirá pausar objetivos y su efecto en agenda y calendario. El código contiene `ObjectiveStatus.PAUSED`, pero ninguna regla lo usa. | RN-29, RN-57, RN-59 |
 | D-05 | En qué momento una idea acepta objetivos y tareas y pasa a meta activa. RN-55 la activa al tener horizonte y tareas; CU-02 crea `ACTIVE` una meta nueva con horizonte. Tampoco está definido qué pasa si se quita el horizonte a una meta activa. | RN-55, CU-02, CU-22 |
-| D-06 | Si se permite editar el título, el deadline o el plan de un objetivo cerrado o de una tarea o paso al 100 %. Hoy solo está definido que un objetivo cerrado puede recibir hijos (RN-63). | RN-60, RN-63, CU-25 |
 | D-07 | Si objetivos, tareas y pasos necesitan orden manual. | — |
 | D-08 | Respaldos y recuperación de elementos borrados (fuera del MVP). | RN-52 |
 | D-09 | Endpoint de consulta del calendario por rango de fechas. | RN-66, §7.2 punto 11, §8 |
@@ -55,3 +53,8 @@ El 2026-10-23 el usuario decidió que el avance sale de las sesiones marcadas, n
 - **RN-73** y el estado `NOT_NEEDED`: el 100 % solo llega al marcar todas las sesiones, así que no quedan sesiones futuras que descartar.
 - **CU-20** («Indicar avance del resultado»). Antes de esa reasignación era la migración de datos, eliminada.
 - **D-10** (sesión de hoy al llegar a 100 %) y **D-16** (avance al cambiar de tipo): el avance siempre se calcula.
+
+El 2026-10-23 se acordó el cierre manual y automático de elementos y días (RN-77 a RN-81, CU-29). Con eso se retiraron:
+- **P-01**, la propuesta que lo definió.
+- **D-03** (objetivo vencido): el objetivo cerrado con menos de 100 % queda `OVERDUE` (RN-78).
+- **D-06** (editar lo cerrado): se editan textos y clasificación, no tipo, deadline ni plan (RN-80).

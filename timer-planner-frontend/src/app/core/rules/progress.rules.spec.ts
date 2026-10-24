@@ -38,9 +38,14 @@ describe('progress.rules', () => {
       expect(deriveStatus(100)).toBe(ActivityStatus.COMPLETED);
     });
 
-    it('conserva PAUSED (RN-59) y nunca devuelve OVERDUE (RN-58)', () => {
+    it('conserva PAUSED (RN-59) y sin cierre no devuelve OVERDUE', () => {
       expect(deriveStatus(50, ActivityStatus.PAUSED)).toBe(ActivityStatus.PAUSED);
       expect(deriveStatus(50, ActivityStatus.OVERDUE)).toBe(ActivityStatus.IN_PROGRESS);
+    });
+
+    it('cerrada queda completada al 100 % o vencida, aunque estuviera pausada (RN-77, RN-78)', () => {
+      expect(deriveStatus(100, ActivityStatus.PAUSED, true)).toBe(ActivityStatus.COMPLETED);
+      expect(deriveStatus(40, ActivityStatus.PAUSED, true)).toBe(ActivityStatus.OVERDUE);
     });
   });
 
@@ -49,6 +54,11 @@ describe('progress.rules', () => {
       expect(deriveSubActivityStatus(0)).toBe(SubActivityStatus.PENDING);
       expect(deriveSubActivityStatus(1)).toBe(SubActivityStatus.IN_PROGRESS);
       expect(deriveSubActivityStatus(100)).toBe(SubActivityStatus.COMPLETED);
+    });
+
+    it('cerrado con menos de 100 % queda vencido (RN-77)', () => {
+      expect(deriveSubActivityStatus(40, true)).toBe(SubActivityStatus.OVERDUE);
+      expect(deriveSubActivityStatus(100, true)).toBe(SubActivityStatus.COMPLETED);
     });
   });
 });

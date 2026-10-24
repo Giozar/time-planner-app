@@ -6,11 +6,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 import { Activity, ActivityStatus, ActivityType, SubActivity } from '../../../core/models/activity.model';
 import { DeletableType } from '../../../core/models/deletion-impact.model';
-import { canCloseObjective, effectiveActivityDeadline, isOverdue } from '../../../core/rules';
+import { effectiveActivityDeadline, isClosed, isOverdue } from '../../../core/rules';
 import { DateUtils } from '../../../core/utils/date.utils';
 import {
   ACTIVITY_COMPLEXITY_LABELS, ACTIVITY_CRITICALITY_LABELS, ACTIVITY_PRIORITY_LABELS,
   ACTIVITY_RECURRENCE_LABELS, ACTIVITY_STATUS_LABELS, OBJECTIVE_NATURE_LABELS, OBJECTIVE_STATUS_LABELS,
+  SUBACTIVITY_STATUS_LABELS,
 } from '../../../core/i18n/labels';
 import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
@@ -37,8 +38,10 @@ export class ObjectiveDetailComponent implements OnInit {
   readonly complexityLabels = ACTIVITY_COMPLEXITY_LABELS;
   readonly recurrenceLabels = ACTIVITY_RECURRENCE_LABELS;
   readonly statusLabels = ACTIVITY_STATUS_LABELS;
+  readonly stepStatusLabels = SUBACTIVITY_STATUS_LABELS;
   readonly ActivityType = ActivityType;
   readonly ActivityStatus = ActivityStatus;
+  readonly isClosed = isClosed;
 
   today = DateUtils.getTodayISO();
 
@@ -64,12 +67,13 @@ export class ObjectiveDetailComponent implements OnInit {
     return this.allSubActivities().filter((s) => s.activityId === activityId);
   }
 
+  /** Se puede cerrar en cualquier momento mientras siga abierto y tenga tareas (RN-77). */
   canClose = computed(() => {
     const obj = this.objective();
-    return !!obj && canCloseObjective(obj);
+    return !!obj && !isClosed(obj) && this.activities().length > 0;
   });
 
-  /** Estado a mostrar: `OVERDUE` es derivado, nunca se almacena (RN-58). */
+  /** Estado a mostrar: el guardado o, en una compuesta sin pasos con deadline pasado, vencida (RN-58). */
   displayStatus(activity: Activity): ActivityStatus {
     return isOverdue(activity, this.deadlineOf(activity), this.today) ? ActivityStatus.OVERDUE : activity.status;
   }
@@ -80,8 +84,29 @@ export class ObjectiveDetailComponent implements OnInit {
     return obj ? effectiveActivityDeadline(activity, obj) : (activity.deadline ?? '');
   }
 
-  closeObjective() {
-    if (this.objectiveId) this.plannerService.closeObjective(this.objectiveId);
+  /** Cierre manual (RN-77 a RN-79): lo abierto queda completado y las sesiones que faltan dejan de contar. */
+  async closeObjective() {
+    const obj = this.objective();
+    if (obj && await this.confirmClose('Cerrar objetivo', `"${obj.title}" y todas sus tareas y pasos abiertos`)) {
+      this.plannerService.closeObjective(obj.id);
+    }
+  }
+
+  async closeActivity(activity: Activity) {
+    const what = activity.type === ActivityType.COMPOSITE ? `"${activity.title}" y sus pasos abiertos` : `"${activity.title}"`;
+    if (await this.confirmClose('Cerrar tarea', what)) this.plannerService.closeActivity(activity.id);
+  }
+
+  async closeStep(sub: SubActivity) {
+    if (await this.confirmClose('Cerrar paso', `"${sub.title}"`)) this.plannerService.closeStep(sub.id);
+  }
+
+  private confirmClose(title: string, what: string): Promise<boolean> {
+    return this.dialogService.confirm(title,
+      `Se cerrará ${what}: lo que siga abierto quedará completado aunque falten sesiones.\n` +
+      'Las sesiones que faltan se mostrarán completas y no contarán para la constancia.\n' +
+      'Después ya no podrás cambiar su fecha límite ni su plan.',
+      { confirmText: 'Cerrar' });
   }
 
   togglePause(activity: Activity) {

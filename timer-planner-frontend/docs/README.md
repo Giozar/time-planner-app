@@ -20,7 +20,7 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 ## Pendiente
 
 - **Recorrido manual** en el navegador (`pnpm ng serve`) de los casos de uso implementados. Las pruebas automáticas cubren la lógica, no la interfaz.
-- **Avisos de presupuesto** al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (506 kB sobre 500 kB).
+- **Avisos de presupuesto** al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (513 kB sobre 500 kB).
 - **Decisiones por definir (`D-xx`) y correcciones a las reglas (`C-xx`):** están en [estado-y-pendientes.md](../../docs/estado-y-pendientes.md).
 
 ## Mantenimiento de la documentación

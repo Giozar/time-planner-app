@@ -10,7 +10,7 @@ import {
 import { ExecutionSession, SessionStatus } from '../../../core/models/session.model';
 import { DateUtils } from '../../../core/utils/date.utils';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
-import { effectiveDeadline, regenerateFutureSessions } from '../../../core/rules';
+import { effectiveDeadline, isClosed, regenerateFutureSessions } from '../../../core/rules';
 import {
   ACTIVITY_COMPLEXITY_LABELS, ACTIVITY_CRITICALITY_LABELS, ACTIVITY_PRIORITY_LABELS,
   ACTIVITY_TYPE_LABELS, EXECUTION_PLAN_TYPE_LABELS, WEEK_DAY_LABELS
@@ -34,6 +34,8 @@ export class ActivityFormComponent implements OnInit {
   objectiveId: string | null = null;
   activityId: string | null = null;
   isEditMode = false;
+  /** Cerrada: su tipo, deadline y plan ya no se editan (RN-80). */
+  closed = false;
   minDate = DateUtils.getTodayISO();
 
   // Datos originales para no perder el progreso al editar
@@ -122,6 +124,11 @@ export class ActivityFormComponent implements OnInit {
       duration: activity.executionPlan?.durationPerExecutionMin ?? 60
     });
 
+    this.closed = isClosed(activity);
+    if (this.closed) {
+      ['type', 'deadline', 'planType', 'duration'].forEach(name => this.activityForm.get(name)?.disable());
+    }
+
     const plan = activity.executionPlan;
     if (activity.type === ActivityType.SIMPLE && plan) {
       if (plan.type === ExecutionPlanType.WEEKLY_PATTERN && plan.patternDays) {
@@ -178,6 +185,18 @@ export class ActivityFormComponent implements OnInit {
 
   async saveActivity() {
     if (this.activityForm.invalid || !this.objectiveId) return;
+
+    // RN-80: de una tarea cerrada solo se editan los textos y la clasificación.
+    if (this.closed) {
+      const original = this.plannerService.activities().find(a => a.id === this.activityId);
+      if (!original) return;
+      const raw = this.activityForm.getRawValue();
+      this.plannerService.updateActivity({
+        ...original, title: raw.title!, priority: raw.priority!, criticality: raw.criticality!, complexity: raw.complexity!,
+      });
+      this.router.navigate(['/objectives', this.objectiveId]);
+      return;
+    }
 
     const val = this.activityForm.value;
     const newType = val.type!;

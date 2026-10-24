@@ -1,3 +1,4 @@
+import { ClosureType } from '../models/activity.model';
 import { makeSessions } from '../../testing/builders';
 import { ConsistencyEntry, computeConsistency, endPause, isPausedOn, startPause } from './consistency.rules';
 
@@ -36,6 +37,12 @@ describe('consistency.rules', () => {
       const all = entries(['2026-10-05', '2026-10-12', '2026-10-14', '2026-10-19'], ['2026-10-14'], pauses);
       // 10-05 no realizada, 10-12 pausada (no cuenta), 10-14 DONE, 10-19 no realizada → 1 de 3
       expect(computeConsistency(all, TODAY, false)).toBe(33);
+    });
+
+    it('no cuenta las sesiones cubiertas por un cierre manual (RN-79)', () => {
+      const closure = { type: ClosureType.MANUAL, closedOn: '2026-10-18' };
+      const all = makeSessions('p', ['2026-10-12', '2026-10-19'], ['2026-10-12']).map(session => ({ session, pauses: [], closure }));
+      expect(computeConsistency(all, TODAY, false)).toBe(100);
     });
 
     it('agrega sesiones de varios ítems sin promediar porcentajes', () => {

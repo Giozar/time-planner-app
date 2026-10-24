@@ -13,6 +13,7 @@ export enum ObjectiveStatus {
   ACTIVE = 'ACTIVE',
   PAUSED = 'PAUSED',
   COMPLETED = 'COMPLETED',
+  OVERDUE = 'OVERDUE', // todas sus tareas cerradas, con menos de 100 % (RN-78)
 }
 
 /**

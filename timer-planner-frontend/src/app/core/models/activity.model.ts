@@ -10,13 +10,26 @@ export enum ActivityStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
   PAUSED = 'PAUSED',
-  OVERDUE = 'OVERDUE', // Solo derivado, nunca se almacena (RN-58)
+  OVERDUE = 'OVERDUE', // Cerrada con menos de 100 % (RN-58)
 }
 
 export enum SubActivityStatus {
   PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
+  OVERDUE = 'OVERDUE', // Cerrado con menos de 100 % (RN-58)
+}
+
+/** Cómo se cerró una tarea simple o un paso (RN-77). */
+export enum ClosureType {
+  MANUAL = 'MANUAL', // el usuario la cerró: queda completada
+  AUTOMATIC = 'AUTOMATIC', // se cerró al día siguiente de su deadline: queda con su avance
+}
+
+/** Cierre guardado de una tarea simple o un paso (RN-77). */
+export interface ItemClosure {
+  type: ClosureType;
+  closedOn: string; // 'YYYY-MM-DD'
 }
 
 export enum ActivityPriority {
@@ -103,7 +116,8 @@ export interface Activity {
 
   totalTimeRequiredMin?: number;
   progress: number;
-  status: ActivityStatus; // Nunca OVERDUE almacenado
+  status: ActivityStatus;
+  closure?: ItemClosure; // solo en simple; la compuesta se cierra con sus pasos (RN-78)
   pauses?: PausePeriod[]; // historial de pausas (RN-70)
 }
 
@@ -121,4 +135,5 @@ export interface SubActivity {
   // SIEMPRE tiene plan (es la unidad ejecutable de la compuesta)
   executionPlan: ExecutionPlan;
   progress: number;
+  closure?: ItemClosure; // RN-77
 }

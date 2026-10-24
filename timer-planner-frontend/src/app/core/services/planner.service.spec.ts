@@ -135,45 +135,186 @@ describe('PlannerService', () => {
     });
   });
 
-  describe('cierre y reapertura de objetivo (RN-63, RN-64)', () => {
+  describe('cierre en cascada y reapertura (RN-63, RN-64, RN-78)', () => {
     function completeObjective() {
       seedHierarchy();
       addActivity(simple('a1', [TODAY]));
       service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
     }
 
-    it('llegar a 100% no lo cierra', () => {
+    it('con todas sus tareas cerradas, el objetivo queda completado y la meta finalizada', () => {
       completeObjective();
-      expect(service.objectives()[0].status).toBe(ObjectiveStatus.ACTIVE);
-    });
-
-    it('closeObjective cierra solo con 100%', () => {
-      seedHierarchy();
-      addActivity(simple('a1', [TODAY]));
-      expect(service.closeObjective('o1')).toBe(false);
-      expect(service.objectives()[0].status).toBe(ObjectiveStatus.ACTIVE);
-
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
-      expect(service.closeObjective('o1')).toBe(true);
       expect(service.objectives()[0].status).toBe(ObjectiveStatus.COMPLETED);
+      expect(service.goals()[0].status).toBe(GoalStatus.FINISHED);
     });
 
-    it('agregar una tarea a un objetivo cerrado lo reabre', () => {
+    it('lo finalizado sigue en la agenda, ya como completo', () => {
       completeObjective();
-      service.closeObjective('o1');
+      expect(service.agendaTasks()).toMatchObject([{ id: 'a1', isCompleted: true }]);
+    });
+
+    it('agregar una tarea a un objetivo cerrado lo reabre y baja su avance', () => {
+      completeObjective();
       addActivity(simple('a2', ['2026-10-30']));
 
       expect(service.objectives()[0].status).toBe(ObjectiveStatus.ACTIVE);
       expect(service.objectives()[0].progress).toBe(50);
+      expect(service.goals()[0].status).toBe(GoalStatus.ACTIVE);
     });
 
     it('borrar el hijo completado lo reabre y recalcula', () => {
       completeObjective();
-      service.closeObjective('o1');
       service.deleteActivity('a1');
 
       expect(service.objectives()[0].status).toBe(ObjectiveStatus.ACTIVE);
       expect(service.objectives()[0].progress).toBe(0);
+    });
+  });
+
+  describe('cierre manual (RN-77, RN-79, RN-80)', () => {
+    const MONDAYS = ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'];
+
+    it('cerrar «Correr» antes del último lunes la deja completada y ese lunes cubierto', () => {
+      seedHierarchy();
+      addActivity(simple('a1', MONDAYS, MONDAYS.slice(0, 3)));
+      expect(service.closeActivity('a1')).toBe(true);
+
+      const task = service.activities()[0];
+      expect(task).toMatchObject({ progress: 100, status: ActivityStatus.COMPLETED, closure: { type: 'MANUAL', closedOn: TODAY } });
+      service.setSelectedDate('2026-10-26');
+      expect(service.agendaTasks()).toMatchObject([{ id: 'a1', isCompleted: true, isCovered: true }]);
+      expect(service.agendaMetrics()).toMatchObject({ total: 0, plannedTimeMin: 0 });
+    });
+
+    it('la sesión cubierta no se marca ni cuenta para la constancia', () => {
+      seedHierarchy();
+      addActivity(simple('a1', MONDAYS, MONDAYS.slice(0, 3)));
+      service.closeActivity('a1');
+      vi.setSystemTime(new Date('2026-10-27T12:00:00'));
+
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 30, '2026-10-26');
+      expect(doneDates('p-a1')).toEqual(MONDAYS.slice(0, 3));
+      expect(service.workLogs()).toEqual([]);
+      expect(service.consistency().get('a1')).toBe(100);
+    });
+
+    it('cerrar una compuesta cierra sus pasos abiertos; un paso nuevo la reabre', () => {
+      seedHierarchy();
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      addStep(step({ id: 's1', activityId: 'k' }, [TODAY]));
+      addStep(step({ id: 's2', activityId: 'k' }, ['2026-10-30']));
+      service.closeActivity('k');
+
+      expect(service.subActivities().map(s => s.status)).toEqual([SubActivityStatus.COMPLETED, SubActivityStatus.COMPLETED]);
+      expect(service.activities()[0].status).toBe(ActivityStatus.COMPLETED);
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.COMPLETED);
+
+      addStep(step({ id: 's3', activityId: 'k' }, ['2026-10-31']));
+      expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.IN_PROGRESS, progress: 67 });
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.ACTIVE);
+    });
+
+    it('cerrar un objetivo cierra todas sus tareas y pasos abiertos', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      addStep(step({ id: 's1', activityId: 'k' }, ['2026-10-30']));
+
+      expect(service.closeObjective('o1')).toBe(true);
+      expect(service.objectives()[0]).toMatchObject({ status: ObjectiveStatus.COMPLETED, progress: 100 });
+      expect(service.closeObjective('o1')).toBe(false);
+    });
+
+    it('cerrar un paso lo deja completado aunque le falten sesiones', () => {
+      seedHierarchy();
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      addStep(step({ id: 's1', activityId: 'k' }, [TODAY, '2026-10-30']));
+      addStep(step({ id: 's2', activityId: 'k' }, ['2026-10-30']));
+      service.closeStep('s1');
+
+      expect(service.subActivities()[0]).toMatchObject({ progress: 100, status: SubActivityStatus.COMPLETED });
+      expect(service.activities()[0]).toMatchObject({ progress: 50, status: ActivityStatus.IN_PROGRESS });
+    });
+
+    it('lo cerrado conserva su deadline y su plan, pero cambia de título (RN-80)', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30'], [], { deadline: '2026-11-30' }));
+      service.closeActivity('a1');
+      const closed = service.activities()[0];
+
+      service.updateActivity(
+        { ...closed, title: 'Nuevo', deadline: '2026-12-15', executionPlan: makePlan('otro') },
+        makeSessions('otro', ['2026-12-01']),
+      );
+      expect(service.activities()[0]).toMatchObject({
+        title: 'Nuevo', deadline: '2026-11-30', executionPlan: { id: 'p-a1' }, status: ActivityStatus.COMPLETED,
+      });
+      expect(service.sessionsOf('p-a1')).toHaveLength(1);
+      expect(service.sessionsOf('otro')).toHaveLength(0);
+    });
+
+    it('un objetivo cerrado conserva su deadline al editarlo', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      service.closeObjective('o1');
+      service.updateObjective({ ...service.objectives()[0], title: 'Otro título', deadline: '3000-01-01' });
+
+      expect(service.objectives()[0]).toMatchObject({ title: 'Otro título', deadline: '2999-01-01' });
+    });
+  });
+
+  describe('cierre automático (RN-77, RN-78)', () => {
+    beforeEach(() => {
+      service.addGoal(makeGoal());
+      service.addObjective(makeObjective({ deadline: '2026-10-21' }));
+    });
+
+    it('al día siguiente del deadline se cierra como vencida con su avance', () => {
+      addActivity(simple('a1', ['2026-10-20', '2026-10-21'], ['2026-10-20']));
+
+      expect(service.activities()[0]).toMatchObject({
+        progress: 50, status: ActivityStatus.OVERDUE, closure: { type: 'AUTOMATIC', closedOn: TODAY },
+      });
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.OVERDUE);
+      expect(service.goals()[0].status).toBe(GoalStatus.FINISHED);
+    });
+
+    it('corregir un olvido recalcula sin reabrir y al llegar a 100 % pasa a completada', () => {
+      addActivity(simple('a1', ['2026-10-20', '2026-10-21'], ['2026-10-20']));
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 40, '2026-10-21');
+
+      expect(service.activities()[0]).toMatchObject({ progress: 100, status: ActivityStatus.COMPLETED });
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.COMPLETED);
+    });
+
+    it('un paso vencido cierra su compuesta como vencida', () => {
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      addStep(step({ id: 's1', activityId: 'k' }, ['2026-10-21']));
+
+      expect(service.subActivities()[0].status).toBe(SubActivityStatus.OVERDUE);
+      expect(service.activities()[0].status).toBe(ActivityStatus.OVERDUE);
+    });
+
+    it('una tarea pausada también se cierra al vencer', () => {
+      addActivity(simple('a1', ['2026-10-21'], [], { status: ActivityStatus.PAUSED }));
+      expect(service.activities()[0].status).toBe(ActivityStatus.OVERDUE);
+    });
+  });
+
+  describe('cierre automático de días (RN-81)', () => {
+    it('al abrir, cierra sin notas los días pasados con sesiones o tiempo y sin cierre', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-19', '2026-10-20', TODAY], ['2026-10-20']));
+      service.logWork('a1', TaskSourceType.ACTIVITY, 15, '2026-10-15');
+      service.closeDay('mías', '2026-10-19');
+
+      const reopened = TestBed.runInInjectionContext(() => new PlannerService());
+      const byDate = new Map(reopened.records().map(r => [r.date, r]));
+
+      expect([...byDate.keys()].sort()).toEqual(['2026-10-15', '2026-10-19', '2026-10-20']);
+      expect(byDate.get('2026-10-19')!.notes).toBe('mías');
+      expect(byDate.get('2026-10-20')).toMatchObject({ notes: '', completedSessions: 1, plannedSessions: 1 });
+      expect(byDate.get('2026-10-15')).toMatchObject({ plannedSessions: 0, actualMinutes: 15 });
     });
   });
 

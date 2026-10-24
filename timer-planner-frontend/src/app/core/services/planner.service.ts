@@ -2,12 +2,14 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { DataProvider } from '../providers/data.provider';
 import { Goal, GoalStatus } from '../models/goal.model';
-import { Objective, ObjectiveStatus } from '../models/objective.model';
+import { Objective } from '../models/objective.model';
 import {
   Activity,
   ActivityStatus,
   ActivityType,
+  ClosureType,
   ExecutionPlan,
+  ItemClosure,
   SubActivity,
   TaskSourceType,
 } from '../models/activity.model';
@@ -19,14 +21,19 @@ import { DeletableType, DeletionImpact, TypeChangeImpact } from '../models/delet
 import { DateUtils } from '../utils/date.utils';
 import {
   DeadlineConflict,
+  autoClosure,
   averageProgress,
-  canCloseObjective,
+  closedProgress,
   effectiveActivityDeadline,
   effectiveDeadline,
   computeProgress,
+  deriveGoalStatus,
+  deriveObjectiveStatus,
   deriveRecurrence,
   deriveStatus,
   deriveSubActivityStatus,
+  isClosed,
+  isCoveredByClosure,
   isFutureDate,
   isValidISODate,
   ConsistencyEntry,
@@ -34,7 +41,6 @@ import {
   endPause,
   plannedMinutesOf,
   startPause,
-  reopenIfBelowComplete,
   validateDeadlines,
 } from '../rules';
 
@@ -95,6 +101,9 @@ export class PlannerService {
       this.sessionsSignal.set(data.sessions);
       this.workLogsSignal.set(data.workLogs);
       this.recordsSignal.set(data.records);
+      // Al abrir se aplican los cierres automáticos de elementos y de días (RN-77, RN-81).
+      this.commit();
+      this.closePendingDays();
     });
   }
 
@@ -146,8 +155,14 @@ export class PlannerService {
     return owners;
   });
 
+  /** Cierre guardado del dueño de un plan: el del paso o el de la tarea simple (RN-77). */
+  private closureOfOwner(owner: PlanOwner): ItemClosure | undefined {
+    return owner.step ? owner.step.closure : owner.activity.closure;
+  }
+
   /**
    * Tareas cuyas sesiones se muestran (RN-29, RN-66): excluye las de metas PAUSED/IDEA y las tareas PAUSED.
+   * Una meta finalizada sigue visible: lo cerrado aparece como completo (RN-78).
    * Única fuente de visibilidad: la usan la agenda de hoy y el calendario, para que nunca difieran.
    */
   private visibleActivityIds = computed<Set<string>>(() => {
@@ -158,7 +173,7 @@ export class PlannerService {
       if (activity.status === ActivityStatus.PAUSED) return false;
       const objective = objectives.find(o => o.id === activity.objectiveId);
       const goal = goals.find(g => g.id === objective?.goalId);
-      return !!goal && goal.status === GoalStatus.ACTIVE;
+      return !!goal && (goal.status === GoalStatus.ACTIVE || goal.status === GoalStatus.FINISHED);
     }).map(a => a.id));
   });
 
@@ -197,13 +212,14 @@ export class PlannerService {
       const owner = owners.get(session.planId);
       if (session.scheduledDate !== date || !owner || !visible.has(owner.activity.id)) continue;
 
-      const isCompleted = session.status === SessionStatus.DONE;
+      const isCovered = isCoveredByClosure(session, this.closureOfOwner(owner));
       items.push({
         id: owner.id,
         title: owner.title,
         sourceType: owner.sourceType,
         parentId: owner.step ? owner.activity.id : null,
-        isCompleted,
+        isCompleted: session.status === SessionStatus.DONE || isCovered,
+        isCovered,
         estimatedDurationMin: session.plannedMinutes,
         executedMinutes: logs.filter(l => l.sessionId === session.id).reduce((sum, l) => sum + l.minutes, 0),
       });
@@ -212,8 +228,12 @@ export class PlannerService {
     return items;
   }
 
-  /** `executedTimeMin` suma todo el `WorkLog` de la fecha, también el trabajo sin sesión (RN-72). */
-  private metricsOf(tasks: AgendaItem[], date: string) {
+  /**
+   * Métricas de la fecha sin las sesiones cubiertas por un cierre manual (RN-79).
+   * `executedTimeMin` suma todo el `WorkLog` de la fecha, también el trabajo sin sesión (RN-72).
+   */
+  private metricsOf(agenda: AgendaItem[], date: string) {
+    const tasks = agenda.filter(t => !t.isCovered);
     const total = tasks.length;
     const completed = tasks.filter(t => t.isCompleted).length;
     const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
@@ -255,7 +275,7 @@ export class PlannerService {
         id: owner.id,
         sourceType: owner.sourceType,
         title: owner.title,
-        isCompleted: session.status === SessionStatus.DONE,
+        isCompleted: session.status === SessionStatus.DONE || isCoveredByClosure(session, this.closureOfOwner(owner)),
         durationMin: session.plannedMinutes,
         effectiveDeadline: owner.step ? effectiveDeadline(owner.step, activityLimit) : activityLimit,
       });
@@ -282,8 +302,10 @@ export class PlannerService {
       result.set(id, computeConsistency(entries, today, todayClosed));
       return entries;
     };
-    const entriesOf = (plan: ExecutionPlan | null, pauses: ConsistencyEntry['pauses']): ConsistencyEntry[] =>
-      plan ? sessions.filter(s => s.planId === plan.id).map(session => ({ session, pauses })) : [];
+    const entriesOf = (
+      plan: ExecutionPlan | null, pauses: ConsistencyEntry['pauses'], closure: ItemClosure | undefined,
+    ): ConsistencyEntry[] =>
+      plan ? sessions.filter(s => s.planId === plan.id).map(session => ({ session, pauses, closure })) : [];
 
     const byObjective = new Map<string, ConsistencyEntry[]>();
     const byGoal = new Map<string, ConsistencyEntry[]>();
@@ -295,8 +317,8 @@ export class PlannerService {
 
       const pauses = [...(goal.pauses ?? []), ...(activity.pauses ?? [])];
       const own = activity.type === ActivityType.SIMPLE
-        ? entriesOf(activity.executionPlan, pauses)
-        : this.stepsOf(activity.id).flatMap(step => score(step.id, entriesOf(step.executionPlan, pauses)));
+        ? entriesOf(activity.executionPlan, pauses, activity.closure)
+        : this.stepsOf(activity.id).flatMap(step => score(step.id, entriesOf(step.executionPlan, pauses, step.closure)));
       score(activity.id, own);
 
       byObjective.set(objective.id, [...(byObjective.get(objective.id) ?? []), ...own]);
@@ -366,8 +388,14 @@ export class PlannerService {
     this.commit();
   }
 
-  /** Devuelve los conflictos de deadline (RN-49); si hay alguno, no se guarda. */
+  /**
+   * Devuelve los conflictos de deadline (RN-49); si hay alguno, no se guarda.
+   * Un objetivo cerrado conserva su deadline (RN-80).
+   */
   updateObjective(updated: Objective): DeadlineConflict[] {
+    const previous = this.objectivesSignal().find(o => o.id === updated.id);
+    if (previous && isClosed(previous)) updated = { ...updated, deadline: previous.deadline };
+
     const conflicts = this.conflictsFor(updated.id, { objective: updated });
     if (conflicts.length > 0) return conflicts;
 
@@ -376,15 +404,12 @@ export class PlannerService {
     return [];
   }
 
-  /** Cierra el objetivo solo si está activo y al 100% (RN-63). Devuelve si se cerró. */
+  /**
+   * Cierra a mano el objetivo: sus tareas simples y pasos abiertos quedan completados (RN-77, RN-78).
+   * Devuelve si cerró algo.
+   */
   closeObjective(id: string): boolean {
-    const objective = this.objectivesSignal().find(o => o.id === id);
-    if (!objective || !canCloseObjective(objective)) return false;
-
-    this.objectivesSignal.update(obs =>
-      obs.map(o => o.id === id ? { ...o, status: ObjectiveStatus.COMPLETED } : o));
-    this.commit();
-    return true;
+    return this.closeItems(this.activitiesSignal().filter(a => a.objectiveId === id).map(a => a.id));
   }
 
   deleteObjective(id: string) {
@@ -413,10 +438,16 @@ export class PlannerService {
    * Guarda la tarea. Si `sessions` se indica, reemplaza las sesiones de su plan.
    * Si cambia de tipo (RN-39, RN-40): compuesta → simple elimina sus pasos con sus sesiones y tiempo;
    * simple → compuesta descarta su plan, sesiones y tiempo. La confirmación previa es del llamador (`typeChangeImpact`).
+   * Una tarea cerrada conserva su cierre, su tipo, su deadline y su plan (RN-80).
    * Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda.
    */
   updateActivity(updated: Activity, sessions?: ExecutionSession[]): DeadlineConflict[] {
     const previous = this.activitiesSignal().find(a => a.id === updated.id);
+    if (previous) updated = { ...updated, closure: previous.closure };
+    if (previous && isClosed(previous)) {
+      updated = { ...updated, type: previous.type, deadline: previous.deadline, executionPlan: previous.executionPlan };
+      sessions = undefined;
+    }
     const keptSessions = sessions ?? this.sessionsOf(updated.executionPlan?.id ?? '');
     const candidate = this.normalizeActivity(updated, keptSessions);
     const keepsSteps = candidate.type === ActivityType.COMPOSITE;
@@ -477,6 +508,14 @@ export class PlannerService {
     this.setActivityStatus(id, ActivityStatus.PENDING);
   }
 
+  /**
+   * Cierra a mano la tarea (RN-77, RN-78): la simple queda completada aunque le falten sesiones (RN-79);
+   * la compuesta cierra sus pasos abiertos. Devuelve si cerró algo.
+   */
+  closeActivity(id: string): boolean {
+    return this.closeItems([id]);
+  }
+
   deleteActivity(id: string) {
     this.removeActivities([id]);
     this.commit();
@@ -489,9 +528,24 @@ export class PlannerService {
     return this.saveSubActivity(sub, sessions, subs => [...subs, sub]);
   }
 
-  /** `sessions`, si se indica, reemplaza las del plan del paso. */
+  /**
+   * `sessions`, si se indica, reemplaza las del plan del paso.
+   * Un paso cerrado conserva su cierre, su deadline y su plan (RN-80).
+   */
   updateSubActivity(updated: SubActivity, sessions?: ExecutionSession[]): DeadlineConflict[] {
-    return this.saveSubActivity(updated, sessions, subs => subs.map(s => s.id === updated.id ? updated : s));
+    const previous = this.subActivitiesSignal().find(s => s.id === updated.id);
+    if (previous) updated = { ...updated, closure: previous.closure };
+    if (previous && isClosed(previous)) {
+      updated = { ...updated, deadline: previous.deadline, executionPlan: previous.executionPlan };
+      sessions = undefined;
+    }
+    const step = updated;
+    return this.saveSubActivity(step, sessions, subs => subs.map(s => s.id === step.id ? step : s));
+  }
+
+  /** Cierra a mano el paso: queda completado aunque le falten sesiones (RN-77, RN-79). Devuelve si cerró algo. */
+  closeStep(id: string): boolean {
+    return this.closeItems([], [id]);
   }
 
   deleteSubActivity(id: string) {
@@ -554,7 +608,7 @@ export class PlannerService {
    * Marca o desmarca la sesión de `date` (la de la agenda por defecto), de hoy o pasada (RN-27).
    * Marcar crea un `WorkLog` vinculado con `minutes` o, si falta, los minutos previstos;
    * desmarcar vuelve la sesión a `PLANNED` y elimina los bloques vinculados.
-   * Las fechas futuras, sin sesión o con minutos no válidos se ignoran.
+   * Las fechas futuras, sin sesión, cubiertas por un cierre manual (RN-79) o con minutos no válidos se ignoran.
    * Un día ya cerrado no se actualiza solo: se recalcula al volver a cerrarlo (RN-44).
    */
   toggleTaskExecution(id: string, sourceType: TaskSourceType, minutes?: number, date = this.selectedDateSignal()) {
@@ -563,7 +617,7 @@ export class PlannerService {
 
     const plan = this.planOf(id, sourceType);
     const session = plan && this.sessionsSignal().find(s => s.planId === plan.id && s.scheduledDate === date);
-    if (!session) return;
+    if (!session || isCoveredByClosure(session, this.closureOf(id, sourceType))) return;
 
     if (session.status === SessionStatus.DONE) {
       this.updateSession(session.id, { status: SessionStatus.PLANNED, completedAt: undefined });
@@ -618,11 +672,20 @@ export class PlannerService {
   }
 
   private saveRecord(date: string, notes: string): DailyRecord {
-    const metrics = this.metricsOf(this.agendaFor(date), date);
     const existing = this.recordsSignal().find(r => r.date === date);
+    const record = this.buildRecord(date, notes, existing?.id);
 
-    const record: DailyRecord = {
-      id: existing?.id ?? crypto.randomUUID(),
+    this.recordsSignal.update(records => existing
+      ? records.map(r => r.date === date ? record : r)
+      : [...records, record]);
+    this.dataProvider.saveRecords(this.recordsSignal()).subscribe();
+    return record;
+  }
+
+  private buildRecord(date: string, notes: string, id: string = crypto.randomUUID()): DailyRecord {
+    const metrics = this.metricsOf(this.agendaFor(date), date);
+    return {
+      id,
       date,
       plannedSessions: metrics.total,
       completedSessions: metrics.completed,
@@ -632,12 +695,28 @@ export class PlannerService {
       notes,
       closedAt: new Date().toISOString(),
     };
+  }
 
-    this.recordsSignal.update(records => existing
-      ? records.map(r => r.date === date ? record : r)
-      : [...records, record]);
+  /**
+   * Cierra solos, sin notas, los días pasados que tuvieron sesiones o tiempo registrado y no tienen cierre (RN-81).
+   * Después se pueden volver a cerrar para escribir notas o recalcular (RN-43, RN-44).
+   */
+  private closePendingDays() {
+    const today = DateUtils.getTodayISO();
+    const closed = new Set(this.recordsSignal().map(r => r.date));
+    const dates = new Set([
+      ...this.sessionsSignal().map(s => s.scheduledDate),
+      ...this.workLogsSignal().map(l => l.date),
+    ]);
+
+    const records = [...dates]
+      .filter(date => date < today && !closed.has(date))
+      .map(date => this.buildRecord(date, ''))
+      .filter(r => r.plannedSessions > 0 || r.actualMinutes > 0);
+    if (records.length === 0) return;
+
+    this.recordsSignal.update(all => [...all, ...records]);
     this.dataProvider.saveRecords(this.recordsSignal()).subscribe();
-    return record;
   }
 
   // --- INTERNOS ---
@@ -686,6 +765,32 @@ export class PlannerService {
       return activity?.type === ActivityType.SIMPLE ? activity.executionPlan : null;
     }
     return this.subActivitiesSignal().find(s => s.id === id)?.executionPlan ?? null;
+  }
+
+  private closureOf(id: string, sourceType: TaskSourceType): ItemClosure | undefined {
+    return sourceType === TaskSourceType.ACTIVITY
+      ? this.activitiesSignal().find(a => a.id === id)?.closure
+      : this.subActivitiesSignal().find(s => s.id === id)?.closure;
+  }
+
+  /**
+   * Cierre manual (RN-77): las tareas simples de `activityIds`, los pasos abiertos de sus compuestas
+   * y los pasos `stepIds` que sigan abiertos quedan completados desde hoy. Devuelve si cerró algo.
+   */
+  private closeItems(activityIds: string[], stepIds: string[] = []): boolean {
+    const closure: ItemClosure = { type: ClosureType.MANUAL, closedOn: DateUtils.getTodayISO() };
+    const activities = this.activitiesSignal().filter(a => activityIds.includes(a.id));
+    const simpleIds = activities.filter(a => a.type === ActivityType.SIMPLE && !isClosed(a)).map(a => a.id);
+    const compositeIds = activities.filter(a => a.type === ActivityType.COMPOSITE).map(a => a.id);
+    const openStepIds = this.subActivitiesSignal()
+      .filter(s => !isClosed(s) && (stepIds.includes(s.id) || compositeIds.includes(s.activityId)))
+      .map(s => s.id);
+    if (simpleIds.length === 0 && openStepIds.length === 0) return false;
+
+    this.activitiesSignal.update(acts => acts.map(a => simpleIds.includes(a.id) ? { ...a, closure } : a));
+    this.subActivitiesSignal.update(subs => subs.map(s => openStepIds.includes(s.id) ? { ...s, closure } : s));
+    this.commit();
+    return true;
   }
 
   private updateSession(id: string, changes: Partial<ExecutionSession>) {
@@ -774,19 +879,37 @@ export class PlannerService {
   }
 
   /**
-   * Recalcula todo el árbol de abajo hacia arriba: paso → tarea → objetivo → meta (RN-30 a RN-36).
+   * Recalcula todo el árbol de abajo hacia arriba: paso → tarea → objetivo → meta (RN-30 a RN-36),
+   * con el cierre automático de tareas simples y pasos y el cierre en cascada de sus padres (RN-77, RN-78).
    * Es la única función de recálculo: se ejecuta tras cada mutación.
    */
   private cascade() {
+    const today = DateUtils.getTodayISO();
     const byPlan = new Map<string, ExecutionSession[]>();
     for (const session of this.sessionsSignal()) {
       byPlan.set(session.planId, [...(byPlan.get(session.planId) ?? []), session]);
     }
     const sessionsOfPlan = (planId: string) => byPlan.get(planId) ?? [];
 
+    const objectivesById = new Map(this.objectivesSignal().map(o => [o.id, o]));
+    const activitiesById = new Map(this.activitiesSignal().map(a => [a.id, a]));
+    /** Deadline efectivo de una tarea (RN-48); `null` si no tiene objetivo. */
+    const limitOf = (activity: Activity | undefined): string | null => {
+      const objective = activity && objectivesById.get(activity.objectiveId);
+      return activity && objective ? effectiveActivityDeadline(activity, objective) : null;
+    };
+    /** Cierre y avance de una tarea simple o un paso (RN-30, RN-77). */
+    const closeLeaf = (closure: ItemClosure | undefined, sessions: ExecutionSession[], deadline: string | null) => {
+      const raw = computeProgress(sessions);
+      const current = deadline ? autoClosure(closure, raw, deadline, today) : closure;
+      return { closure: current, progress: closedProgress(raw, current) };
+    };
+
     const steps = this.subActivitiesSignal().map(s => {
-      const progress = computeProgress(sessionsOfPlan(s.executionPlan.id));
-      return { ...s, progress, status: deriveSubActivityStatus(progress) };
+      const parentLimit = limitOf(activitiesById.get(s.activityId));
+      const deadline = parentLimit ? effectiveDeadline(s, parentLimit) : null;
+      const { closure, progress } = closeLeaf(s.closure, sessionsOfPlan(s.executionPlan.id), deadline);
+      return { ...s, closure, progress, status: deriveSubActivityStatus(progress, !!closure) };
     });
 
     const activities = this.activitiesSignal().map(a => {
@@ -796,31 +919,34 @@ export class PlannerService {
         return {
           ...a,
           progress,
-          status: deriveStatus(progress, a.status),
+          status: deriveStatus(progress, a.status, own.length > 0 && own.every(isClosed)),
           totalTimeRequiredMin: own.reduce((sum, s) => sum + plannedMinutesOf(sessionsOfPlan(s.executionPlan.id)), 0),
         };
       }
       const ownSessions = a.executionPlan ? sessionsOfPlan(a.executionPlan.id) : [];
-      const progress = computeProgress(ownSessions);
+      const { closure, progress } = closeLeaf(a.closure, ownSessions, limitOf(a));
       return {
         ...a,
+        closure,
         progress,
-        status: deriveStatus(progress, a.status),
+        status: deriveStatus(progress, a.status, !!closure),
         totalTimeRequiredMin: plannedMinutesOf(ownSessions),
       };
     });
 
     const objectives = this.objectivesSignal().map(o => {
-      const progress = averageProgress(activities.filter(a => a.objectiveId === o.id).map(a => a.progress));
-      return { ...o, progress, status: reopenIfBelowComplete({ status: o.status, progress }) };
+      const tasks = activities.filter(a => a.objectiveId === o.id);
+      const progress = averageProgress(tasks.map(a => a.progress));
+      return { ...o, progress, status: deriveObjectiveStatus(o.status, progress, tasks) };
     });
 
     const goals = this.goalsSignal().map(g => {
-      const progress = averageProgress(objectives.filter(o => o.goalId === g.id).map(o => o.progress));
+      const own = objectives.filter(o => o.goalId === g.id);
+      const progress = averageProgress(own.map(o => o.progress));
       // RN-55: la idea pasa a ACTIVE cuando tiene horizonte y ya tiene tareas.
-      const hasTasks = activities.some(a => objectives.some(o => o.id === a.objectiveId && o.goalId === g.id));
+      const hasTasks = activities.some(a => own.some(o => o.id === a.objectiveId));
       const status = g.status === GoalStatus.IDEA && g.horizon && hasTasks ? GoalStatus.ACTIVE : g.status;
-      return { ...g, progress, status };
+      return { ...g, progress, status: deriveGoalStatus(status, own) };
     });
 
     this.subActivitiesSignal.set(steps);

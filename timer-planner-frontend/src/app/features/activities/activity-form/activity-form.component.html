@@ -58,7 +58,12 @@
 
     <hr class="divider">
 
-    @if (isSimple) {
+    @if (closed) {
+    <div class="info-box fade-in">
+      <p><strong>Tarea cerrada:</strong> su tipo, su fecha límite y su plan ya no se editan. Puedes cambiar el título y
+        la clasificación.</p>
+    </div>
+    } @else if (isSimple) {
     <div class="plan-section fade-in">
       <h3>Plan de Ejecución</h3>
 

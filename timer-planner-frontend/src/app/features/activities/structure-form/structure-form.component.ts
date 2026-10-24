@@ -6,7 +6,7 @@ import { PlannerService } from '../../../core/services/planner.service';
 import {
   ActivityComplexity, ExecutionPlan, ExecutionPlanType, SubActivity, SubActivityStatus, WeekDay, WEEK_DAYS_ORDER
 } from '../../../core/models/activity.model';
-import { regenerateFutureSessions, effectiveActivityDeadline, effectiveDeadline } from '../../../core/rules';
+import { regenerateFutureSessions, effectiveActivityDeadline, effectiveDeadline, isClosed } from '../../../core/rules';
 import { ACTIVITY_COMPLEXITY_LABELS, EXECUTION_PLAN_TYPE_LABELS, WEEK_DAY_LABELS } from '../../../core/i18n/labels';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
 import { SessionStatus } from '../../../core/models/session.model';
@@ -31,7 +31,9 @@ export class StructureFormComponent implements OnInit {
   activityId: string | null = null;
   subActivityId: string | null = null;
   isEditMode = false;
-  
+  /** Cerrado: su deadline y su plan ya no se editan (RN-80). */
+  closed = false;
+
   minDate = DateUtils.getTodayISO();
 
   // Guardar estado original
@@ -107,6 +109,11 @@ export class StructureFormComponent implements OnInit {
       duration: sub.executionPlan.durationPerExecutionMin
     });
 
+    this.closed = isClosed(sub);
+    if (this.closed) {
+      ['deadline', 'planType', 'duration'].forEach(name => this.form.get(name)?.disable());
+    }
+
     if (sub.executionPlan.type === ExecutionPlanType.WEEKLY_PATTERN && sub.executionPlan.patternDays) {
       sub.executionPlan.patternDays.forEach(day => this.patternDaysArray.push(new FormControl(day)));
     } else if (sub.executionPlan.type === ExecutionPlanType.SPECIFIC_DATES) {
@@ -154,6 +161,16 @@ export class StructureFormComponent implements OnInit {
 
   onSubmit() {
     if (this.form.invalid || !this.activityId) return;
+
+    // RN-80: de un paso cerrado solo se editan el título y la complejidad.
+    if (this.closed) {
+      const original = this.plannerService.subActivities().find(s => s.id === this.subActivityId);
+      if (!original) return;
+      const raw = this.form.getRawValue();
+      this.plannerService.updateSubActivity({ ...original, title: raw.title!, complexity: raw.complexity! });
+      this.router.navigate(['/objectives', this.objectiveId]);
+      return;
+    }
 
     const val = this.form.value;
     const ownDeadline = val.deadline || undefined;
