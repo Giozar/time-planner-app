@@ -6,13 +6,13 @@ Mapa de qué reglas y casos de uso corresponden a cada parte del frontend, y det
 
 | Feature | Carpeta | Casos de uso | Reglas principales | Falta |
 |---------|---------|--------------|--------------------|-------|
-| Metas e ideas | `features/goals` | CU-01 a CU-05, CU-22, CU-23 (meta), CU-28 | RN-07, RN-12, RN-34, RN-55 a RN-57, RN-62, RN-68, RN-70, RN-78 | — |
-| Objetivos, y en su detalle las acciones sobre tareas y pasos | `features/objectives` (`objective-form`, `objective-detail`) | CU-06 a CU-09, CU-13, CU-16, CU-23 (tarea), CU-24, CU-25, CU-28, CU-29 | RN-08, RN-09, RN-33, RN-52 a RN-54, RN-58, RN-59, RN-62 a RN-65, RN-68, RN-70, RN-77 a RN-80 | — |
+| Metas e ideas | `features/goals` | CU-01 a CU-05, CU-20, CU-22, CU-23, CU-25, CU-28 | RN-07, RN-12, RN-31, RN-34, RN-35, RN-55 a RN-57, RN-62 a RN-64, RN-68, RN-70, RN-73, RN-77, RN-78 | ⏳ Plan 05: estados nuevos, cerrar y reabrir meta, pausar objetivo, avance por suma y productividad |
+| Objetivos, y en su detalle las acciones sobre tareas y pasos | `features/objectives` (`objective-form`, `objective-detail`) | CU-06 a CU-09, CU-13, CU-16, CU-20, CU-23, CU-24, CU-25, CU-28, CU-29 | RN-08, RN-09, RN-31, RN-33, RN-35, RN-52 a RN-54, RN-57, RN-58, RN-62 a RN-65, RN-68, RN-70, RN-73, RN-77 a RN-80 | ⏳ Plan 05: estados nuevos, cierre sin 100 % forzado, reabrir, pausar paso, productividad |
 | Tareas | `features/activities` (`activity-form`) | CU-10 a CU-12, CU-24 | RN-03, RN-04, RN-14 a RN-22, RN-30 a RN-32, RN-39, RN-40, RN-47 a RN-51, RN-67, RN-80, RN-82 | `completedAt` (RN-67) |
 | Pasos | `features/activities` (`structure-form`) | CU-14, CU-15, CU-24 | RN-05, RN-13 a RN-20, RN-30, RN-31, RN-48, RN-49, RN-51, RN-67, RN-80, RN-82 | `completedAt` (RN-67) |
-| Agenda diaria | `features/daily` (`daily-dashboard`) | CU-17, CU-18, CU-27, CU-30 | RN-25 a RN-29, RN-69, RN-71, RN-75, RN-76, RN-79, RN-82 | — |
+| Agenda diaria | `features/daily` (`daily-dashboard`) | CU-17, CU-18, CU-27, CU-30 | RN-25 a RN-29, RN-57, RN-69, RN-71, RN-75, RN-76, RN-79, RN-82 | ⏳ Plan 05: ocultar sesiones posteriores al cierre y pausa heredada |
 | Cierre del día | `features/daily` (`daily-summary`) | CU-19 | RN-41 a RN-44, RN-72, RN-81 | — |
-| Calendario | `features/calendar` (`calendar-view`) | CU-26 | RN-25, RN-26, RN-29, RN-48, RN-66, RN-79 | — |
+| Calendario | `features/calendar` (`calendar-view`) | CU-26 | RN-25, RN-26, RN-29, RN-48, RN-57, RN-66, RN-79 | ⏳ Plan 05: ocultar sesiones posteriores al cierre y pausa heredada |
 | Historial | `features/history` (`history-list`) | CU-21, CU-28 | RN-11, RN-43, RN-70, RN-72, RN-74, RN-81 | — |
 
 ## Notas
