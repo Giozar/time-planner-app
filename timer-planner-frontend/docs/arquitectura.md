@@ -6,7 +6,7 @@ La arquitectura actual se mantiene: **simple, compacta y todo en uno**. Se toman
 
 ## Estructura actual
 
-Estado verificado en `src/app` (2026-10-23):
+Contenido de `src/app`:
 
 ```
 src/app/
@@ -33,7 +33,7 @@ src/app/
 └── app.routes.ts
 ```
 
-Las pruebas (`*.spec.ts`) viven junto al archivo que prueban. Cuando se crean o mueven carpetas, esta sección se actualiza en el mismo cambio.
+Las pruebas (`*.spec.ts`) viven junto al archivo que prueban.
 
 ## Capas y responsabilidades
 

@@ -17,25 +17,7 @@ Esta carpeta reúne la documentación del frontend: funcionalidad, arquitectura 
 - **Agentes:** `../Agents/`. Empieza por el orquestador `../Agents/Agents.md`; el agente planificador está en `../Agents/funcionalidad/Agents-planner.md`.
 - **Reglas de trabajo de los agentes:** `../Agents/reglas/Agents-alcance.md` y `../Agents/tecnologia/Agents-angular.md`.
 
-## Pendiente
+## Pendientes y mantenimiento
 
-- **Recorrido manual** en el navegador (`pnpm ng serve`) de los casos de uso implementados. Las pruebas automáticas cubren la lógica, no la interfaz.
-- **Avisos de presupuesto** al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (513 kB sobre 500 kB).
-- **Decisiones por definir (`D-xx`) y correcciones a las reglas (`C-xx`):** están en [estado-y-pendientes.md](../../docs/estado-y-pendientes.md).
-
-## Mantenimiento de la documentación
-
-**Regla:** el mismo cambio que implementa una fase actualiza sus documentos.
-
-**Estados y convenciones:** ver [../../Agents/funcionalidad/Agents-documentacion.md](../../Agents/funcionalidad/Agents-documentacion.md).
-
-| Si cambia... | Se actualiza |
-|--------------|--------------|
-| El avance de una fase | La tabla de fases del plan y la sección «Pendiente» de este README. Al terminar, no se marca como hecho: se pasa a las reglas y se borra de los pendientes (ver `Agents-documentacion.md`) |
-| El estado de una feature | La columna Falta de `funcionalidad.md` |
-| La estructura de carpetas o capas | `arquitectura.md` (estructura actual) |
-| Una regla de negocio | `../../docs/analisis-reglas-de-negocio.md` (fuente de verdad: solo reglas acordadas) y, si cambia el mapa, `funcionalidad.md` |
-| Lo implementado frente a las reglas | «Comparación con el código» de `../../docs/estado-y-pendientes.md` |
-| Una propuesta nueva, una duda, una decisión tomada o una inconsistencia en las reglas | «Propuestas en discusión», «Decisiones abiertas» o «Correcciones pendientes» de `../../docs/estado-y-pendientes.md` (ver `../../Agents/funcionalidad/Agents-documentacion.md`) |
-| Una convención o práctica | `buenas-practicas.md` |
-| Un agente nuevo, movido o modificado | Lo indicado en «Documento o agente nuevo» de `../../Agents/funcionalidad/Agents-documentacion.md` |
+- **Lo pendiente** (recorrido manual, avisos de compilación, decisiones y correcciones a las reglas) está en [estado-y-pendientes.md](../../docs/estado-y-pendientes.md).
+- **Qué documento actualizar según el cambio:** «Qué documento tocar según el cambio» en [Agents-documentacion.md](../../Agents/funcionalidad/Agents-documentacion.md). El mismo cambio que modifica el código actualiza sus documentos.

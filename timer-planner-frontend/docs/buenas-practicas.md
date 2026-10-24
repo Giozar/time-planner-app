@@ -55,4 +55,4 @@ El código y los datos manejan el valor en inglés. El español aparece solo al 
 
 ## Documentación al día
 
-Cambiar el código y cambiar su documentación es un solo trabajo. Qué documento corresponde a cada cambio está en la sección "Mantenimiento de la documentación" de [README.md](README.md). Una fase de un plan no se da por terminada hasta cumplirlo.
+Cambiar el código y cambiar su documentación es un solo trabajo. Qué documento corresponde a cada cambio está en «Qué documento tocar según el cambio» de [Agents-documentacion.md](../../Agents/funcionalidad/Agents-documentacion.md).

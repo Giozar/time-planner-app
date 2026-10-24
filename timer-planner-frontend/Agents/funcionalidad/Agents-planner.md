@@ -18,23 +18,24 @@ Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que emp
 1. Si la petición es una funcionalidad nueva, sigue el flujo «Propuesta nueva» de `../Agents/funcionalidad/Agents-documentacion.md` antes de planificar.
 2. Identifica la feature en `docs/funcionalidad.md` y las RN/CU que le aplican.
 3. Lee solo esas reglas en el documento de reglas de negocio.
-4. Revisa en `../docs/estado-y-pendientes.md` qué falta implementar y qué decisiones o correcciones tocan esas reglas.
-5. Revisa el código actual de la feature, lo mínimo necesario.
-6. Entrega el plan con el formato de abajo: muéstralo al usuario y **espera su aprobación**. Guardar el plan no autoriza a implementarlo.
+4. **Comprueba que no haya conflictos.** Compara lo pedido con esas reglas y busca en el documento de reglas cada entidad, campo o estado que cambia, para encontrar reglas de otras features que también lo usen. Si algo choca, detente: explícalo al usuario y regístralo como `P-xx` o `D-xx`. Esa parte no se planifica ni se implementa hasta que se resuelva.
+5. Revisa en `../docs/estado-y-pendientes.md` qué falta implementar y qué decisiones o correcciones tocan esas reglas.
+6. Revisa el código actual de la feature, lo mínimo necesario.
+7. Entrega el plan con el formato de abajo: muéstralo al usuario y **espera su aprobación**. Guardar el plan no autoriza a implementarlo.
+
+Un cambio pequeño (un arreglo o un ajuste de pantalla) no necesita plan guardado: se comprueban los conflictos (paso 4), se dice qué se va a hacer y se trata como una sola fase.
 
 ## Cómo implementa por fases
 
-Solo cuando el usuario aprueba el plan y pide implementarlo.
+Solo cuando el usuario aprueba el plan y pide implementarlo. Sigue «Implementación» de `../Agents/reglas/Agents-alcance.md`: sin conflictos con las reglas, una fase a la vez, aviso de «Terminó la fase N de M» y espera hasta que el usuario diga que continúes o que está listo; el commit lo hace él o lo pide al agente de git.
 
-1. Antes de empezar una fase, di en pocas líneas qué vas a hacer y qué archivos vas a tocar.
-2. Implementa **una sola fase** y actualiza su documentación en el mismo cambio.
-3. **Detente.** Resume qué archivos cambiaron y qué queda, y espera a que el usuario revise y haga su commit. No empieces la siguiente fase hasta que diga «sigue».
-4. Los comandos siguen `../Agents/reglas/Agents-alcance.md`, también dentro de una fase aprobada: leer y buscar es libre; pruebas, compilación y lo que modifique archivos piden autorización.
+Los comandos también siguen ese archivo dentro de una fase aprobada: leer y buscar es libre; pruebas, compilación y lo que modifique archivos piden autorización.
 
 ## Formato de un plan
 
 - **Contexto:** por qué se hace, en una o dos líneas, y los IDs de las RN y CU acordadas. No repite el texto de las reglas.
 - **RN y CU cubiertas.**
+- **Conflictos con reglas existentes:** los encontrados, o «Ninguno». Un plan con un conflicto sin resolver no se implementa.
 - **Archivos a tocar,** agrupados por patrón, sin enumerar cada línea.
 - **Pasos ordenados,** por fases según dependencia.
 - **Verificación:** cómo probar el resultado (`pnpm ng test`, `pnpm ng build`, recorrido manual).
@@ -46,4 +47,4 @@ Los planes se guardan en `docs/planes/` con numeración (`NN-tema.md`). Al imple
 
 ## Mantenimiento de la documentación
 
-Una fase no se da por terminada hasta que su documentación esté al día: se actualiza según `docs/README.md` y `../Agents/funcionalidad/Agents-documentacion.md`.
+Una fase no se da por terminada hasta que su documentación esté al día, según «Qué documento tocar según el cambio» de `../Agents/funcionalidad/Agents-documentacion.md`.

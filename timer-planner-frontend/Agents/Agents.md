@@ -12,6 +12,7 @@ Orquestador de este proyecto: indica qué otros archivos cargar según la tarea.
 |-------------------|-----------|
 | Instalar dependencias, ejecutar scripts o generar código Angular | [tecnologia/Agents-angular.md](tecnologia/Agents-angular.md) |
 | Planificar cómo alinear una feature con las reglas de negocio | [funcionalidad/Agents-planner.md](funcionalidad/Agents-planner.md) |
+| Implementar o corregir código, aunque sea un cambio pequeño | [funcionalidad/Agents-planner.md](funcionalidad/Agents-planner.md) (conflictos con las reglas y fases) y «Qué documento tocar según el cambio» de `../../Agents/funcionalidad/Agents-documentacion.md` |
 | Crear o revisar commits y ramas (afecta a todo el monorepo) | `../../Agents/tecnologia/Agents-git-monorepo.md`, en la raíz del repositorio |
 | Revisar o actualizar documentación, consultar qué está por definir o agregar un agente | `../../Agents/funcionalidad/Agents-documentacion.md`, en la raíz del repositorio |
 

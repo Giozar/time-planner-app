@@ -17,12 +17,34 @@ Mantiene la documentación del monorepo coherente. Sabe qué va en cada document
 | [docs/estado-y-pendientes.md](../../docs/estado-y-pendientes.md) | Lo **por definir y por hacer**: comparación reglas ↔ código, trabajo pendiente, propuestas en discusión (`P-xx`), decisiones abiertas (`D-xx`) y correcciones pendientes a las reglas (`C-xx`). | Reglas acordadas: una regla solo existe cuando está en el documento de reglas. |
 | `timer-planner-frontend/docs/planes/NN-*.md` | Un bloque de trabajo por hacer: fases pendientes, cómo verificarlo y decisiones que lo bloquean. | Copias de las reglas (las cita por ID) ni lo ya hecho. |
 | `timer-planner-frontend/docs/funcionalidad.md` | Qué RN y CU aplican a cada feature y su estado. | El texto de las reglas. |
-| `timer-planner-frontend/docs/README.md` | Índice, estado general y tabla de mantenimiento del frontend. | Detalle de fases (va en los planes). |
+| `timer-planner-frontend/docs/README.md` | Índice de la documentación del frontend. | Pendientes (van en `estado-y-pendientes.md`) ni reglas de mantenimiento (van en este agente). |
 | `timer-planner-frontend/docs/arquitectura.md`, `buenas-practicas.md` | Estructura del código y convenciones. | Reglas de negocio. |
 | `AGENTS.md` (raíz) | Solo el aviso de leer `Agents/Agents.md`. | Cualquier otra instrucción. |
 | `Agents/` (raíz y de cada proyecto) | Instrucciones de trabajo de los agentes y dónde buscar cada cosa. | Reglas de negocio ni estado del trabajo. |
 
 Antes de responder qué está definido, qué falta o qué sigue, lee `docs/estado-y-pendientes.md` y después solo las RN o CU que cite.
+
+## Qué documento tocar según el cambio
+
+Aplica a todo cambio de código, sea una fase de un plan o un arreglo suelto, en frontend o backend. Se abren solo los documentos de las filas que correspondan; no se revisa toda la documentación.
+
+| Si cambia... | Se actualiza |
+|--------------|--------------|
+| Una regla o un caso de uso (nuevo, editado o quitado) | Su RN o CU en `docs/analisis-reglas-de-negocio.md` y lo que la cite: el mapa de `funcionalidad.md` y las P, D y C de `estado-y-pendientes.md`. Si se quita, su número va a «Números libres». |
+| Un modelo: entidad, campo o enum (`core/models`, entidades del backend) | En el documento de reglas, la sección 3.x de la entidad y la 4.2 si es un valor de enum; además la sección 7 (tablas) si se guarda y la 8 (API) si se expone. |
+| Lo que falta o sobra frente a las reglas | «Comparación con el código» de `estado-y-pendientes.md` y la columna «Falta» de `funcionalidad.md`: se agrega al quedar pendiente y se quita al implementarlo. |
+| Un comportamiento de pantalla que no es una regla (botón, aviso, diseño) | «Notas» de `funcionalidad.md`. |
+| Una feature, carpeta o ruta nueva, movida o borrada | Su fila del mapa en `funcionalidad.md` y «Estructura actual» de `arquitectura.md`. |
+| Un archivo nuevo, movido o borrado en `core/` o `shared/` | «Estructura actual» de `arquitectura.md`. |
+| Las ayudas de prueba (`src/app/testing/`) o una convención | `buenas-practicas.md`. |
+| Una fase de un plan | El plan: se quita la fase; si era la última, se borra el plan (ver «Termina un plan»). |
+| Algo que queda por verificar (pruebas, recorrido manual, avisos de compilación) | «Trabajo pendiente» de `estado-y-pendientes.md`. |
+| Una propuesta, una duda o una inconsistencia en las reglas | P, D o C de `estado-y-pendientes.md` (ver «Flujos»). |
+| Un agente, un permiso o un comando | El agente que lo contiene; si es nuevo o se borra, también ver «Documento o agente nuevo». |
+| Un documento nuevo o borrado | El mapa de arriba y, si es del frontend, el índice de `timer-planner-frontend/docs/README.md`. |
+| Solo la lógica interna, sin cambiar lo acordado ni la estructura | Nada. |
+
+**Cómo encontrar lo afectado sin leer todo.** Busca con `grep` el ID (`RN-67`), el nombre del campo o enum (`completedAt`) o la ruta del archivo en `docs/`, `Agents/` y en los `docs/` y `Agents/` de cada proyecto; si es una RN, busca también en `src/` (pruebas y comentarios la citan). Abre solo los archivos que aparezcan.
 
 ## Flujos
 
@@ -35,7 +57,7 @@ Antes de responder qué está definido, qué falta o qué sigue, lee `docs/estad
 
 **Inconsistencia en el documento de reglas.** Regístrala como `C-xx` con su corrección propuesta. Si el usuario pide corregirla, aplícala y quítala de la lista sin dejar nota de qué se corrigió ni cuándo.
 
-**Se implementa algo.** En el mismo cambio: quita la fase de su plan, la fila de «Comparación con el código» y la fila o estado de `funcionalidad.md`, y aplica la tabla de mantenimiento de `timer-planner-frontend/docs/README.md`. Si es comportamiento nuevo, queda en las reglas o en `funcionalidad.md`.
+**Se implementa algo.** En el mismo cambio, aplica «Qué documento tocar según el cambio». Si es comportamiento nuevo, queda en las reglas o en `funcionalidad.md`.
 
 **Termina un plan.** Un plan termina al implementar su última fase, aunque falten las pruebas o el recorrido que hace el usuario: se borra en ese mismo cambio y esa verificación queda como una línea en «Trabajo pendiente» de `estado-y-pendientes.md`. Antes de borrarlo: (1) las reglas y casos de uso nuevos ya están en el documento de reglas; (2) el comportamiento de pantallas que no es una regla va en `funcionalidad.md`; (3) lo que quedó por verificar o decidir va en `estado-y-pendientes.md`; (4) se quitan su fila de «Comparación con el código» y sus referencias en README, `funcionalidad.md` y otros planes. Lo que describe cómo se hizo (commits, fases, pruebas) no se conserva.
 
@@ -56,9 +78,11 @@ Antes de responder qué está definido, qué falta o qué sigue, lee `docs/estad
 
 ## Revisión después de cada cambio
 
+Solo sobre los documentos que tocaste y los que encontró la búsqueda por ID; no sobre toda la documentación. Una revisión completa se hace únicamente cuando el usuario la pide.
+
 1. El documento de reglas no tiene estados, propuestas ni referencias al código.
 2. Toda RN o CU citada existe y no está en «Números libres»; las P, D y C citadas como pendientes siguen abiertas.
-3. El estado de cada plan coincide con `funcionalidad.md`, el README del frontend y `estado-y-pendientes.md`.
+3. El estado del plan coincide con `funcionalidad.md` y `estado-y-pendientes.md`.
 4. No hay enlaces relativos rotos.
 5. Ninguna regla está definida en dos lugares, ni con el mismo texto ni con uno distinto.
 6. No queda historial: fechas de aplicación, notas de «se corrigió» o «se acordó» ni planes con todas sus fases implementadas.

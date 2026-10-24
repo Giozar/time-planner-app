@@ -4,7 +4,7 @@ Punto de entrada de todos los agentes del repositorio. Cada proyecto tiene adem�
 
 ## Siempre
 
-- [reglas/Agents-alcance.md](reglas/Agents-alcance.md): límite de trabajo, comandos, documentación y estilo de respuesta.
+- [reglas/Agents-alcance.md](reglas/Agents-alcance.md): límite de trabajo, comandos, implementación (conflictos con las reglas y fases), documentación y estilo de respuesta.
 
 ## Proyectos
 
@@ -19,8 +19,6 @@ Punto de entrada de todos los agentes del repositorio. Cada proyecto tiene adem�
 |-------|--------|
 | Commits, ramas y flujo de trabajo en git | [tecnologia/Agents-git-monorepo.md](tecnologia/Agents-git-monorepo.md) |
 | Revisar o actualizar documentación, discutir una propuesta nueva, registrar una decisión por definir, saber qué está pendiente o agregar un agente | [funcionalidad/Agents-documentacion.md](funcionalidad/Agents-documentacion.md) |
-
-`tecnologia/Agents-git-commits.md` es solo una plantilla genérica para reutilizar en otros proyectos; en este repositorio aplica `Agents-git-monorepo.md`.
 
 ## Documentación del producto
 
