@@ -27,11 +27,13 @@ import {
   deadlineClosure,
   effectiveActivityDeadline,
   effectiveDeadline,
+  computeProductivity,
   computeProgress,
   deriveRecurrence,
   deriveStatus,
   hasOpenPause,
   isClosed,
+  isEffectivelyPaused,
   isHiddenByClosure,
   isFutureDate,
   isValidISODate,
@@ -39,9 +41,12 @@ import {
   computeConsistency,
   endPause,
   plannedMinutesOf,
+  reopensWithParent,
+  sessionsDoneClosure,
   startPause,
   validateDeadlines,
 } from '../rules';
+import { PausePeriod } from '../models/pause.model';
 
 /** Tarea simple o paso donde se puede registrar tiempo. */
 export interface ExecutableItem {
@@ -53,6 +58,38 @@ export interface ExecutableItem {
 export interface DayWorkLog {
   log: WorkLog;
   label: string;
+}
+
+/** Productividad de un elemento (RN-73): minutos reales sobre previstos de todo su plan. */
+export interface ProductivitySummary {
+  actualMinutes: number;
+  plannedMinutes: number;
+  percentage: number | null;
+}
+
+/**
+ * Resultado de reabrir (RN-64): `NEEDS_DEADLINE` si su deadline efectivo ya pasó y falta uno nuevo;
+ * `PARENT_EXPIRED` si el de su padre también pasó; `INVALID_DEADLINE` si el nuevo es anterior a hoy o supera el del padre.
+ */
+export type ReopenResult = 'OK' | 'NOT_CLOSED' | 'NEEDS_DEADLINE' | 'PARENT_EXPIRED' | 'INVALID_DEADLINE';
+
+/** Nivel de la jerarquía, para las acciones comunes a los cuatro: pausar, cerrar y reabrir. */
+type Level = 'goal' | 'objective' | 'activity' | 'step';
+
+/** Lo que tienen en común los cuatro niveles para pausar, cerrar y reabrir. */
+interface TreeNode {
+  id: string;
+  status: string;
+  progress: number;
+  closure?: ItemClosure;
+  pauses?: PausePeriod[];
+}
+
+/** Estado del último guardado: detecta los eventos que disparan cierres automáticos (RN-77, RN-78). */
+interface Snapshot {
+  progress: ReadonlyMap<string, number>;
+  closed: ReadonlySet<string>;
+  children: ReadonlyMap<string, readonly string[]>;
 }
 
 /** Dueño de un plan de ejecución: una tarea simple o un paso. */
@@ -100,7 +137,9 @@ export class PlannerService {
       this.sessionsSignal.set(data.sessions);
       this.workLogsSignal.set(data.workLogs);
       this.recordsSignal.set(data.records);
-      // Al abrir se aplican los cierres automáticos de elementos y de días (RN-77, RN-81).
+      // Lo guardado es el punto de partida: los cierres automáticos solo responden a cambios desde aquí (RN-77).
+      this.snapshot = this.takeSnapshot();
+      // Al abrir se aplican los cierres por fecha límite y el cierre automático de días (RN-58, RN-81).
       this.commit();
       this.closePendingDays();
     });
@@ -159,21 +198,26 @@ export class PlannerService {
     return owner.step ? owner.step.closure : owner.activity.closure;
   }
 
-  /**
-   * Tareas cuyas sesiones se muestran (RN-29, RN-66): excluye las de metas PAUSED/IDEA y las tareas PAUSED.
-   * De lo cerrado solo se ocultan las sesiones no realizadas desde su cierre (RN-79).
-   * Única fuente de visibilidad: la usan la agenda de hoy y el calendario, para que nunca difieran.
-   */
-  private visibleActivityIds = computed<Set<string>>(() => {
-    const goals = this.goalsSignal();
-    const objectives = this.objectivesSignal();
+  /** Historiales de pausa de la meta, el objetivo, la tarea y, si es un paso, el paso dueño de un plan (RN-57). */
+  private pauseChainOf(owner: PlanOwner): (PausePeriod[] | undefined)[] {
+    const objective = this.objectivesSignal().find(o => o.id === owner.activity.objectiveId);
+    const goal = this.goalsSignal().find(g => g.id === objective?.goalId);
+    return [goal?.pauses, objective?.pauses, owner.activity.pauses, owner.step?.pauses];
+  }
 
-    return new Set(this.activitiesSignal().filter(activity => {
-      if (activity.status === ActivityStatus.PAUSED) return false;
-      const objective = objectives.find(o => o.id === activity.objectiveId);
-      const goal = goals.find(g => g.id === objective?.goalId);
-      return !!goal && goal.status !== GoalStatus.IDEA && goal.status !== GoalStatus.PAUSED;
-    }).map(a => a.id));
+  /**
+   * Planes cuyas sesiones se muestran (RN-29, RN-66): excluye los de metas `IDEA` y los que están en pausa efectiva,
+   * por una pausa propia o de cualquier padre (RN-57). De lo cerrado solo se ocultan las sesiones no realizadas
+   * desde su cierre (RN-79). Única fuente de visibilidad: la usan la agenda y el calendario, para que nunca difieran.
+   */
+  private visiblePlanIds = computed<Set<string>>(() => {
+    const visible = new Set<string>();
+    for (const [planId, owner] of this.planOwners()) {
+      const objective = this.objectivesSignal().find(o => o.id === owner.activity.objectiveId);
+      const goal = this.goalsSignal().find(g => g.id === objective?.goalId);
+      if (goal && goal.status !== GoalStatus.IDEA && !isEffectivelyPaused(this.pauseChainOf(owner))) visible.add(planId);
+    }
+    return visible;
   });
 
   /** Fecha de la agenda; hoy por defecto (RN-75). */
@@ -203,14 +247,14 @@ export class PlannerService {
   /** Sesiones de `date` de tareas simples y pasos visibles. */
   private agendaFor(date: string): AgendaItem[] {
     const today = DateUtils.getTodayISO();
-    const visible = this.visibleActivityIds();
+    const visible = this.visiblePlanIds();
     const owners = this.planOwners();
     const logs = this.workLogsSignal();
     const items: AgendaItem[] = [];
 
     for (const session of this.sessionsSignal()) {
       const owner = owners.get(session.planId);
-      if (session.scheduledDate !== date || !owner || !visible.has(owner.activity.id)) continue;
+      if (session.scheduledDate !== date || !owner || !visible.has(session.planId)) continue;
       if (isHiddenByClosure(session, this.closureOfOwner(owner))) continue;
 
       items.push({
@@ -245,7 +289,7 @@ export class PlannerService {
    * con su jerarquía y deadlines efectivos (RN-48). Ordenadas por título dentro de cada día.
    */
   public calendarEntries = computed<ReadonlyMap<string, CalendarEntry[]>>(() => {
-    const visible = this.visibleActivityIds();
+    const visible = this.visiblePlanIds();
     const goals = this.goalsSignal();
     const objectives = this.objectivesSignal();
     const entries = new Map<string, CalendarEntry[]>();
@@ -258,7 +302,7 @@ export class PlannerService {
     const owners = this.planOwners();
     for (const session of this.sessionsSignal()) {
       const owner = owners.get(session.planId);
-      if (!owner || !visible.has(owner.activity.id)) continue;
+      if (!owner || !visible.has(session.planId)) continue;
       if (isHiddenByClosure(session, this.closureOfOwner(owner))) continue;
       const objective = objectives.find(o => o.id === owner.activity.objectiveId);
       const goal = goals.find(g => g.id === objective?.goalId);
@@ -315,10 +359,12 @@ export class PlannerService {
       const goal = goals.find(g => g.id === objective?.goalId);
       if (!objective || !goal) continue;
 
-      const pauses = [...(goal.pauses ?? []), ...(activity.pauses ?? [])];
+      // Pausas de todos sus padres (RN-57): la del paso se suma a las de su tarea, objetivo y meta.
+      const pauses = [...(goal.pauses ?? []), ...(objective.pauses ?? []), ...(activity.pauses ?? [])];
       const own = activity.type === ActivityType.SIMPLE
         ? entriesOf(activity.executionPlan, pauses, activity.closure)
-        : this.stepsOf(activity.id).flatMap(step => score(step.id, entriesOf(step.executionPlan, pauses, step.closure)));
+        : this.stepsOf(activity.id).flatMap(step =>
+          score(step.id, entriesOf(step.executionPlan, [...pauses, ...(step.pauses ?? [])], step.closure)));
       score(activity.id, own);
 
       byObjective.set(objective.id, [...(byObjective.get(objective.id) ?? []), ...own]);
@@ -327,6 +373,56 @@ export class PlannerService {
 
     for (const objective of objectives) score(objective.id, byObjective.get(objective.id) ?? []);
     for (const goal of goals) score(goal.id, byGoal.get(goal.id) ?? []);
+    return result;
+  });
+
+  /**
+   * Productividad por id de tarea, paso, objetivo y meta (RN-73): minutos de `WorkLog`, también sin sesión,
+   * sobre los minutos previstos de todas las sesiones del plan. Los padres suman los de sus ítems ejecutables.
+   */
+  public productivity = computed<ReadonlyMap<string, ProductivitySummary>>(() => {
+    const actualBySource = new Map<string, number>();
+    for (const log of this.workLogsSignal()) {
+      actualBySource.set(log.sourceId, (actualBySource.get(log.sourceId) ?? 0) + log.minutes);
+    }
+    const plannedByPlan = new Map<string, number>();
+    for (const session of this.sessionsSignal()) {
+      plannedByPlan.set(session.planId, (plannedByPlan.get(session.planId) ?? 0) + session.plannedMinutes);
+    }
+
+    const result = new Map<string, ProductivitySummary>();
+    const totals = new Map<string, { actual: number; planned: number }>();
+    const add = (id: string, actual: number, planned: number) => {
+      const t = totals.get(id) ?? { actual: 0, planned: 0 };
+      totals.set(id, { actual: t.actual + actual, planned: t.planned + planned });
+    };
+    const leaf = (id: string, planId: string | undefined) => {
+      const actual = actualBySource.get(id) ?? 0;
+      const planned = planId ? plannedByPlan.get(planId) ?? 0 : 0;
+      add(id, actual, planned);
+      return { actual, planned };
+    };
+
+    for (const activity of this.activitiesSignal()) {
+      const objective = this.objectivesSignal().find(o => o.id === activity.objectiveId);
+      const parts = activity.type === ActivityType.SIMPLE
+        ? [leaf(activity.id, activity.executionPlan?.id)]
+        : this.stepsOf(activity.id).map(step => leaf(step.id, step.executionPlan.id));
+      for (const { actual, planned } of parts) {
+        if (activity.type === ActivityType.COMPOSITE) add(activity.id, actual, planned);
+        if (objective) {
+          add(objective.id, actual, planned);
+          add(objective.goalId, actual, planned);
+        }
+      }
+    }
+
+    const ids = [...this.goalsSignal(), ...this.objectivesSignal(), ...this.activitiesSignal(), ...this.subActivitiesSignal()]
+      .map(item => item.id);
+    for (const id of ids) {
+      const { actual, planned } = totals.get(id) ?? { actual: 0, planned: 0 };
+      result.set(id, { actualMinutes: actual, plannedMinutes: planned, percentage: computeProductivity(actual, planned) });
+    }
     return result;
   });
 
@@ -360,18 +456,31 @@ export class PlannerService {
     this.commit();
   }
 
+  /** El cierre y las pausas no se editan con el formulario: se conservan. */
   updateGoal(updated: Goal) {
-    this.goalsSignal.update(goals => goals.map(g => g.id === updated.id ? updated : g));
+    this.goalsSignal.update(goals => goals.map(g => g.id === updated.id ? { ...updated, closure: g.closure, pauses: g.pauses } : g));
     this.commit();
   }
 
-  /** Solo cambia el estado; no toca deadlines, sesiones ni progreso (RN-57). */
+  /** Pausar no toca deadlines, sesiones ni progreso; lo de abajo queda en pausa efectiva (RN-57). Una idea no se pausa. */
   pauseGoal(id: string) {
-    this.setGoalStatus(id, GoalStatus.OPEN, GoalStatus.PAUSED);
+    if (this.goalsSignal().find(g => g.id === id)?.status === GoalStatus.IDEA) return;
+    this.setPause('goal', id, true);
   }
 
   resumeGoal(id: string) {
-    this.setGoalStatus(id, GoalStatus.PAUSED, GoalStatus.OPEN);
+    this.setPause('goal', id, false);
+  }
+
+  /** Cierra a mano la meta y todo lo que tiene abajo, sin cambiar su avance (RN-77, RN-78). Una idea no se cierra. */
+  closeGoal(id: string): boolean {
+    if (this.goalsSignal().find(g => g.id === id)?.status === GoalStatus.IDEA) return false;
+    return this.closeManually('goal', id);
+  }
+
+  /** Reabre la meta y lo de abajo que siga dentro de su deadline (RN-64). */
+  reopenGoal(id: string): ReopenResult {
+    return this.reopen('goal', id);
   }
 
   deleteGoal(id: string) {
@@ -383,17 +492,20 @@ export class PlannerService {
 
   // --- OBJETIVOS ---
 
+  /** Un objetivo nuevo reabre su meta si estaba cerrada (RN-53). */
   addObjective(objective: Objective) {
     this.objectivesSignal.update(o => [...o, objective]);
+    this.reopenAncestors('objective', objective.id);
     this.commit();
   }
 
   /**
    * Devuelve los conflictos de deadline (RN-49); si hay alguno, no se guarda.
-   * Un objetivo cerrado conserva su deadline (RN-80).
+   * Conserva el cierre y las pausas; un objetivo cerrado conserva además su deadline (RN-80).
    */
   updateObjective(updated: Objective): DeadlineConflict[] {
     const previous = this.objectivesSignal().find(o => o.id === updated.id);
+    if (previous) updated = { ...updated, closure: previous.closure, pauses: previous.pauses };
     if (previous && isClosed(previous)) updated = { ...updated, deadline: previous.deadline };
 
     const conflicts = this.conflictsFor(updated.id, { objective: updated });
@@ -406,13 +518,20 @@ export class PlannerService {
 
   /** Cierra a mano el objetivo y sus tareas y pasos abiertos, sin cambiar su avance (RN-77, RN-78). Devuelve si cerró algo. */
   closeObjective(id: string): boolean {
-    const objective = this.objectivesSignal().find(o => o.id === id);
-    if (!objective || isClosed(objective)) return false;
-    const closure: ItemClosure = { type: ClosureType.MANUAL, closedOn: DateUtils.getTodayISO() };
-    this.objectivesSignal.update(obs => obs.map(o => o.id === id ? { ...o, closure } : o));
-    this.closeItems(this.activitiesSignal().filter(a => a.objectiveId === id).map(a => a.id));
-    this.commit();
-    return true;
+    return this.closeManually('objective', id);
+  }
+
+  /** `deadline`: obligatorio si el suyo ya pasó (RN-64). */
+  reopenObjective(id: string, deadline?: string): ReopenResult {
+    return this.reopen('objective', id, deadline);
+  }
+
+  pauseObjective(id: string) {
+    this.setPause('objective', id, true);
+  }
+
+  resumeObjective(id: string) {
+    this.setPause('objective', id, false);
   }
 
   deleteObjective(id: string) {
@@ -433,6 +552,7 @@ export class PlannerService {
 
     this.activitiesSignal.update(a => [...a, candidate]);
     this.replaceSessions(candidate.executionPlan?.id, sessions);
+    this.reopenAncestors('activity', candidate.id); // RN-53
     this.commit();
     return [];
   }
@@ -441,12 +561,12 @@ export class PlannerService {
    * Guarda la tarea. Si `sessions` se indica, reemplaza las sesiones de su plan.
    * Si cambia de tipo (RN-39, RN-40): compuesta → simple elimina sus pasos con sus sesiones y tiempo;
    * simple → compuesta descarta su plan, sesiones y tiempo. La confirmación previa es del llamador (`typeChangeImpact`).
-   * Una tarea cerrada conserva su cierre, su tipo, su deadline y su plan (RN-80).
+   * Conserva el cierre y las pausas; una tarea cerrada conserva además su tipo, su deadline y su plan (RN-80).
    * Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda.
    */
   updateActivity(updated: Activity, sessions?: ExecutionSession[]): DeadlineConflict[] {
     const previous = this.activitiesSignal().find(a => a.id === updated.id);
-    if (previous) updated = { ...updated, closure: previous.closure };
+    if (previous) updated = { ...updated, closure: previous.closure, pauses: previous.pauses };
     if (previous && isClosed(previous)) {
       updated = { ...updated, type: previous.type, deadline: previous.deadline, executionPlan: previous.executionPlan };
       sessions = undefined;
@@ -499,17 +619,18 @@ export class PlannerService {
     };
   }
 
-  /** Solo oculta la tarea de la agenda (RN-59). Una tarea cerrada no se pausa. */
+  /** Solo la oculta de la agenda, con sus pasos (RN-57, RN-59). Una tarea cerrada no se pausa. */
   pauseActivity(id: string) {
-    const activity = this.activitiesSignal().find(a => a.id === id);
-    if (!activity || isClosed(activity)) return;
-    this.setActivityStatus(id, ActivityStatus.PAUSED);
+    this.setPause('activity', id, true);
   }
 
   resumeActivity(id: string) {
-    const activity = this.activitiesSignal().find(a => a.id === id);
-    if (activity?.status !== ActivityStatus.PAUSED) return;
-    this.setActivityStatus(id, ActivityStatus.OPEN);
+    this.setPause('activity', id, false);
+  }
+
+  /** `deadline`: obligatorio si su deadline efectivo ya pasó (RN-64). */
+  reopenActivity(id: string, deadline?: string): ReopenResult {
+    return this.reopen('activity', id, deadline);
   }
 
   /**
@@ -517,7 +638,7 @@ export class PlannerService {
    * Devuelve si cerró algo.
    */
   closeActivity(id: string): boolean {
-    return this.closeItems([id]);
+    return this.closeManually('activity', id);
   }
 
   deleteActivity(id: string) {
@@ -527,18 +648,18 @@ export class PlannerService {
 
   // --- PASOS ---
 
-  /** Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda. */
+  /** Devuelve los conflictos de deadline (RN-48/49); si hay alguno, no se guarda. Reabre sus padres cerrados (RN-53). */
   addSubActivity(sub: SubActivity, sessions: ExecutionSession[] = []): DeadlineConflict[] {
-    return this.saveSubActivity(sub, sessions, subs => [...subs, sub]);
+    return this.saveSubActivity(sub, sessions, subs => [...subs, sub], true);
   }
 
   /**
    * `sessions`, si se indica, reemplaza las del plan del paso.
-   * Un paso cerrado conserva su cierre, su deadline y su plan (RN-80).
+   * Conserva el cierre y las pausas; un paso cerrado conserva además su deadline y su plan (RN-80).
    */
   updateSubActivity(updated: SubActivity, sessions?: ExecutionSession[]): DeadlineConflict[] {
     const previous = this.subActivitiesSignal().find(s => s.id === updated.id);
-    if (previous) updated = { ...updated, closure: previous.closure };
+    if (previous) updated = { ...updated, closure: previous.closure, pauses: previous.pauses };
     if (previous && isClosed(previous)) {
       updated = { ...updated, deadline: previous.deadline, executionPlan: previous.executionPlan };
       sessions = undefined;
@@ -549,7 +670,20 @@ export class PlannerService {
 
   /** Cierra a mano el paso sin cambiar su avance (RN-77). Devuelve si cerró algo. */
   closeStep(id: string): boolean {
-    return this.closeItems([], [id]);
+    return this.closeManually('step', id);
+  }
+
+  /** `deadline`: obligatorio si su deadline efectivo ya pasó (RN-64). */
+  reopenStep(id: string, deadline?: string): ReopenResult {
+    return this.reopen('step', id, deadline);
+  }
+
+  pauseStep(id: string) {
+    this.setPause('step', id, true);
+  }
+
+  resumeStep(id: string) {
+    this.setPause('step', id, false);
   }
 
   deleteSubActivity(id: string) {
@@ -758,28 +892,148 @@ export class PlannerService {
     return this.subActivitiesSignal().filter(s => s.activityId === activityId);
   }
 
-  private setGoalStatus(id: string, from: GoalStatus, to: GoalStatus) {
-    const goal = this.goalsSignal().find(g => g.id === id);
-    if (goal?.status !== from) return;
+  // --- JERARQUÍA: ACCIONES COMUNES A LOS CUATRO NIVELES ---
+
+  private nodeOf(level: Level, id: string): TreeNode | undefined {
+    switch (level) {
+      case 'goal': return this.goalsSignal().find(g => g.id === id);
+      case 'objective': return this.objectivesSignal().find(o => o.id === id);
+      case 'activity': return this.activitiesSignal().find(a => a.id === id);
+      case 'step': return this.subActivitiesSignal().find(s => s.id === id);
+    }
+  }
+
+  /** Hijos directos: meta → objetivos, objetivo → tareas, tarea → pasos. */
+  private childrenOf(level: Level, id: string): { level: Level; id: string }[] {
+    switch (level) {
+      case 'goal': return this.objectivesSignal().filter(o => o.goalId === id).map(o => ({ level: 'objective' as const, id: o.id }));
+      case 'objective': return this.activitiesSignal().filter(a => a.objectiveId === id).map(a => ({ level: 'activity' as const, id: a.id }));
+      case 'activity': return this.stepsOf(id).map(s => ({ level: 'step' as const, id: s.id }));
+      case 'step': return [];
+    }
+  }
+
+  private parentOf(level: Level, id: string): { level: Level; id: string } | null {
+    switch (level) {
+      case 'goal': return null;
+      case 'objective': {
+        const objective = this.objectivesSignal().find(o => o.id === id);
+        return objective ? { level: 'goal', id: objective.goalId } : null;
+      }
+      case 'activity': {
+        const activity = this.activitiesSignal().find(a => a.id === id);
+        return activity ? { level: 'objective', id: activity.objectiveId } : null;
+      }
+      case 'step': {
+        const step = this.subActivitiesSignal().find(s => s.id === id);
+        return step ? { level: 'activity', id: step.activityId } : null;
+      }
+    }
+  }
+
+  /** Deadline efectivo (RN-48); la meta no tiene (RN-56). */
+  private effectiveDeadlineOf(level: Level, id: string): string | null {
+    switch (level) {
+      case 'goal': return null;
+      case 'objective': return this.objectivesSignal().find(o => o.id === id)?.deadline ?? null;
+      case 'activity': {
+        const activity = this.activitiesSignal().find(a => a.id === id);
+        const objective = activity && this.objectivesSignal().find(o => o.id === activity.objectiveId);
+        return activity && objective ? effectiveActivityDeadline(activity, objective) : null;
+      }
+      case 'step': {
+        const step = this.subActivitiesSignal().find(s => s.id === id);
+        const limit = step && this.effectiveDeadlineOf('activity', step.activityId);
+        return step && limit ? effectiveDeadline(step, limit) : null;
+      }
+    }
+  }
+
+  /** Cambia el cierre, las pausas o el deadline de un elemento. La meta no tiene deadline. */
+  private patchNode(level: Level, id: string, changes: { closure?: ItemClosure; pauses?: PausePeriod[]; deadline?: string }) {
+    const apply = <T extends { id: string }>(items: T[]): T[] => items.map(item => item.id === id ? { ...item, ...changes } : item);
+    switch (level) {
+      case 'goal': this.goalsSignal.update(apply); break;
+      case 'objective': this.objectivesSignal.update(apply); break;
+      case 'activity': this.activitiesSignal.update(apply); break;
+      case 'step': this.subActivitiesSignal.update(apply); break;
+    }
+  }
+
+  /** Pausar abre un periodo y reanudar lo termina el día anterior (RN-57). Lo cerrado no se pausa. */
+  private setPause(level: Level, id: string, pause: boolean) {
+    const node = this.nodeOf(level, id);
+    if (!node) return;
     const today = DateUtils.getTodayISO();
-    this.goalsSignal.update(goals => goals.map(g => {
-      if (g.id !== id) return g;
-      const pauses = to === GoalStatus.PAUSED ? startPause(g.pauses, today)
-        : from === GoalStatus.PAUSED ? endPause(g.pauses, today) : g.pauses;
-      return { ...g, status: to, pauses };
-    }));
+    if (pause) {
+      if (node.closure || hasOpenPause(node.pauses)) return;
+      this.patchNode(level, id, { pauses: startPause(node.pauses, today) });
+    } else {
+      if (!hasOpenPause(node.pauses)) return;
+      this.patchNode(level, id, { pauses: endPause(node.pauses, today) });
+    }
     this.commit();
   }
 
-  private setActivityStatus(id: string, status: ActivityStatus) {
-    const today = DateUtils.getTodayISO();
-    this.activitiesSignal.update(acts => acts.map(a => {
-      if (a.id !== id) return a;
-      const pauses = status === ActivityStatus.PAUSED ? startPause(a.pauses, today)
-        : a.status === ActivityStatus.PAUSED ? endPause(a.pauses, today) : a.pauses;
-      return { ...a, status, pauses };
-    }));
+  /**
+   * Cierre a mano (RN-77, RN-78): el elemento y todos sus descendientes abiertos quedan cerrados desde hoy,
+   * sin cambiar su avance. Los ya cerrados conservan su cierre. Devuelve si cerró algo.
+   */
+  private closeManually(level: Level, id: string): boolean {
+    if (!this.nodeOf(level, id) || this.nodeOf(level, id)?.closure) return false;
+    const closure: ItemClosure = { type: ClosureType.MANUAL, closedOn: DateUtils.getTodayISO() };
+    const close = (l: Level, i: string) => {
+      if (!this.nodeOf(l, i)?.closure) this.patchNode(l, i, { closure });
+      this.childrenOf(l, i).forEach(child => close(child.level, child.id));
+    };
+    close(level, id);
     this.commit();
+    return true;
+  }
+
+  /**
+   * Reabrir (RN-64): borra el cierre sin importar cómo se cerró, reabre los descendientes que siguen dentro de su deadline
+   * y tienen sesiones pendientes, y reabre sus padres cerrados. Si su deadline efectivo ya pasó, exige `deadline`
+   * desde hoy y dentro del de su padre; sus descendientes sin deadline propio lo heredan.
+   */
+  private reopen(level: Level, id: string, deadline?: string): ReopenResult {
+    if (!this.nodeOf(level, id)?.closure) return 'NOT_CLOSED';
+    const today = DateUtils.getTodayISO();
+    const current = this.effectiveDeadlineOf(level, id);
+
+    if (current !== null && current < today) {
+      const parent = this.parentOf(level, id);
+      const parentLimit = parent && this.effectiveDeadlineOf(parent.level, parent.id);
+      if (parentLimit && parentLimit < today) return 'PARENT_EXPIRED';
+      if (!deadline) return 'NEEDS_DEADLINE';
+      if (!isValidISODate(deadline) || deadline < today || (parentLimit && deadline > parentLimit)) return 'INVALID_DEADLINE';
+      this.patchNode(level, id, { deadline });
+    }
+
+    this.patchNode(level, id, { closure: undefined });
+    this.reopenDescendants(level, id, today);
+    this.reopenAncestors(level, id);
+    this.commit();
+    return 'OK';
+  }
+
+  /** Reabre los descendientes cerrados que siguen dentro de su deadline y tienen sesiones pendientes (RN-64). */
+  private reopenDescendants(level: Level, id: string, today: string) {
+    for (const child of this.childrenOf(level, id)) {
+      const node = this.nodeOf(child.level, child.id);
+      const limit = this.effectiveDeadlineOf(child.level, child.id);
+      if (node?.closure && limit !== null && reopensWithParent(limit, node.progress, today)) {
+        this.patchNode(child.level, child.id, { closure: undefined });
+      }
+      this.reopenDescendants(child.level, child.id, today);
+    }
+  }
+
+  /** Reabre los padres cerrados de un elemento, sin tocar a sus otros hijos (RN-53, RN-64). */
+  private reopenAncestors(level: Level, id: string) {
+    for (let parent = this.parentOf(level, id); parent; parent = this.parentOf(parent.level, parent.id)) {
+      if (this.nodeOf(parent.level, parent.id)?.closure) this.patchNode(parent.level, parent.id, { closure: undefined });
+    }
   }
 
   /** `recurrence` se calcula del plan (RN-47); una compuesta no tiene plan ni recurrencia. */
@@ -806,26 +1060,6 @@ export class PlannerService {
     if (!objective) return null;
     const activityLimit = effectiveActivityDeadline(owner.activity, objective);
     return owner.step ? effectiveDeadline(owner.step, activityLimit) : activityLimit;
-  }
-
-  /**
-   * Cierre a mano (RN-77, RN-78): las tareas de `activityIds` que sigan abiertas, los pasos abiertos de sus compuestas
-   * y los pasos `stepIds` que sigan abiertos quedan cerrados desde hoy, sin cambiar su avance. Devuelve si cerró algo.
-   */
-  private closeItems(activityIds: string[], stepIds: string[] = []): boolean {
-    const closure: ItemClosure = { type: ClosureType.MANUAL, closedOn: DateUtils.getTodayISO() };
-    const activities = this.activitiesSignal().filter(a => activityIds.includes(a.id));
-    const openActivityIds = activities.filter(a => !isClosed(a)).map(a => a.id);
-    const compositeIds = activities.filter(a => a.type === ActivityType.COMPOSITE).map(a => a.id);
-    const openStepIds = this.subActivitiesSignal()
-      .filter(s => !isClosed(s) && (stepIds.includes(s.id) || compositeIds.includes(s.activityId)))
-      .map(s => s.id);
-    if (openActivityIds.length === 0 && openStepIds.length === 0) return false;
-
-    this.activitiesSignal.update(acts => acts.map(a => openActivityIds.includes(a.id) ? { ...a, closure } : a));
-    this.subActivitiesSignal.update(subs => subs.map(s => openStepIds.includes(s.id) ? { ...s, closure } : s));
-    this.commit();
-    return true;
   }
 
   private updateSession(id: string, changes: Partial<ExecutionSession>) {
@@ -887,6 +1121,7 @@ export class PlannerService {
     sub: SubActivity,
     sessions: ExecutionSession[] | undefined,
     apply: (subs: SubActivity[]) => SubActivity[],
+    reopenParents = false,
   ): DeadlineConflict[] {
     const parent = this.activitiesSignal().find(a => a.id === sub.activityId);
     if (!parent) return [];
@@ -896,6 +1131,7 @@ export class PlannerService {
 
     this.subActivitiesSignal.update(apply);
     if (sessions) this.replaceSessions(sub.executionPlan.id, sessions);
+    if (reopenParents) this.reopenAncestors('step', sub.id); // RN-53
     this.commit();
     return [];
   }
@@ -913,19 +1149,43 @@ export class PlannerService {
     this.objectivesSignal.update(obs => obs.filter(o => !ids.includes(o.id)));
   }
 
+  /** Estado del último guardado; `null` hasta cargar los datos. */
+  private snapshot: Snapshot | null = null;
+
+  private takeSnapshot(): Snapshot {
+    const nodes: TreeNode[] = [
+      ...this.goalsSignal(), ...this.objectivesSignal(), ...this.activitiesSignal(), ...this.subActivitiesSignal(),
+    ];
+    const children = new Map<string, string[]>();
+    const link = (parentId: string, childId: string) => children.set(parentId, [...(children.get(parentId) ?? []), childId]);
+    this.objectivesSignal().forEach(o => link(o.goalId, o.id));
+    this.activitiesSignal().forEach(a => link(a.objectiveId, a.id));
+    this.subActivitiesSignal().forEach(s => link(s.activityId, s.id));
+    return {
+      progress: new Map(nodes.map(n => [n.id, n.progress])),
+      closed: new Set(nodes.filter(n => n.closure).map(n => n.id)),
+      children,
+    };
+  }
+
   /**
    * Recalcula todo el árbol de abajo hacia arriba: paso → tarea → objetivo → meta (RN-30 a RN-36).
-   * El avance de cada padre suma las sesiones de sus ítems ejecutables (RN-35). Aplica el cierre por fecha límite
-   * (RN-58) y deriva el estado de cada nivel (RN-31). Es la única función de recálculo: se ejecuta tras cada mutación.
+   * - Avance: cada padre suma las sesiones de sus ítems ejecutables (RN-35).
+   * - Cierres automáticos (RN-58, RN-77, RN-78): por fecha límite al recalcular; por sesiones completas y por hijos
+   *   cerrados solo si cambiaron desde el último guardado, para no volver a cerrar lo que el usuario reabrió.
+   * - Estado: cerrado, en pausa efectiva por él o por un padre, o abierto (RN-31, RN-57).
+   * Es la única función de recálculo: se ejecuta tras cada mutación.
    */
   private cascade() {
     const today = DateUtils.getTodayISO();
+    const prev = this.snapshot ?? this.takeSnapshot();
     const byPlan = new Map<string, ExecutionSession[]>();
     for (const session of this.sessionsSignal()) {
       byPlan.set(session.planId, [...(byPlan.get(session.planId) ?? []), session]);
     }
     const sessionsOfPlan = (planId: string | undefined) => (planId && byPlan.get(planId)) || [];
 
+    const goalsById = new Map(this.goalsSignal().map(g => [g.id, g]));
     const objectivesById = new Map(this.objectivesSignal().map(o => [o.id, o]));
     const activitiesById = new Map(this.activitiesSignal().map(a => [a.id, a]));
     /** Deadline efectivo de una tarea (RN-48); `null` si no tiene objetivo. */
@@ -935,12 +1195,46 @@ export class PlannerService {
     };
     const closeByDeadline = (closure: ItemClosure | undefined, deadline: string | null) =>
       deadline ? deadlineClosure(closure, deadline, today) : closure;
+    /** Cierres de los padres de una tarea: el de su objetivo y el de su meta. */
+    const closuresAbove = (activity: Activity | undefined) => {
+      const objective = activity && objectivesById.get(activity.objectiveId);
+      return [objective?.closure, objective && goalsById.get(objective.goalId)?.closure];
+    };
+
+    /**
+     * Tarea simple o paso: por sesiones completas al cambiar su avance y luego por fecha límite (RN-77).
+     * Bajar de 100 % no lo reabre si un padre sigue cerrado a mano o por fecha límite.
+     */
+    const leafClosure = (
+      id: string, closure: ItemClosure | undefined, progress: number, deadline: string | null,
+      above: (ItemClosure | undefined)[],
+    ) => {
+      let next = sessionsDoneClosure(closure, prev.progress.get(id) ?? progress, progress, today);
+      if (!next && closure && above.some(c => c && c.type !== ClosureType.CHILDREN_CLOSED)) next = closure;
+      return closeByDeadline(next, deadline);
+    };
+
+    /**
+     * Padre (RN-78): se cierra cuando se cierra o se borra su último hijo abierto; un cierre por hijos cerrados
+     * se deshace en cuanto vuelve a tener un hijo abierto (RN-77).
+     */
+    const parentClosure = (id: string, closure: ItemClosure | undefined, kids: { id: string; closure?: ItemClosure }[]) => {
+      const anyOpen = kids.some(k => !k.closure);
+      if (closure) return closure.type === ClosureType.CHILDREN_CLOSED && anyOpen ? undefined : closure;
+      if (kids.length === 0 || anyOpen) return undefined;
+      const ids = new Set(kids.map(k => k.id));
+      const childJustClosed = kids.some(k => !prev.closed.has(k.id));
+      const openChildRemoved = (prev.children.get(id) ?? []).some(k => !ids.has(k) && !prev.closed.has(k));
+      return childJustClosed || openChildRemoved ? { type: ClosureType.CHILDREN_CLOSED, closedOn: today } : undefined;
+    };
 
     const steps = this.subActivitiesSignal().map(s => {
-      const parentLimit = limitOf(activitiesById.get(s.activityId));
-      const closure = closeByDeadline(s.closure, parentLimit ? effectiveDeadline(s, parentLimit) : null);
+      const activity = activitiesById.get(s.activityId);
+      const parentLimit = limitOf(activity);
       const progress = computeProgress(sessionsOfPlan(s.executionPlan.id));
-      return { ...s, closure, progress, status: deriveStatus(closure, hasOpenPause(s.pauses), SubActivityStatus) };
+      const closure = leafClosure(s.id, s.closure, progress, parentLimit ? effectiveDeadline(s, parentLimit) : null,
+        [activity?.closure, ...closuresAbove(activity)]);
+      return { ...s, closure, progress };
     });
 
     /** Sesiones de los ítems ejecutables de una tarea: las de su plan o las de sus pasos. */
@@ -950,47 +1244,49 @@ export class PlannerService {
 
     const activities = this.activitiesSignal().map(a => {
       const own = sessionsOfActivity(a);
-      const closure = closeByDeadline(a.closure, limitOf(a));
-      return {
-        ...a,
-        closure,
-        progress: computeProgress(own),
-        status: deriveStatus(closure, hasOpenPause(a.pauses), ActivityStatus),
-        totalTimeRequiredMin: plannedMinutesOf(own),
-      };
+      const progress = computeProgress(own);
+      const closure = a.type === ActivityType.COMPOSITE
+        ? parentClosure(a.id, closeByDeadline(a.closure, limitOf(a)), steps.filter(s => s.activityId === a.id))
+        : leafClosure(a.id, a.closure, progress, limitOf(a), closuresAbove(a));
+      return { ...a, closure, progress, totalTimeRequiredMin: plannedMinutesOf(own) };
     });
 
     const sessionsOfObjective = (id: string) => activities.filter(a => a.objectiveId === id).flatMap(sessionsOfActivity);
 
-    const objectives = this.objectivesSignal().map(o => {
-      const closure = closeByDeadline(o.closure, o.deadline);
-      return {
-        ...o,
-        closure,
-        progress: computeProgress(sessionsOfObjective(o.id)),
-        status: deriveStatus(closure, hasOpenPause(o.pauses), ObjectiveStatus),
-      };
-    });
+    const objectives = this.objectivesSignal().map(o => ({
+      ...o,
+      closure: parentClosure(o.id, closeByDeadline(o.closure, o.deadline), activities.filter(a => a.objectiveId === o.id)),
+      progress: computeProgress(sessionsOfObjective(o.id)),
+    }));
 
     const goals = this.goalsSignal().map(g => {
       const own = objectives.filter(o => o.goalId === g.id);
-      const progress = computeProgress(own.flatMap(o => sessionsOfObjective(o.id)));
-      // RN-55: la idea pasa a OPEN cuando tiene horizonte y ya tiene tareas.
+      // RN-55: la idea pasa a OPEN cuando tiene horizonte y ya tiene tareas. Una idea no se cierra.
       const hasTasks = activities.some(a => own.some(o => o.id === a.objectiveId));
       const isIdea = g.status === GoalStatus.IDEA && !(g.horizon && hasTasks);
-      const status = isIdea ? GoalStatus.IDEA : deriveStatus(g.closure, hasOpenPause(g.pauses), GoalStatus);
-      return { ...g, progress, status };
+      const closure = isIdea ? undefined : parentClosure(g.id, g.closure, own);
+      const status = isIdea ? GoalStatus.IDEA : deriveStatus(closure, hasOpenPause(g.pauses), GoalStatus);
+      return { ...g, closure, status, progress: computeProgress(own.flatMap(o => sessionsOfObjective(o.id))) };
     });
 
-    this.subActivitiesSignal.set(steps);
-    this.activitiesSignal.set(activities);
-    this.objectivesSignal.set(objectives);
+    // Estado con la pausa efectiva: la propia o la de cualquier padre (RN-31, RN-57).
+    const pausesOf = new Map<string, (PausePeriod[] | undefined)[]>();
+    for (const g of goals) pausesOf.set(g.id, [g.pauses]);
+    for (const o of objectives) pausesOf.set(o.id, [...(pausesOf.get(o.goalId) ?? []), o.pauses]);
+    for (const a of activities) pausesOf.set(a.id, [...(pausesOf.get(a.objectiveId) ?? []), a.pauses]);
+    for (const s of steps) pausesOf.set(s.id, [...(pausesOf.get(s.activityId) ?? []), s.pauses]);
+    const paused = (id: string) => isEffectivelyPaused(pausesOf.get(id) ?? []);
+
+    this.subActivitiesSignal.set(steps.map(s => ({ ...s, status: deriveStatus(s.closure, paused(s.id), SubActivityStatus) })));
+    this.activitiesSignal.set(activities.map(a => ({ ...a, status: deriveStatus(a.closure, paused(a.id), ActivityStatus) })));
+    this.objectivesSignal.set(objectives.map(o => ({ ...o, status: deriveStatus(o.closure, paused(o.id), ObjectiveStatus) })));
     this.goalsSignal.set(goals);
   }
 
-  /** Recalcula la cascada y guarda. Se llama una vez por mutación. */
+  /** Recalcula la cascada, guarda la instantánea de este estado y persiste. Se llama una vez por mutación. */
   private commit() {
     this.cascade();
+    this.snapshot = this.takeSnapshot();
     this.dataProvider.saveGoals(this.goalsSignal()).subscribe();
     this.dataProvider.saveObjectives(this.objectivesSignal()).subscribe();
     this.dataProvider.saveActivities(this.activitiesSignal()).subscribe();

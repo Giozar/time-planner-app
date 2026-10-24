@@ -973,4 +973,273 @@ describe('PlannerService', () => {
       expect(service.calendarEntries().get('2026-11-02')).toBeUndefined();
     });
   });
+  describe('cierres automáticos por evento (RN-77, RN-78)', () => {
+    const PAST = '2026-10-20';
+
+    /** Tarea con una sesión pasada y una de hoy, ambas por marcar. */
+    function seedTwoSessions() {
+      seedHierarchy();
+      addActivity(simple('a1', [PAST, TODAY]));
+    }
+    const completeAll = () => {
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 30, PAST);
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+    };
+
+    it('hacer todas sus sesiones la cierra por sesiones completas y cierra a sus padres', () => {
+      seedTwoSessions();
+      completeAll();
+
+      expect(service.activities()[0]).toMatchObject({
+        status: ActivityStatus.CLOSED, progress: 100, closure: { type: ClosureType.SESSIONS_DONE, closedOn: TODAY },
+      });
+      expect(service.objectives()[0]).toMatchObject({ status: ObjectiveStatus.CLOSED, closure: { type: ClosureType.CHILDREN_CLOSED } });
+      expect(service.goals()[0]).toMatchObject({ status: GoalStatus.CLOSED, closure: { type: ClosureType.CHILDREN_CLOSED } });
+    });
+
+    it('desmarcar una sesión deshace ese cierre y el de sus padres', () => {
+      seedTwoSessions();
+      completeAll();
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+
+      expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.OPEN, progress: 50 });
+      expect(service.activities()[0].closure).toBeUndefined();
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.OPEN);
+      expect(service.goals()[0].status).toBe(GoalStatus.OPEN);
+    });
+
+    it('reabrir a mano algo al 100 % no lo vuelve a cerrar solo', () => {
+      seedTwoSessions();
+      completeAll();
+      expect(service.reopenActivity('a1')).toBe('OK');
+      service.logWork('a1', TaskSourceType.ACTIVITY, 10);
+
+      expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.OPEN, progress: 100 });
+      expect(service.goals()[0].status).toBe(GoalStatus.OPEN);
+    });
+
+    it('si un padre sigue cerrado a mano, desmarcar no reabre la tarea', () => {
+      seedTwoSessions();
+      addActivity(simple('a2', ['2026-10-30']));
+      completeAll();
+      service.closeObjective('o1');
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+
+      expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.CLOSED, progress: 50 });
+    });
+
+    it('cerrar la última tarea abierta cierra el objetivo y la meta; con otra abierta no', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      addActivity(simple('a2', ['2026-10-31']));
+      service.closeActivity('a1');
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.OPEN);
+
+      service.closeActivity('a2');
+      expect(service.objectives()[0]).toMatchObject({ status: ObjectiveStatus.CLOSED, closure: { type: ClosureType.CHILDREN_CLOSED } });
+      expect(service.goals()[0].status).toBe(GoalStatus.CLOSED);
+    });
+
+    it('borrar la última tarea abierta cierra el objetivo', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      addActivity(simple('a2', ['2026-10-31']));
+      service.closeActivity('a1');
+      service.deleteActivity('a2');
+
+      expect(service.objectives()[0]).toMatchObject({ status: ObjectiveStatus.CLOSED, closure: { type: ClosureType.CHILDREN_CLOSED } });
+    });
+
+    it('agregar una tarea reabre al objetivo y la meta, pero no a sus hermanas cerradas (RN-53)', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      service.closeObjective('o1');
+      addActivity(simple('a2', ['2026-10-31']));
+
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.OPEN);
+      expect(service.goals()[0].status).toBe(GoalStatus.OPEN);
+      expect(service.activities().map(a => a.status)).toEqual([ActivityStatus.CLOSED, ActivityStatus.OPEN]);
+    });
+  });
+
+  describe('cerrar y reabrir (RN-64, RN-77, RN-78, RN-80)', () => {
+    it('cerrar la meta cierra todo lo de abajo; una idea no se cierra', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      expect(service.closeGoal('g1')).toBe(true);
+
+      expect(service.goals()[0]).toMatchObject({ status: GoalStatus.CLOSED, closure: { type: ClosureType.MANUAL } });
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.CLOSED);
+      expect(service.activities()[0].status).toBe(ActivityStatus.CLOSED);
+      expect(service.closeGoal('g1')).toBe(false);
+
+      service.addGoal(makeGoal({ id: 'g2', horizon: null, status: GoalStatus.IDEA }));
+      expect(service.closeGoal('g2')).toBe(false);
+    });
+
+    it('reabrir un objetivo reabre sus tareas con sesiones pendientes y no las que ya están al 100 %', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      addActivity(simple('a2', ['2026-10-20'], ['2026-10-20']));
+      service.closeObjective('o1');
+
+      expect(service.reopenObjective('o1')).toBe('OK');
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.OPEN);
+      expect(service.activities().map(a => a.status)).toEqual([ActivityStatus.OPEN, ActivityStatus.CLOSED]);
+    });
+
+    it('reabrir un hijo reabre sus padres cerrados sin reabrir a sus hermanos', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      addActivity(simple('a2', ['2026-10-31']));
+      service.closeGoal('g1');
+
+      expect(service.reopenActivity('a1')).toBe('OK');
+      expect(service.activities().map(a => a.status)).toEqual([ActivityStatus.OPEN, ActivityStatus.CLOSED]);
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.OPEN);
+      expect(service.goals()[0].status).toBe(GoalStatus.OPEN);
+    });
+
+    it('reabrir lo vencido exige un deadline nuevo desde hoy y sus hijos lo heredan', () => {
+      service.addGoal(makeGoal());
+      service.addObjective(makeObjective({ deadline: '2026-10-21' }));
+      addActivity(simple('a1', ['2026-10-20']));
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.CLOSED);
+
+      expect(service.reopenObjective('o1')).toBe('NEEDS_DEADLINE');
+      expect(service.reopenObjective('o1', '2026-10-01')).toBe('INVALID_DEADLINE');
+      expect(service.reopenObjective('o1', '2026-11-30')).toBe('OK');
+      expect(service.objectives()[0]).toMatchObject({ status: ObjectiveStatus.OPEN, deadline: '2026-11-30' });
+      expect(service.activities()[0].status).toBe(ActivityStatus.OPEN);
+    });
+
+    it('reabrir una tarea vencida no cabe si el deadline de su objetivo también pasó', () => {
+      service.addGoal(makeGoal());
+      service.addObjective(makeObjective({ deadline: '2026-10-21' }));
+      addActivity(simple('a1', ['2026-10-20']));
+
+      expect(service.reopenActivity('a1', '2026-11-30')).toBe('PARENT_EXPIRED');
+    });
+
+    it('lo abierto no se reabre', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      expect(service.reopenActivity('a1')).toBe('NOT_CLOSED');
+    });
+
+    it('al reabrir, las sesiones ocultas por el cierre vuelven a la agenda (RN-79)', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY]));
+      service.closeActivity('a1');
+      expect(service.agendaTasks()).toEqual([]);
+
+      service.reopenActivity('a1');
+      expect(service.agendaTasks()).toHaveLength(1);
+    });
+  });
+
+  describe('pausa heredada (RN-57)', () => {
+    it('pausar la tarea, pausar y reanudar la meta deja la tarea pausada', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY]));
+      service.pauseActivity('a1');
+      service.pauseGoal('g1');
+      service.resumeGoal('g1');
+
+      expect(service.activities()[0].status).toBe(ActivityStatus.PAUSED);
+      expect(service.agendaTasks()).toEqual([]);
+
+      service.resumeActivity('a1');
+      expect(service.agendaTasks()).toHaveLength(1);
+    });
+
+    it('pausar un objetivo pausa sus tareas y pasos sin guardarles la pausa', () => {
+      seedHierarchy();
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      addStep(step({ id: 's1', activityId: 'k' }, [TODAY]));
+      service.pauseObjective('o1');
+
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.PAUSED);
+      expect(service.activities()[0].status).toBe(ActivityStatus.PAUSED);
+      expect(service.subActivities()[0].status).toBe(SubActivityStatus.PAUSED);
+      expect(service.activities()[0].pauses ?? []).toEqual([]);
+      expect(service.agendaTasks()).toEqual([]);
+
+      service.resumeObjective('o1');
+      expect(service.subActivities()[0].status).toBe(SubActivityStatus.OPEN);
+      expect(service.agendaTasks()).toHaveLength(1);
+    });
+
+    it('un paso se pausa solo y sale de la agenda y del calendario', () => {
+      seedHierarchy();
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      addStep(step({ id: 's1', activityId: 'k' }, [TODAY]));
+      service.pauseStep('s1');
+
+      expect(service.subActivities()[0].status).toBe(SubActivityStatus.PAUSED);
+      expect(service.agendaTasks()).toEqual([]);
+      expect(service.calendarEntries().get(TODAY)).toBeUndefined();
+    });
+
+    it('lo cerrado no se pausa y pausar una idea no hace nada', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30']));
+      service.closeObjective('o1');
+      service.pauseObjective('o1');
+      expect(service.objectives()[0].status).toBe(ObjectiveStatus.CLOSED);
+      expect(service.objectives()[0].pauses ?? []).toEqual([]);
+
+      service.addGoal(makeGoal({ id: 'g2', horizon: null, status: GoalStatus.IDEA }));
+      service.pauseGoal('g2');
+      expect(service.goals()[1].status).toBe(GoalStatus.IDEA);
+    });
+
+    it('la constancia no cuenta las fechas en que un padre estaba pausado', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-12', '2026-10-23'], ['2026-10-12']));
+      service.pauseObjective('o1'); // desde hoy, 22
+      vi.setSystemTime(new Date('2026-10-25T12:00:00'));
+      expect(service.consistency().get('a1')).toBe(100); // el 23 cae en la pausa abierta
+
+      service.resumeObjective('o1'); // termina el 24: el 23 sigue dentro del periodo
+      expect(service.consistency().get('a1')).toBe(100);
+    });
+  });
+
+  describe('productividad (RN-73)', () => {
+    it('minutos reales sobre previstos de todo el plan, también el trabajo sin sesión', () => {
+      seedHierarchy();
+      const plan = makePlan('pa1', 60);
+      addActivity(simple('a1', ['2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02'], [], { executionPlan: plan }));
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 45, '2026-10-12');
+      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 45, '2026-10-19');
+
+      expect(service.productivity().get('a1')).toEqual({ actualMinutes: 90, plannedMinutes: 240, percentage: 38 });
+
+      service.logWork('a1', TaskSourceType.ACTIVITY, 30, TODAY);
+      expect(service.productivity().get('a1')?.actualMinutes).toBe(120);
+    });
+
+    it('los padres suman minutos sin promediar y puede pasar de 100 %', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-12'], [], { executionPlan: makePlan('pa1', 60) }));
+      addActivity(simple('a2', ['2026-10-30'], [], { executionPlan: makePlan('pa2', 60) }));
+      service.logWork('a1', TaskSourceType.ACTIVITY, 90, '2026-10-12');
+
+      expect(service.productivity().get('o1')).toEqual({ actualMinutes: 90, plannedMinutes: 120, percentage: 75 });
+      expect(service.productivity().get('g1')?.percentage).toBe(75);
+      expect(service.productivity().get('a1')?.percentage).toBe(150);
+    });
+
+    it('no cambia al cerrar y es null sin minutos previstos', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-30'], [], { executionPlan: makePlan('pa1', 60) }));
+      service.logWork('a1', TaskSourceType.ACTIVITY, 30);
+      service.closeActivity('a1');
+      expect(service.productivity().get('a1')?.percentage).toBe(50);
+
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      expect(service.productivity().get('k')?.percentage).toBeNull();
+    });
+  });
 });
