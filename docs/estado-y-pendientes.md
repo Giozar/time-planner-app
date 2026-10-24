@@ -10,18 +10,15 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 
 | Tema | Definido | Estado del código |
 |------|----------|-------------------|
-| Historial | Lista de resúmenes diarios (CU-21). | ⏳ Pendiente. No existe la pantalla. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
 
-Lo que no aparece en la tabla está implementado y vive en las reglas y en [funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md). El trabajo del frontend se organiza en el [plan 03](../timer-planner-frontend/docs/planes/03-historial.md).
-
+Lo que no aparece en la tabla está implementado y vive en las reglas y en [funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md).
 ## Trabajo pendiente
 
 | Tema | Estado |
 |------|--------|
-| Plan 03: pantalla de historial | ⏳ Pendiente |
-| Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, cierre y reapertura de objetivo, borrado con confirmación escrita, cierre del día repetido, calendario con hover y cambio de mes, y agenda de días pasados con minutos y recálculo del cierre) | ⏳ Pendiente |
-| Avisos de presupuesto al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (503 kB sobre 500 kB) | ⏳ Pendiente |
+| Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, cierre y reapertura de objetivo, borrado con confirmación escrita, cierre del día repetido, historial, calendario con hover y cambio de mes, y agenda de días pasados con minutos y recálculo del cierre) | ⏳ Pendiente |
+| Avisos de presupuesto al compilar: CSS de `objective-detail` (5,6 kB sobre 4 kB) y paquete inicial (506 kB sobre 500 kB) | ⏳ Pendiente |
 | Backend | ⏳ Pendiente; requiere D-01 |
 | Agente planificador del backend (`timer-planner-backend/Agents/funcionalidad/`) | ⏳ Pendiente; se crea al empezar el backend |
 

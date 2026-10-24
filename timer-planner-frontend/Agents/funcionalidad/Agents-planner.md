@@ -11,7 +11,7 @@ Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que emp
 - **Qué contiene cada documento y cómo se mantiene:** `../Agents/funcionalidad/Agents-documentacion.md`.
 - **Funcionalidad por feature:** `docs/funcionalidad.md`. Indica qué RN y CU aplican a cada carpeta y su estado.
 - **Arquitectura y prácticas:** `docs/arquitectura.md` y `docs/buenas-practicas.md`. No se inventan decisiones de arquitectura fuera de ellos.
-- **Planes existentes:** `docs/planes/`.
+- **Planes existentes:** `docs/planes/` (si la carpeta no existe, no hay planes).
 
 ## Cómo planifica
 

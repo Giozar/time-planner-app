@@ -1,0 +1,22 @@
+<div class="history-container">
+  <header>
+    <h1>Historial</h1>
+    <p class="subtitle">Resumen de los días cerrados</p>
+  </header>
+
+  @for (row of rows(); track row.record.id) {
+  <a class="day-row" routerLink="/daily" [queryParams]="{ date: row.record.date }">
+    <div class="day-main">
+      <span class="day-date">{{ row.displayDate | date:'fullDate' }}</span>
+      @if (row.record.notes) {
+      <span class="day-notes">{{ row.record.notes }}</span>
+      }
+    </div>
+    <span class="day-stat">{{ row.record.completedSessions }} / {{ row.record.plannedSessions }} sesiones</span>
+    <span class="day-stat">{{ row.record.adherencePercentage === null ? 'Sin datos' : row.record.adherencePercentage + ' %' }}</span>
+    <span class="day-stat">{{ row.record.actualMinutes }} / {{ row.record.plannedMinutes }} min</span>
+  </a>
+  } @empty {
+  <p class="empty">Aún no has cerrado ningún día.</p>
+  }
+</div>
