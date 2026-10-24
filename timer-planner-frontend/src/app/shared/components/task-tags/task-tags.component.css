@@ -1,0 +1,57 @@
+.tags {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.tag-priority,
+.tag-criticality,
+.tag-complexity {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.tag-priority.HIGH {
+    color: #c0392b;
+    background: #fadbd8;
+}
+
+.tag-priority.MEDIUM {
+    color: #d35400;
+    background: #fae5d3;
+}
+
+.tag-priority.LOW {
+    color: #2980b9;
+    background: #d6eaf8;
+}
+
+.tag-criticality.VITAL {
+    color: #7b241c;
+    background: #f2d7d5;
+}
+
+.tag-criticality.ESSENTIAL_RECURRING {
+    color: #154360;
+    background: #d4e6f1;
+}
+
+.tag-criticality.FLEXIBLE {
+    color: #145a32;
+    background: #d4efdf;
+}
+
+.tag-complexity.HIGH {
+    color: #641e16;
+}
+
+.tag-complexity.MEDIUM {
+    color: #7d6608;
+}
+
+.tag-complexity.LOW {
+    color: #186a3b;
+}

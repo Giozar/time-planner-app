@@ -1,0 +1,40 @@
+:host {
+  display: block;
+  flex: 1;
+  overflow: hidden;
+  background: #eceff1;
+}
+
+:host(.large) {
+  height: 10px;
+  border-radius: 5px;
+}
+
+:host(.small) {
+  height: 6px;
+  border-radius: 3px;
+  background: #f2f3f4;
+}
+
+:host(.mini) {
+  flex: none;
+  width: 60px;
+  height: 3px;
+  border-radius: 2px;
+  background: #e5e8e8;
+}
+
+.fill {
+  height: 100%;
+  background: #3498db;
+  transition: width 0.4s;
+}
+
+:host(.large) .fill {
+  background: linear-gradient(90deg, #3498db, #2980b9);
+}
+
+:host(.mini) .fill,
+:host(.small) .fill.completed {
+  background: #27ae60;
+}

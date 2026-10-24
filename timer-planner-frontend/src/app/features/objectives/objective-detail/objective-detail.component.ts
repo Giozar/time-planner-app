@@ -9,19 +9,21 @@ import { DeletableType } from '../../../core/models/deletion-impact.model';
 import { effectiveActivityDeadline, hasOpenPause, isClosed } from '../../../core/rules';
 import { DateUtils } from '../../../core/utils/date.utils';
 import {
-  ACTIVITY_COMPLEXITY_LABELS, ACTIVITY_CRITICALITY_LABELS, ACTIVITY_PRIORITY_LABELS,
+  ACTIVITY_COMPLEXITY_LABELS,
   ACTIVITY_RECURRENCE_LABELS, ACTIVITY_STATUS_LABELS, CLOSURE_TYPE_LABELS, OBJECTIVE_NATURE_LABELS,
   OBJECTIVE_STATUS_LABELS, SUBACTIVITY_STATUS_LABELS,
 } from '../../../core/i18n/labels';
 import { LifecycleActionsService } from '../../../core/services/lifecycle-actions.service';
 import { ProductivityPipe } from '../../../shared/pipes/productivity.pipe';
 import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
+import { TaskTagsComponent } from '../../../shared/components/task-tags/task-tags.component';
+import { ProgressBarComponent } from '../../../shared/components/progress-bar/progress-bar.component';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-objective-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe, TaskTagsComponent, ProgressBarComponent],
   templateUrl: './objective-detail.component.html',
   styleUrl: './objective-detail.component.css'
 })
@@ -36,8 +38,6 @@ export class ObjectiveDetailComponent implements OnInit {
 
   readonly natureLabels = OBJECTIVE_NATURE_LABELS;
   readonly objectiveStatusLabels = OBJECTIVE_STATUS_LABELS;
-  readonly priorityLabels = ACTIVITY_PRIORITY_LABELS;
-  readonly criticalityLabels = ACTIVITY_CRITICALITY_LABELS;
   readonly complexityLabels = ACTIVITY_COMPLEXITY_LABELS;
   readonly recurrenceLabels = ACTIVITY_RECURRENCE_LABELS;
   readonly statusLabels = ACTIVITY_STATUS_LABELS;

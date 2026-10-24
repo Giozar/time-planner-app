@@ -25,7 +25,7 @@ src/app/
 │   ├── history/       history-list
 │   └── objectives/    objective-form, objective-detail
 ├── shared/
-│   ├── components/    global-dialog
+│   ├── components/    global-dialog, progress-bar, task-tags
 │   ├── layout/        main-layout
 │   └── pipes/         label.pipe.ts, consistency.pipe.ts, productivity.pipe.ts
 ├── testing/           builders.ts e in-memory-data.provider.ts (solo para pruebas)

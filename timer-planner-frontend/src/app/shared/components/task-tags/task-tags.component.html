@@ -1,0 +1,5 @@
+<div class="tags">
+  <span class="tag-priority" [class]="priority()">{{ priority() | label: priorityLabels }}</span>
+  <span class="tag-criticality" [class]="criticality()">{{ criticality() | label: criticalityLabels }}</span>
+  <span class="tag-complexity" [class]="complexity()">{{ complexity() | label: complexityLabels }}</span>
+</div>

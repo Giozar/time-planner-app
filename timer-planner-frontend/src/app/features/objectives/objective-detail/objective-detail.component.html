@@ -34,9 +34,7 @@
         <p class="objective-deadline">Fecha límite del objetivo: <strong>{{ currentObj.deadline | date:'mediumDate' }}</strong></p>
 
         <div class="progress-container">
-            <div class="progress-bar-bg">
-                <div class="progress-bar-fill" [style.width.%]="currentObj.progress"></div>
-            </div>
+            <app-progress-bar [value]="currentObj.progress" />
             <span class="progress-text">Avance: {{ currentObj.progress }}% · Constancia: {{ currentObj.id | consistency }} · Productividad: {{ currentObj.id | productivity }}</span>
         </div>
     </header>
@@ -87,14 +85,8 @@
                             {{ deadlineOf(activity) | date:'mediumDate' }}@if (!activity.deadline) { (del objetivo) }</span>
                     </div>
 
-                    <div class="tags">
-                        <span class="tag-priority" [class]="activity.priority">{{ activity.priority | label: priorityLabels
-                            }}</span>
-                        <span class="tag-criticality" [class]="activity.criticality">{{
-                            activity.criticality | label: criticalityLabels }}</span>
-                        <span class="tag-complexity" [class]="activity.complexity">{{ activity.complexity | label: complexityLabels
-                            }}</span>
-                    </div>
+                    <app-task-tags [priority]="activity.priority" [criticality]="activity.criticality"
+                        [complexity]="activity.complexity" />
 
                     <div class="activity-meta">
                         <div class="meta-top">
@@ -108,11 +100,7 @@
                         </div>
 
                         <div class="meta-progress">
-                            <div class="progress-bar-bg-small">
-                                <div class="progress-bar-fill-small" [style.width.%]="activity.progress"
-                                    [class.completed]="activity.progress === 100">
-                                </div>
-                            </div>
+                            <app-progress-bar size="small" [value]="activity.progress" />
                             <span class="percentage-text">{{ activity.progress }}% · {{ activity.id | consistency }} · {{ activity.id | productivity }}</span>
                         </div>
                         @if (suggestsClose(activity)) {
@@ -177,9 +165,7 @@
                                 </div>
                             </div>
 
-                            <div class="mini-progress">
-                                <div class="mini-bar" [style.width.%]="sub.progress"></div>
-                            </div>
+                            <app-progress-bar size="mini" [value]="sub.progress" />
                             @if (suggestsClose(sub)) {
                             <p class="close-hint">Ya cubriste el tiempo previsto. <button type="button" class="btn-link" (click)="closeStep(sub)">Cerrar paso</button></p>
                             }
