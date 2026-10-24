@@ -7,10 +7,20 @@
             <a [routerLink]="['/goals', g.id]" class="back-link">← Volver a {{ g.title }}</a>
             }
             <div class="header-actions">
+                @if (isClosed(currentObj)) {
+                <button type="button" class="btn-close-objective" (click)="reopenObjective()">
+                    Reabrir objetivo
+                </button>
+                } @else {
+                <button type="button" class="btn-icon-edit" (click)="togglePauseObjective()"
+                    [title]="hasOpenPause(currentObj.pauses) ? 'Reanudar Objetivo' : 'Pausar Objetivo'">
+                    <mat-icon>{{ hasOpenPause(currentObj.pauses) ? 'play_arrow' : 'pause' }}</mat-icon>
+                </button>
                 @if (canClose()) {
                 <button type="button" class="btn-close-objective" (click)="closeObjective()">
                     Cerrar objetivo
                 </button>
+                }
                 }
                 <a [routerLink]="['/goals', currentObj.goalId, 'objectives', currentObj.id, 'edit']"
                     class="btn-icon-edit" title="Editar Objetivo">
@@ -19,7 +29,7 @@
             </div>
         </div>
         <span class="badge">{{ currentObj.nature | label: natureLabels }}</span>
-        <span class="badge badge-status">{{ currentObj.status | label: objectiveStatusLabels }}</span>
+        <span class="badge badge-status">{{ currentObj.status | label: objectiveStatusLabels }}@if (currentObj.closure) { · {{ currentObj.closure.type | label: closureLabels }} }</span>
         <h1>{{ currentObj.title }}</h1>
         <p class="objective-deadline">Fecha límite del objetivo: <strong>{{ currentObj.deadline | date:'mediumDate' }}</strong></p>
 
@@ -27,7 +37,7 @@
             <div class="progress-bar-bg">
                 <div class="progress-bar-fill" [style.width.%]="currentObj.progress"></div>
             </div>
-            <span class="progress-text">{{ currentObj.progress }}% Completado · Constancia: {{ currentObj.id | consistency }}</span>
+            <span class="progress-text">Avance: {{ currentObj.progress }}% · Constancia: {{ currentObj.id | consistency }} · Productividad: {{ currentObj.id | productivity }}</span>
         </div>
     </header>
 
@@ -54,10 +64,14 @@
                                 class="icon-btn-small">
                                 <mat-icon>edit</mat-icon>
                             </a>
-                            @if (!isClosed(activity)) {
+                            @if (isClosed(activity)) {
+                            <button class="icon-btn-small" (click)="reopenActivity(activity)" title="Reabrir Tarea">
+                                <mat-icon>lock_open</mat-icon>
+                            </button>
+                            } @else {
                             <button class="icon-btn-small-danger" (click)="togglePause(activity)"
-                                [title]="activity.status === ActivityStatus.PAUSED ? 'Reanudar Tarea' : 'Pausar Tarea'">
-                                <mat-icon>{{ activity.status === ActivityStatus.PAUSED ? 'play_arrow' : 'pause' }}</mat-icon>
+                                [title]="hasOpenPause(activity.pauses) ? 'Reanudar Tarea' : 'Pausar Tarea'">
+                                <mat-icon>{{ hasOpenPause(activity.pauses) ? 'play_arrow' : 'pause' }}</mat-icon>
                             </button>
                             <button class="icon-btn-small" (click)="closeActivity(activity)" title="Cerrar Tarea">
                                 <mat-icon>task_alt</mat-icon>
@@ -90,8 +104,7 @@
                                 {{ activity.recurrence | label: recurrenceLabels }}
                             </span>
                             }
-                            <span class="status {{ displayStatus(activity) }}">{{ displayStatus(activity) | label: statusLabels
-                                }}</span>
+                            <span class="status {{ activity.status }}">{{ activity.status | label: statusLabels }}@if (activity.closure) { · {{ activity.closure.type | label: closureLabels }} }</span>
                         </div>
 
                         <div class="meta-progress">
@@ -100,8 +113,11 @@
                                     [class.completed]="activity.progress === 100">
                                 </div>
                             </div>
-                            <span class="percentage-text">{{ activity.progress }}% · {{ activity.id | consistency }}</span>
+                            <span class="percentage-text">{{ activity.progress }}% · {{ activity.id | consistency }} · {{ activity.id | productivity }}</span>
                         </div>
+                        @if (suggestsClose(activity)) {
+                        <p class="close-hint">Ya cubriste el tiempo previsto. <button type="button" class="btn-link" (click)="closeActivity(activity)">Cerrar tarea</button></p>
+                        }
                     </div>
                 </div>
 
@@ -133,20 +149,28 @@
                                         <mat-icon>delete</mat-icon>
                                     </button>
 
-                                    @if (!isClosed(sub)) {
+                                    @if (isClosed(sub)) {
+                                    <button class="action-icon-btn" (click)="reopenStep(sub)" title="Reabrir Paso">
+                                        <mat-icon>lock_open</mat-icon>
+                                    </button>
+                                    } @else {
+                                    <button class="action-icon-btn" (click)="togglePauseStep(sub)"
+                                        [title]="hasOpenPause(sub.pauses) ? 'Reanudar Paso' : 'Pausar Paso'">
+                                        <mat-icon>{{ hasOpenPause(sub.pauses) ? 'play_arrow' : 'pause' }}</mat-icon>
+                                    </button>
                                     <button class="action-icon-btn" (click)="closeStep(sub)" title="Cerrar Paso">
                                         <mat-icon>task_alt</mat-icon>
                                     </button>
                                     }
 
                                     <span class="sub-details">
-                                        @if (isClosed(sub)) {
-                                        <span class="status {{ sub.status }}">{{ sub.status | label: stepStatusLabels }}</span>
+                                        @if (sub.status !== SubActivityStatus.OPEN) {
+                                        <span class="status {{ sub.status }}">{{ sub.status | label: stepStatusLabels }}@if (sub.closure) { · {{ sub.closure.type | label: closureLabels }} }</span>
                                         }
                                         <span class="mini-complexity {{ sub.complexity }}">{{ sub.complexity | label: complexityLabels
                                             }}</span>
                                         <span class="sub-progress-text">
-                                            ({{ sessionCount(sub.executionPlan.id).done }} / {{ sessionCount(sub.executionPlan.id).total }}) · {{ sub.id | consistency }}
+                                            ({{ sessionCount(sub.executionPlan.id).done }} / {{ sessionCount(sub.executionPlan.id).total }}) · {{ sub.id | consistency }} · {{ sub.id | productivity }}
                                         </span>
                                     </span>
 
@@ -156,6 +180,9 @@
                             <div class="mini-progress">
                                 <div class="mini-bar" [style.width.%]="sub.progress"></div>
                             </div>
+                            @if (suggestsClose(sub)) {
+                            <p class="close-hint">Ya cubriste el tiempo previsto. <button type="button" class="btn-link" (click)="closeStep(sub)">Cerrar paso</button></p>
+                            }
                         </li>
                         } @empty {
                         <li class="empty-subtasks">No hay pasos definidos aún.</li>

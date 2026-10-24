@@ -150,8 +150,12 @@ h3 {
   letter-spacing: 0.5px;
 }
 
-.status-indicator.ACTIVE {
+.status-indicator.OPEN {
   color: #27ae60;
+}
+
+.status-indicator.CLOSED {
+  color: #7f8c8d;
 }
 
 .status-indicator.PAUSED {

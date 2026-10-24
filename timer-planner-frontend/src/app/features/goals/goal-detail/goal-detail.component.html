@@ -5,10 +5,17 @@
     <div class="header-top">
       <a routerLink="/goals" class="back-link">← Volver a Metas</a>
       <div class="header-actions">
-        @if (currentGoal.status === GoalStatus.OPEN || currentGoal.status === GoalStatus.PAUSED) {
-        <button type="button" class="btn-icon-edit" (click)="onTogglePause(currentGoal.id, currentGoal.status)"
-          [title]="currentGoal.status === GoalStatus.PAUSED ? 'Reanudar Meta' : 'Pausar Meta'">
-          <mat-icon>{{ currentGoal.status === GoalStatus.PAUSED ? 'play_arrow' : 'pause' }}</mat-icon>
+        @if (currentGoal.status === GoalStatus.CLOSED) {
+        <button type="button" class="btn-icon-edit" (click)="onReopen(currentGoal)" title="Reabrir Meta">
+          <mat-icon>lock_open</mat-icon>
+        </button>
+        } @else if (currentGoal.status !== GoalStatus.IDEA) {
+        <button type="button" class="btn-icon-edit" (click)="onTogglePause(currentGoal)"
+          [title]="ownPaused(currentGoal) ? 'Reanudar Meta' : 'Pausar Meta'">
+          <mat-icon>{{ ownPaused(currentGoal) ? 'play_arrow' : 'pause' }}</mat-icon>
+        </button>
+        <button type="button" class="btn-icon-edit" (click)="onClose(currentGoal)" title="Cerrar Meta">
+          <mat-icon>task_alt</mat-icon>
         </button>
         }
         <a [routerLink]="['/goals', currentGoal.id, 'edit']" class="btn-icon-edit" title="Editar Meta">
@@ -20,14 +27,14 @@
 
     <div class="meta-info">
       <span>Horizonte: <strong>{{ currentGoal.horizon ? (currentGoal.horizon | label: horizonLabels) : 'Sin horizonte' }}</strong></span>
-      <span>Estado: <strong>{{ currentGoal.status | label: statusLabels }}</strong></span>
+      <span>Estado: <strong>{{ currentGoal.status | label: statusLabels }}</strong>@if (currentGoal.closure) { · {{ currentGoal.closure.type | label: closureLabels }} }</span>
     </div>
 
     <div class="progress-container">
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" [style.width.%]="currentGoal.progress"></div>
       </div>
-      <span class="progress-text">{{ currentGoal.progress }}% Completado · Constancia: {{ currentGoal.id | consistency }}</span>
+      <span class="progress-text">Avance: {{ currentGoal.progress }}% · Constancia: {{ currentGoal.id | consistency }} · Productividad: {{ currentGoal.id | productivity }}</span>
     </div>
   </header>
 
@@ -63,7 +70,7 @@
 
           <div class="tags">
             <span class="tag-level">{{ objective.nature | label: natureLabels }}</span>
-            <span class="tag-type">{{ objective.status | label: objectiveStatusLabels }}</span>
+            <span class="tag-type">{{ objective.status | label: objectiveStatusLabels }}@if (objective.closure) { · {{ objective.closure.type | label: closureLabels }} }</span>
             <span class="tag-type">Límite: {{ objective.deadline }}</span>
           </div>
 
@@ -74,7 +81,7 @@
                   [class.completed]="objective.progress === 100">
                 </div>
               </div>
-              <span class="percentage-text">{{ objective.progress }}% · {{ objective.id | consistency }}</span>
+              <span class="percentage-text">{{ objective.progress }}% · {{ objective.id | consistency }} · {{ objective.id | productivity }}</span>
             </div>
           </div>
         </div>

@@ -14,6 +14,7 @@ import {
   SubActivityStatus,
   TaskSourceType,
 } from '../models/activity.model';
+import type { HierarchyLevel, ReopenResult } from '../models/hierarchy.model';
 import { DailyRecord } from '../models/daily-record.model';
 import { ExecutionSession, SessionStatus, WorkLog } from '../models/session.model';
 import { AgendaItem } from '../models/agenda-item.model';
@@ -66,15 +67,6 @@ export interface ProductivitySummary {
   plannedMinutes: number;
   percentage: number | null;
 }
-
-/**
- * Resultado de reabrir (RN-64): `NEEDS_DEADLINE` si su deadline efectivo ya pasó y falta uno nuevo;
- * `PARENT_EXPIRED` si el de su padre también pasó; `INVALID_DEADLINE` si el nuevo es anterior a hoy o supera el del padre.
- */
-export type ReopenResult = 'OK' | 'NOT_CLOSED' | 'NEEDS_DEADLINE' | 'PARENT_EXPIRED' | 'INVALID_DEADLINE';
-
-/** Nivel de la jerarquía, para las acciones comunes a los cuatro: pausar, cerrar y reabrir. */
-type Level = 'goal' | 'objective' | 'activity' | 'step';
 
 /** Lo que tienen en común los cuatro niveles para pausar, cerrar y reabrir. */
 interface TreeNode {
@@ -894,7 +886,7 @@ export class PlannerService {
 
   // --- JERARQUÍA: ACCIONES COMUNES A LOS CUATRO NIVELES ---
 
-  private nodeOf(level: Level, id: string): TreeNode | undefined {
+  private nodeOf(level: HierarchyLevel, id: string): TreeNode | undefined {
     switch (level) {
       case 'goal': return this.goalsSignal().find(g => g.id === id);
       case 'objective': return this.objectivesSignal().find(o => o.id === id);
@@ -904,16 +896,16 @@ export class PlannerService {
   }
 
   /** Hijos directos: meta → objetivos, objetivo → tareas, tarea → pasos. */
-  private childrenOf(level: Level, id: string): { level: Level; id: string }[] {
+  private childrenOf(level: HierarchyLevel, id: string): { level: HierarchyLevel; id: string }[] {
     switch (level) {
-      case 'goal': return this.objectivesSignal().filter(o => o.goalId === id).map(o => ({ level: 'objective' as const, id: o.id }));
-      case 'objective': return this.activitiesSignal().filter(a => a.objectiveId === id).map(a => ({ level: 'activity' as const, id: a.id }));
-      case 'activity': return this.stepsOf(id).map(s => ({ level: 'step' as const, id: s.id }));
+      case 'goal': return this.objectivesSignal().filter(o => o.goalId === id).map(o => ({ level: 'objective', id: o.id }));
+      case 'objective': return this.activitiesSignal().filter(a => a.objectiveId === id).map(a => ({ level: 'activity', id: a.id }));
+      case 'activity': return this.stepsOf(id).map(s => ({ level: 'step', id: s.id }));
       case 'step': return [];
     }
   }
 
-  private parentOf(level: Level, id: string): { level: Level; id: string } | null {
+  private parentOf(level: HierarchyLevel, id: string): { level: HierarchyLevel; id: string } | null {
     switch (level) {
       case 'goal': return null;
       case 'objective': {
@@ -932,7 +924,7 @@ export class PlannerService {
   }
 
   /** Deadline efectivo (RN-48); la meta no tiene (RN-56). */
-  private effectiveDeadlineOf(level: Level, id: string): string | null {
+  private effectiveDeadlineOf(level: HierarchyLevel, id: string): string | null {
     switch (level) {
       case 'goal': return null;
       case 'objective': return this.objectivesSignal().find(o => o.id === id)?.deadline ?? null;
@@ -950,7 +942,7 @@ export class PlannerService {
   }
 
   /** Cambia el cierre, las pausas o el deadline de un elemento. La meta no tiene deadline. */
-  private patchNode(level: Level, id: string, changes: { closure?: ItemClosure; pauses?: PausePeriod[]; deadline?: string }) {
+  private patchNode(level: HierarchyLevel, id: string, changes: { closure?: ItemClosure; pauses?: PausePeriod[]; deadline?: string }) {
     const apply = <T extends { id: string }>(items: T[]): T[] => items.map(item => item.id === id ? { ...item, ...changes } : item);
     switch (level) {
       case 'goal': this.goalsSignal.update(apply); break;
@@ -961,7 +953,7 @@ export class PlannerService {
   }
 
   /** Pausar abre un periodo y reanudar lo termina el día anterior (RN-57). Lo cerrado no se pausa. */
-  private setPause(level: Level, id: string, pause: boolean) {
+  private setPause(level: HierarchyLevel, id: string, pause: boolean) {
     const node = this.nodeOf(level, id);
     if (!node) return;
     const today = DateUtils.getTodayISO();
@@ -979,10 +971,10 @@ export class PlannerService {
    * Cierre a mano (RN-77, RN-78): el elemento y todos sus descendientes abiertos quedan cerrados desde hoy,
    * sin cambiar su avance. Los ya cerrados conservan su cierre. Devuelve si cerró algo.
    */
-  private closeManually(level: Level, id: string): boolean {
+  private closeManually(level: HierarchyLevel, id: string): boolean {
     if (!this.nodeOf(level, id) || this.nodeOf(level, id)?.closure) return false;
     const closure: ItemClosure = { type: ClosureType.MANUAL, closedOn: DateUtils.getTodayISO() };
-    const close = (l: Level, i: string) => {
+    const close = (l: HierarchyLevel, i: string) => {
       if (!this.nodeOf(l, i)?.closure) this.patchNode(l, i, { closure });
       this.childrenOf(l, i).forEach(child => close(child.level, child.id));
     };
@@ -996,17 +988,17 @@ export class PlannerService {
    * y tienen sesiones pendientes, y reabre sus padres cerrados. Si su deadline efectivo ya pasó, exige `deadline`
    * desde hoy y dentro del de su padre; sus descendientes sin deadline propio lo heredan.
    */
-  private reopen(level: Level, id: string, deadline?: string): ReopenResult {
-    if (!this.nodeOf(level, id)?.closure) return 'NOT_CLOSED';
+  private reopen(level: HierarchyLevel, id: string, deadline?: string): ReopenResult {
+    if (!this.nodeOf(level, id)?.closure) return 'not_closed';
     const today = DateUtils.getTodayISO();
     const current = this.effectiveDeadlineOf(level, id);
 
     if (current !== null && current < today) {
       const parent = this.parentOf(level, id);
       const parentLimit = parent && this.effectiveDeadlineOf(parent.level, parent.id);
-      if (parentLimit && parentLimit < today) return 'PARENT_EXPIRED';
-      if (!deadline) return 'NEEDS_DEADLINE';
-      if (!isValidISODate(deadline) || deadline < today || (parentLimit && deadline > parentLimit)) return 'INVALID_DEADLINE';
+      if (parentLimit && parentLimit < today) return 'parent_expired';
+      if (!deadline) return 'needs_deadline';
+      if (!isValidISODate(deadline) || deadline < today || (parentLimit && deadline > parentLimit)) return 'invalid_deadline';
       this.patchNode(level, id, { deadline });
     }
 
@@ -1014,11 +1006,11 @@ export class PlannerService {
     this.reopenDescendants(level, id, today);
     this.reopenAncestors(level, id);
     this.commit();
-    return 'OK';
+    return 'ok';
   }
 
   /** Reabre los descendientes cerrados que siguen dentro de su deadline y tienen sesiones pendientes (RN-64). */
-  private reopenDescendants(level: Level, id: string, today: string) {
+  private reopenDescendants(level: HierarchyLevel, id: string, today: string) {
     for (const child of this.childrenOf(level, id)) {
       const node = this.nodeOf(child.level, child.id);
       const limit = this.effectiveDeadlineOf(child.level, child.id);
@@ -1030,7 +1022,7 @@ export class PlannerService {
   }
 
   /** Reabre los padres cerrados de un elemento, sin tocar a sus otros hijos (RN-53, RN-64). */
-  private reopenAncestors(level: Level, id: string) {
+  private reopenAncestors(level: HierarchyLevel, id: string) {
     for (let parent = this.parentOf(level, id); parent; parent = this.parentOf(parent.level, parent.id)) {
       if (this.nodeOf(parent.level, parent.id)?.closure) this.patchNode(parent.level, parent.id, { closure: undefined });
     }

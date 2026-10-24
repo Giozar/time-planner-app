@@ -12,10 +12,10 @@ Contenido de `src/app`:
 src/app/
 ├── core/
 │   ├── i18n/          labels.ts (etiquetas en español por enum)
-│   ├── models/        activity (incluye ItemClosure), goal, objective, pause, session (ExecutionSession y WorkLog), daily-record, agenda-item, deletion-impact, calendar-entry (enums en inglés)
+│   ├── models/        activity (incluye ItemClosure), goal, objective, hierarchy (tipos HierarchyLevel y ReopenResult), pause, session (ExecutionSession y WorkLog), daily-record, agenda-item, deletion-impact, calendar-entry (enums en inglés)
 │   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves time_planner_*)
 │   ├── rules/         calendar, calendar-view, closure, consistency, progress, recurrence, deadline, session (funciones puras)
-│   ├── services/      planner.service.ts, native-dialog.service.ts
+│   ├── services/      planner.service.ts, lifecycle-actions.service.ts, native-dialog.service.ts
 │   └── utils/         date.utils.ts (getTodayISO)
 ├── features/
 │   ├── activities/    activity-form, structure-form
@@ -27,7 +27,7 @@ src/app/
 ├── shared/
 │   ├── components/    global-dialog
 │   ├── layout/        main-layout
-│   └── pipes/         label.pipe.ts, consistency.pipe.ts
+│   └── pipes/         label.pipe.ts, consistency.pipe.ts, productivity.pipe.ts
 ├── testing/           builders.ts e in-memory-data.provider.ts (solo para pruebas)
 ├── app.config.ts      enlaza DataProvider con LocalStorageService
 └── app.routes.ts

@@ -52,7 +52,7 @@
 
           <div class="tooltip" role="tooltip">
             <p class="tip-type">{{ entry.sourceType | label: sourceTypeLabels }} · {{ entry.durationMin }} min
-              @if (entry.isCompleted) { · Completada }</p>
+              @if (entry.isCompleted) { · Realizada }</p>
             <p class="tip-title">{{ entry.title }}</p>
             <dl>
               <dt>Meta</dt>
@@ -94,7 +94,7 @@
         <span class="detail-type">{{ entry.sourceType | label: sourceTypeLabels }}</span>
         <strong>{{ entry.title }}</strong>
         <span class="detail-time">{{ entry.durationMin }} min</span>
-        @if (entry.isCompleted) { <span class="detail-done">Completada</span> }
+        @if (entry.isCompleted) { <span class="detail-done">Realizada</span> }
       </div>
       <p class="detail-path">
         {{ entry.goalTitle }} › {{ entry.objectiveTitle }}

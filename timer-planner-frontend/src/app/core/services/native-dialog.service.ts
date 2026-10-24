@@ -14,8 +14,13 @@ export interface DialogOptions {
   /** Si se indica, el diálogo pide un entero positivo con este valor inicial. */
   numberDefault?: number;
   numberLabel?: string;
+  /** Si se indica, el diálogo pide una fecha `YYYY-MM-DD` entre `dateMin` y `dateMax`. */
+  askDate?: boolean;
+  dateMin?: string;
+  dateMax?: string;
+  dateLabel?: string;
   type: 'confirm' | 'alert';
-  resolve: (value: boolean, input?: number) => void;
+  resolve: (value: boolean, input?: number | string) => void;
 }
 
 @Injectable({
@@ -54,7 +59,25 @@ export class NativeDialogService {
         numberDefault: defaultMinutes,
         numberLabel: 'Minutos trabajados',
         type: 'confirm',
-        resolve: (ok, input) => resolve(ok && input !== undefined ? input : null),
+        resolve: (ok, input) => resolve(ok && typeof input === 'number' ? input : null),
+      });
+    });
+  }
+
+  /** Pide una fecha desde `min` (y hasta `max`, si se indica), por ejemplo el deadline nuevo al reabrir (RN-64). `null` si se cancela. */
+  promptDate(title: string, message: string, min: string, max?: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      this.dialogState.set({
+        title,
+        message,
+        confirmText: 'Reabrir',
+        cancelText: 'Cancelar',
+        askDate: true,
+        dateMin: min,
+        dateMax: max,
+        dateLabel: 'Deadline nuevo',
+        type: 'confirm',
+        resolve: (ok, input) => resolve(ok && typeof input === 'string' ? input : null),
       });
     });
   }
@@ -70,7 +93,7 @@ export class NativeDialogService {
       impact.steps && `${impact.steps} paso(s)`,
     ].filter(Boolean);
     if (children.length > 0) lines.push(`También se eliminarán: ${children.join(', ')}.`);
-    if (impact.completed > 0) lines.push(`Elementos completados que se perderán: ${impact.completed}.`);
+    if (impact.completed > 0) lines.push(`Elementos ya cerrados que se perderán: ${impact.completed}.`);
     lines.push('', `Para confirmar, escribe el título exacto: ${impact.title}`);
 
     return this.confirm(`¿Eliminar ${label}?`, lines.join('\n'), {
@@ -101,7 +124,7 @@ export class NativeDialogService {
     });
   }
 
-  close(result: boolean, input?: number) {
+  close(result: boolean, input?: number | string) {
     const current = this.dialogState();
     if (current) {
       current.resolve(result, input);

@@ -14,16 +14,23 @@
 
   <div class="grid-layout">
     @for (goal of goals(); track goal.id) {
-    <article class="goal-card" [class.paused]="goal.status === GoalStatus.PAUSED" [routerLink]="['/goals', goal.id]"
+    <article class="goal-card" [class.paused]="goal.status === GoalStatus.PAUSED || goal.status === GoalStatus.CLOSED" [routerLink]="['/goals', goal.id]"
       style="cursor: pointer;">
 
       <div class="card-header">
         <span class="horizonte">{{ goal.horizon ? (goal.horizon | label: horizonLabels) : 'Sin horizonte' }}</span>
         <div class="header-actions">
-          @if (goal.status !== GoalStatus.IDEA) {
+          @if (goal.status === GoalStatus.CLOSED) {
+          <button class="btn-icon-neutral" (click)="onReopen($event, goal)" title="Reabrir Meta">
+            <mat-icon fontIcon="lock_open"></mat-icon>
+          </button>
+          } @else if (goal.status !== GoalStatus.IDEA) {
           <button class="btn-icon-neutral" (click)="onTogglePause($event, goal)"
-            [title]="goal.status === GoalStatus.PAUSED ? 'Reanudar Meta' : 'Pausar Meta'">
-            <mat-icon [fontIcon]="goal.status === GoalStatus.PAUSED ? 'play_arrow' : 'pause'"></mat-icon>
+            [title]="ownPaused(goal) ? 'Reanudar Meta' : 'Pausar Meta'">
+            <mat-icon [fontIcon]="ownPaused(goal) ? 'play_arrow' : 'pause'"></mat-icon>
+          </button>
+          <button class="btn-icon-neutral" (click)="onClose($event, goal)" title="Cerrar Meta">
+            <mat-icon fontIcon="task_alt"></mat-icon>
           </button>
           }
           <button class="btn-icon-danger" (click)="onDeleteGoal($event, goal)" title="Eliminar Meta">
@@ -36,12 +43,16 @@
 
       <div class="progress-section">
         <div class="progress-info">
-          <span>Progreso</span>
+          <span>Avance</span>
           <span>{{ goal.progress }}%</span>
         </div>
         <div class="progress-info">
           <span>Constancia</span>
           <span>{{ goal.id | consistency }}</span>
+        </div>
+        <div class="progress-info">
+          <span>Productividad</span>
+          <span>{{ goal.id | productivity }}</span>
         </div>
         <div class="progress-bar-bg">
           <div class="progress-bar-fill" [style.width.%]="goal.progress"></div>
@@ -50,7 +61,7 @@
 
       <div class="card-footer">
         <span class="status-indicator {{ goal.status }}">
-          {{ goal.status | label: statusLabels }}
+          {{ goal.status | label: statusLabels }}@if (goal.closure) { · {{ goal.closure.type | label: closureLabels }} }
         </span>
       </div>
 

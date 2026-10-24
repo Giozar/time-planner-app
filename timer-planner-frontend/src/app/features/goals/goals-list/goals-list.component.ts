@@ -7,26 +7,31 @@ import { MatIconModule } from '@angular/material/icon';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 import { Goal, GoalStatus } from '../../../core/models/goal.model';
 import { DeletableType } from '../../../core/models/deletion-impact.model';
-import { GOAL_HORIZON_LABELS, GOAL_STATUS_LABELS } from '../../../core/i18n/labels';
+import { CLOSURE_TYPE_LABELS, GOAL_HORIZON_LABELS, GOAL_STATUS_LABELS } from '../../../core/i18n/labels';
+import { LifecycleActionsService } from '../../../core/services/lifecycle-actions.service';
+import { hasOpenPause } from '../../../core/rules';
+import { ProductivityPipe } from '../../../shared/pipes/productivity.pipe';
 import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
 
 @Component({
   selector: 'app-goals-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe],
   templateUrl: './goals-list.component.html',
   styleUrl: './goals-list.component.css'
 })
 export class GoalsListComponent {
   private plannerService = inject(PlannerService);
   private dialogService = inject(NativeDialogService);
+  private lifecycle = inject(LifecycleActionsService);
   
   // Señal de lectura del servicio
   goals = this.plannerService.goals;
 
   readonly horizonLabels = GOAL_HORIZON_LABELS;
   readonly statusLabels = GOAL_STATUS_LABELS;
+  readonly closureLabels = CLOSURE_TYPE_LABELS;
   readonly GoalStatus = GoalStatus;
 
   async onDeleteGoal(event: Event, goal: Goal) {
@@ -40,12 +45,23 @@ export class GoalsListComponent {
     }
   }
 
+  /** Tiene una pausa propia abierta; la heredada de un padre no se reanuda desde aquí (RN-57). */
+  ownPaused(goal: Goal): boolean {
+    return hasOpenPause(goal.pauses);
+  }
+
   onTogglePause(event: Event, goal: Goal) {
     event.stopPropagation();
-    if (goal.status === GoalStatus.PAUSED) {
-      this.plannerService.resumeGoal(goal.id);
-    } else {
-      this.plannerService.pauseGoal(goal.id);
-    }
+    this.lifecycle.togglePause('goal', goal.id, this.ownPaused(goal));
+  }
+
+  onClose(event: Event, goal: Goal) {
+    event.stopPropagation();
+    this.lifecycle.close('goal', goal.id, goal.title);
+  }
+
+  onReopen(event: Event, goal: Goal) {
+    event.stopPropagation();
+    this.lifecycle.reopen('goal', goal.id, goal.title);
   }
 }

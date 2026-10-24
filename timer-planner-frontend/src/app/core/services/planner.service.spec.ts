@@ -1011,7 +1011,7 @@ describe('PlannerService', () => {
     it('reabrir a mano algo al 100 % no lo vuelve a cerrar solo', () => {
       seedTwoSessions();
       completeAll();
-      expect(service.reopenActivity('a1')).toBe('OK');
+      expect(service.reopenActivity('a1')).toBe('ok');
       service.logWork('a1', TaskSourceType.ACTIVITY, 10);
 
       expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.OPEN, progress: 100 });
@@ -1083,7 +1083,7 @@ describe('PlannerService', () => {
       addActivity(simple('a2', ['2026-10-20'], ['2026-10-20']));
       service.closeObjective('o1');
 
-      expect(service.reopenObjective('o1')).toBe('OK');
+      expect(service.reopenObjective('o1')).toBe('ok');
       expect(service.objectives()[0].status).toBe(ObjectiveStatus.OPEN);
       expect(service.activities().map(a => a.status)).toEqual([ActivityStatus.OPEN, ActivityStatus.CLOSED]);
     });
@@ -1094,7 +1094,7 @@ describe('PlannerService', () => {
       addActivity(simple('a2', ['2026-10-31']));
       service.closeGoal('g1');
 
-      expect(service.reopenActivity('a1')).toBe('OK');
+      expect(service.reopenActivity('a1')).toBe('ok');
       expect(service.activities().map(a => a.status)).toEqual([ActivityStatus.OPEN, ActivityStatus.CLOSED]);
       expect(service.objectives()[0].status).toBe(ObjectiveStatus.OPEN);
       expect(service.goals()[0].status).toBe(GoalStatus.OPEN);
@@ -1106,9 +1106,9 @@ describe('PlannerService', () => {
       addActivity(simple('a1', ['2026-10-20']));
       expect(service.objectives()[0].status).toBe(ObjectiveStatus.CLOSED);
 
-      expect(service.reopenObjective('o1')).toBe('NEEDS_DEADLINE');
-      expect(service.reopenObjective('o1', '2026-10-01')).toBe('INVALID_DEADLINE');
-      expect(service.reopenObjective('o1', '2026-11-30')).toBe('OK');
+      expect(service.reopenObjective('o1')).toBe('needs_deadline');
+      expect(service.reopenObjective('o1', '2026-10-01')).toBe('invalid_deadline');
+      expect(service.reopenObjective('o1', '2026-11-30')).toBe('ok');
       expect(service.objectives()[0]).toMatchObject({ status: ObjectiveStatus.OPEN, deadline: '2026-11-30' });
       expect(service.activities()[0].status).toBe(ActivityStatus.OPEN);
     });
@@ -1118,13 +1118,13 @@ describe('PlannerService', () => {
       service.addObjective(makeObjective({ deadline: '2026-10-21' }));
       addActivity(simple('a1', ['2026-10-20']));
 
-      expect(service.reopenActivity('a1', '2026-11-30')).toBe('PARENT_EXPIRED');
+      expect(service.reopenActivity('a1', '2026-11-30')).toBe('parent_expired');
     });
 
     it('lo abierto no se reabre', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-30']));
-      expect(service.reopenActivity('a1')).toBe('NOT_CLOSED');
+      expect(service.reopenActivity('a1')).toBe('not_closed');
     });
 
     it('al reabrir, las sesiones ocultas por el cierre vuelven a la agenda (RN-79)', () => {

@@ -16,12 +16,19 @@
                     (keydown.enter)="onConfirm()">
             </label>
             }
+            @if (d.askDate) {
+            <label class="confirm-label">{{ d.dateLabel }}
+                <input class="confirm-input" type="date" [attr.min]="d.dateMin" [attr.max]="d.dateMax"
+                    [value]="typedDate()" (input)="typedDate.set($any($event.target).value)"
+                    (keydown.enter)="onConfirm()">
+            </label>
+            }
         </div>
         <div class="dialog-actions">
             @if (d.type === 'confirm') {
             <button class="btn-secondary" (click)="onCancel()">{{ d.cancelText }}</button>
             }
-            <button [class]="d.isDanger ? 'btn-danger' : 'btn-primary'" [disabled]="!canConfirm(d.requireText, d.numberDefault)" (click)="onConfirm()">
+            <button [class]="d.isDanger ? 'btn-danger' : 'btn-primary'" [disabled]="!canConfirm(d.requireText, d.numberDefault, dateRange(d))" (click)="onConfirm()">
                 {{ d.confirmText }}
             </button>
         </div>

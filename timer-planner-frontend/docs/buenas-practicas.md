@@ -30,9 +30,10 @@ Definida en la sección 4.1 de `../../docs/analisis-reglas-de-negocio.md`. Resum
 | Clases, tipos y enums | PascalCase, en inglés | `ActivityStatus` |
 | Campos, variables y funciones | camelCase, en inglés | `scheduledDate` |
 | Valores de enum | UPPER_SNAKE_CASE, en inglés | `WEEKLY_PATTERN` |
+| Valores de un `type` de textos | minúscula, en inglés | `'goal' \| 'step'` |
 | Textos de interfaz | Español, en `core/i18n`, nunca en la lógica | `"En progreso"` |
 
-El código y los datos manejan el valor en inglés. El español aparece solo al mostrar algo al usuario.
+Los valores del dominio (los que se guardan, viajan por la API o tienen etiqueta en español) son `enum` con valores en `UPPER_SNAKE_CASE`. Los conjuntos internos del código, que nunca se guardan ni se muestran, son `type` con textos en minúscula: `type HierarchyLevel = 'goal' | 'objective'`. Un `type` de textos siempre va en minúscula. El código y los datos manejan el valor en inglés. El español aparece solo al mostrar algo al usuario.
 
 ## Angular
 

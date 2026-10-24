@@ -264,19 +264,14 @@ h3 {
     font-weight: 700;
 }
 
-.status.PENDING {
-    background: #f2f3f4;
-    color: #7f8c8d;
-}
-
-.status.IN_PROGRESS {
-    background: #e3f2fd;
-    color: #1565c0;
-}
-
-.status.COMPLETED {
+.status.OPEN {
     background: #e8f5e9;
     color: #2e7d32;
+}
+
+.status.CLOSED {
+    background: #f2f3f4;
+    color: #7f8c8d;
 }
 
 .meta-progress {
@@ -464,13 +459,23 @@ h4 {
     color: #e65100;
 }
 
-.status.OVERDUE {
-    background: #fdecea;
-    color: #c0392b;
-}
-
 .objective-deadline {
     margin: 0 0 1rem;
     color: #7f8c8d;
     font-size: 0.9rem;
+}
+
+.close-hint {
+    margin: 0.4rem 0 0;
+    font-size: 0.8rem;
+    color: #7f8c8d;
+}
+
+.close-hint .btn-link {
+    padding: 0;
+    background: none;
+    border: none;
+    color: #3498db;
+    text-decoration: underline;
+    cursor: pointer;
 }

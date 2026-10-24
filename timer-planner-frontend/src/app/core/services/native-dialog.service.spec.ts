@@ -25,6 +25,17 @@ describe('NativeDialogService', () => {
     expect(await cancelled).toBeNull();
   });
 
+  it('promptDate devuelve la fecha al confirmar y null al cancelar (RN-64)', async () => {
+    const ok = dialog.promptDate('t', 'm', '2026-10-22', '2026-12-31');
+    expect(dialog.state()).toMatchObject({ askDate: true, dateMin: '2026-10-22', dateMax: '2026-12-31' });
+    dialog.close(true, '2026-11-30');
+    expect(await ok).toBe('2026-11-30');
+
+    const cancelled = dialog.promptDate('t', 'm', '2026-10-22');
+    dialog.close(false);
+    expect(await cancelled).toBeNull();
+  });
+
   it('confirmDelete exige escribir el título y resume el impacto (RN-62)', async () => {
     const impact: DeletionImpact = { title: 'Mi meta', objectives: 2, activities: 5, steps: 3, completed: 4 };
     const pending = dialog.confirmDelete(DeletableType.GOAL, impact);
@@ -35,7 +46,7 @@ describe('NativeDialogService', () => {
     expect(state.message).toContain('2 objetivo(s)');
     expect(state.message).toContain('5 tarea(s)');
     expect(state.message).toContain('3 paso(s)');
-    expect(state.message).toContain('completados que se perderán: 4');
+    expect(state.message).toContain('cerrados que se perderán: 4');
     dialog.close(false);
     expect(await pending).toBe(false);
   });
