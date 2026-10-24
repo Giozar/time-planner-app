@@ -135,10 +135,10 @@ export class ActivityFormComponent implements OnInit {
         plan.patternDays.forEach(day => this.patternDaysArray.push(new FormControl(day)));
       }
 
-      // Las sesiones pasadas y realizadas se conservan solas (RN-51): el formulario solo edita las pendientes.
+      // Las sesiones pasadas, realizadas y movidas se conservan solas (RN-51, RN-82): el formulario solo edita las pendientes.
       if (plan.type === ExecutionPlanType.SPECIFIC_DATES) {
         this.plannerService.sessionsOf(plan.id)
-          .filter(s => s.scheduledDate >= this.minDate && s.status === SessionStatus.PLANNED)
+          .filter(s => s.scheduledDate >= this.minDate && s.status === SessionStatus.PLANNED && !s.rescheduledFrom)
           .forEach(s => this.specificDatesArray.push(new FormControl(s.scheduledDate)));
       }
     }

@@ -122,8 +122,9 @@ Un plan pertenece a una tarea simple o a un paso. Sus fechas materializadas vive
 
 | Campo | Tipo | Regla |
 |-------|------|-------|
-| `id`, `planId` | UUID | Una sesión pertenece a un plan; fecha única por plan. |
+| `id`, `planId` | UUID | Una sesión pertenece a un plan. El plan genera una por fecha; una sesión movida puede compartir día con otra del mismo plan (RN-82). |
 | `scheduledDate` | fecha local | Día programado. |
+| `rescheduledFrom` | fecha local opcional | Fecha que generó el plan, si la sesión se movió (RN-82). |
 | `plannedMinutes` | entero | Minutos previstos para esa sesión. |
 | `status` | `SessionStatus` | `PLANNED` o `DONE`. |
 | `completedAt` | fecha/hora opcional | Solo cuando está `DONE`. |
@@ -298,11 +299,12 @@ Se numeran para referenciarlas desde la implementación y las pruebas.
 |----|-------|
 | RN-25 | La **agenda** de una fecha contiene las sesiones de esa fecha de tareas simples y pasos, según la visibilidad de RN-29. Por defecto se muestra la de hoy (RN-75). |
 | RN-26 | Una sesión de la agenda está realizada cuando su estado es `DONE`; eso no implica que la tarea o el paso estén terminados. |
-| RN-27 | Se puede marcar o desmarcar una sesión de hoy o de una fecha pasada, sin límite hacia atrás. Las sesiones futuras no se marcan. Al marcarla se registran minutos en `WorkLog` de la fecha de la sesión: hoy se registran los minutos previstos sin preguntar; en una fecha pasada se piden los minutos reales, con los previstos como valor inicial. Desmarcarla elimina los minutos registrados con ella; volver a marcarla los registra de nuevo. |
+| RN-27 | Se puede marcar o desmarcar una sesión de hoy o de una fecha pasada, sin límite hacia atrás. Las sesiones futuras no se marcan, pero se pueden mover (RN-82). Al marcarla se registran minutos en `WorkLog` de la fecha de la sesión: hoy se registran los minutos previstos sin preguntar; en una fecha pasada se piden los minutos reales, con los previstos como valor inicial. Desmarcarla elimina los minutos registrados con ella; volver a marcarla los registra de nuevo. |
 | RN-28 | "Hoy" se calcula en la **zona horaria local** del usuario. |
 | RN-75 | **Navegar entre fechas.** La agenda permite ir al día anterior o siguiente, elegir una fecha y volver a hoy. Se puede consultar cualquier fecha; las futuras son de solo lectura (RN-27). La fecha elegida forma parte de la dirección de la pantalla, por lo que se puede abrir y compartir. |
 | RN-76 | **Corregir tiempo real.** Los bloques de `WorkLog` se pueden editar (minutos) o borrar en hoy y en fechas pasadas. Borrar el último bloque vinculado a una sesión `DONE` la devuelve a `PLANNED`. |
 | RN-29 | La agenda excluye los ítems de metas `PAUSED` o `IDEA` y de tareas `PAUSED` (RN-57, RN-59). No filtra por otros estados. |
+| RN-82 | **Mover una sesión.** Una sesión `PLANNED` de hoy o futura de una tarea simple o un paso abierto se puede mover a otra fecha de hoy en adelante, sin pasar su deadline efectivo (RN-48), aunque ese día ya tenga otra sesión del mismo ítem. Solo cambia esa sesión: conserva sus minutos previstos, el resto del plan no cambia y el avance tampoco (RN-30). No se mueven sesiones `DONE`, pasadas, cubiertas por un cierre manual (RN-79) ni de elementos cerrados (RN-80). Ejemplo: «Correr» es cada lunes; este lunes no se puede y esa sesión pasa al domingo. |
 
 ### 5.6 Cálculo de progreso y estados (cascada ascendente)
 
@@ -345,7 +347,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 | RN-48 | **Límite de deadlines.** Cadena de topes: objetivo → tarea → paso. Una tarea puede tener deadline propio, que nunca puede superar el del objetivo; toda ejecución de una tarea debe ser ≤ su deadline efectivo. Un paso puede tener deadline propio, que nunca puede superar el efectivo de su tarea; cada ejecución de un paso debe ser ≤ su deadline efectivo. |
 | RN-49 | **Cambio de deadline.** Al modificar el deadline de un objetivo, una tarea o un paso se validan todas las ejecuciones, tareas y pasos afectados. Si alguno incumple, el guardado se rechaza y se listan las fechas en conflicto. No se recortan fechas en silencio. Una tarea o un paso con deadline heredado no entra en conflicto: su deadline efectivo es el del padre y se actualiza solo. |
 | RN-50 | **Tarea compuesta.** `executionPlan` y `recurrence` son `null`. Su progreso sale de sus pasos (RN-32). Cada paso tiene su propio plan obligatorio, con programación independiente de los demás pasos. |
-| RN-51 | **Editar un plan.** Se conservan las sesiones pasadas, las `DONE` y los `WorkLog`. Se sustituyen las sesiones `PLANNED` de hoy y futuras (el plan nuevo se genera desde hoy, RN-21), así que el avance se recalcula sobre el plan nuevo (RN-30). |
+| RN-51 | **Editar un plan.** Se conservan las sesiones pasadas, las `DONE` y los `WorkLog`. Se sustituyen las sesiones `PLANNED` de hoy y futuras (el plan nuevo se genera desde hoy, RN-21), así que el avance se recalcula sobre el plan nuevo (RN-30). Las sesiones movidas se conservan en su nueva fecha y su fecha original no se vuelve a generar (RN-82). |
 | RN-52 | **Borrado con historial.** Cualquier elemento (meta, objetivo, tarea o paso) se puede borrar, aunque esté completado o tenga hijos. El borrado es en cascada (RN-07 a RN-09) y exige confirmación escrita (RN-62). Los respaldos quedan fuera del MVP. |
 | RN-53 | **Agregar hijos.** Se pueden agregar pasos, tareas u objetivos a un padre existente, aunque ya tenga progreso o esté cerrado; un padre cerrado se reabre (RN-64). El progreso del padre se recalcula sobre todos sus hijos, así que puede bajar. |
 | RN-54 | **Borrar hijos no completados.** Es posible borrar un elemento que no está completado. Solo se recalcula el progreso de sus ancestros. |
@@ -368,7 +370,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 |----|-------|
 | RN-67 | **Finalización del resultado.** Cuando el avance de una tarea simple o paso llega a 100 %, se fija `completedAt`; si baja, se borra. En tarea compuesta se calcula desde sus pasos y no se almacena (§3.3). |
 | RN-68 | **Medidas separadas.** El avance cuenta las sesiones realizadas sobre todas las del plan; la constancia, sobre las exigibles (RN-70); el tiempo real suma minutos (RN-71). Registrar minutos sin sesión no marca ninguna sesión ni cambia el avance. El cierre de cada nivel sigue RN-77 y RN-78. |
-| RN-69 | **Estado de sesión.** Cada fecha programada tiene una `ExecutionSession` única. `PLANNED` es la inicial; `DONE` significa que se trabajó ese día y tiene `completedAt`. Una `PLANNED` pasada, o de hoy tras cerrar el día, se muestra como no realizada, salvo que esté cubierta por un cierre manual (RN-79). |
+| RN-69 | **Estado de sesión.** Cada fecha programada genera una `ExecutionSession`; una sesión movida puede compartir día con otra (RN-82). `PLANNED` es la inicial; `DONE` significa que se trabajó ese día y tiene `completedAt`. Una `PLANNED` pasada, o de hoy tras cerrar el día, se muestra como no realizada, salvo que esté cubierta por un cierre manual (RN-79). |
 | RN-70 | **Constancia.** `round(DONE / (DONE + no realizadas) × 100)` sobre las sesiones exigibles del ítem; devuelve `null` si no hay ninguna. Incluye las `DONE` hasta hoy y las `PLANNED` de fechas pasadas; una `PLANNED` de hoy cuenta al cerrar el día. Excluye sesiones futuras, las cubiertas por un cierre manual (RN-79) y las de fechas en que la meta o la tarea estaba pausada (según su historial de pausas, RN-57, RN-59). Se muestra también en tarea compuesta, objetivo y meta, calculada con todas las sesiones de sus descendientes ejecutables, sin promediar porcentajes. |
 | RN-71 | **Tiempo real.** Cada `WorkLog` guarda minutos enteros positivos trabajados en una fecha, hoy o pasada pero nunca futura, para una tarea simple o un paso. Puede no estar ligado a una sesión. Si se vincula, la sesión debe estar `DONE` y deben coincidir ítem y fecha. Marcar una sesión `DONE` crea al menos un `WorkLog` vinculado; varios bloques del mismo día se suman. El tiempo planeado nunca sustituye al real. |
 | RN-72 | **Cierre diario.** `DailyRecord` guarda sesiones planeadas y realizadas, porcentaje de constancia del día, minutos planeados, suma de `WorkLog.minutes`, notas y `closedAt`. El porcentaje es `null` si no hubo sesiones planeadas. Se toma de las sesiones visibles de la agenda de ese día, sin las cubiertas por un cierre manual (RN-79); los minutos reales incluyen también trabajo sin sesión programada. Un nuevo cierre en la misma fecha reemplaza el resumen y conserva el `id` (RN-43); los cambios posteriores se reflejan al volver a cerrar ese día (RN-44). |
@@ -422,6 +424,7 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 | CU-27 | Registrar tiempo real sin sesión | Agenda o detalle del ítem ejecutable |
 | CU-28 | Consultar constancia | Detalle del ítem o historial |
 | CU-29 | Cerrar tarea o paso | `/objectives/:id` |
+| CU-30 | Mover una sesión | `/daily` y `/daily?date=YYYY-MM-DD` |
 
 ### Detalle de casos de uso principales
 
@@ -513,6 +516,11 @@ El plan define cuándo se trabaja, la recurrencia clasifica esa programación y 
 - **Precondición:** la tarea o el paso está abierto.
 - **Flujo:** el usuario pulsa "Cerrar" en la tarea o el paso y confirma → la tarea simple o el paso queda `COMPLETED` al 100 % aunque le falten sesiones; una tarea compuesta cierra sus pasos abiertos (RN-77, RN-78). Las sesiones posteriores aparecen completas y no cuentan (RN-79).
 - Si nadie lo cierra, se cierra solo al día siguiente de su deadline efectivo, como `OVERDUE` (RN-77).
+
+#### CU-30 — Mover una sesión
+- **Precondición:** la sesión es `PLANNED`, de hoy o futura, y su tarea simple o paso está abierto (RN-82).
+- **Flujo:** en la agenda de la fecha de la sesión (también en fechas futuras) el usuario pulsa «Mover» y elige la fecha nueva, de hoy hasta el deadline efectivo → la sesión pasa a esa fecha y el resto del plan sigue igual.
+- **Reglas:** RN-48, RN-51, RN-82.
 
 #### CU-24 — Postergar
 - Editar el deadline de un elemento no cerrado. No reduce progreso ni borra historial (RN-60). Respetan RN-48 y RN-49.
@@ -631,6 +639,7 @@ erDiagram
         date scheduled_date
         int planned_minutes
         session_status status "PLANNED, DONE"
+        date rescheduled_from "nullable"
         timestamptz completed_at "nullable"
     }
     WORK_LOG {
@@ -661,7 +670,7 @@ erDiagram
 2. **`EXECUTION_PLAN` como tabla propia** con FK exclusiva: `CHECK ((activity_id IS NULL) <> (sub_activity_id IS NULL))` + `UNIQUE` en cada FK. Alternativa válida: columnas del plan directamente en `activity` y `sub_activity` (más simple, algo de duplicación).
 3. **`EXECUTION_SESSION`** guarda cada sesión programada y su estado en una sola fila:
    - Cada fecha programada es una fila con minutos previstos y estado `PLANNED` o `DONE`. `completed_at` solo existe en `DONE`.
-   - `UNIQUE (plan_id, scheduled_date)`.
+   - Índice `(plan_id, scheduled_date)`, no único: una sesión movida puede compartir día con otra del mismo plan (RN-82). `rescheduled_from` guarda la fecha generada y evita volver a generarla al editar el plan.
    - Índice en `scheduled_date` → la Agenda de Hoy es un `SELECT … WHERE scheduled_date = :today`.
    - Al editar el plan se conservan sesiones pasadas y realizadas; solo se regeneran las futuras `PLANNED` (RN-51, RN-74).
    - El avance se calcula con todas las sesiones del plan (RN-30) y la constancia con las exigibles (RN-70).
@@ -684,7 +693,7 @@ erDiagram
 | `activity` | `(objective_id)`, `(deadline)` |
 | `sub_activity` | `(activity_id)` |
 | `execution_plan` | `UNIQUE (activity_id)`, `UNIQUE (sub_activity_id)` |
-| `execution_session` | `UNIQUE (plan_id, scheduled_date)`, `(scheduled_date)` |
+| `execution_session` | `(plan_id, scheduled_date)`, `(scheduled_date)` |
 | `work_log` | `(activity_id, date)`, `(sub_activity_id, date)`, `(session_id)` |
 | `daily_record` | `UNIQUE (user_id, date)` |
 
@@ -771,6 +780,7 @@ Ejemplo de cuerpo (tarea simple):
 |--------|------|-------------|-------|
 | GET | `/daily?date=` | CU-17 | Devuelve sesiones visibles de la fecha (hoy si se omite), sus estados, trabajo registrado y métricas. "Hoy" según `user.timezone`. |
 | POST | `/execution-sessions/:id/complete` | CU-18, RN-27/69/71 | `{ minutes? }`: obligatorio en fecha pasada; hoy se usan los previstos. Sesión de hoy o pasada (`422` si es futura o está cubierta por un cierre manual, RN-79): crea `WorkLog` en la fecha de la sesión, marca `DONE` y recalcula `progress` en una transacción (RN-30). |
+| PATCH | `/execution-sessions/:id` | CU-30, RN-82 | `{ scheduledDate }`: mueve una sesión `PLANNED` de hoy o futura; `422` si la fecha es pasada, supera el deadline efectivo o el elemento está cerrado. |
 | DELETE | `/execution-sessions/:id/completion` | CU-18 | Vuelve a `PLANNED`, elimina los `WorkLog` vinculados a la sesión (RN-27) y recalcula `progress`. |
 | POST | `/work-logs` | RN-71 | `{ sourceType, sourceId, minutes, sessionId?, date? }`; `date` es hoy si se omite y nunca futura. Registra trabajo con o sin sesión. |
 | GET | `/work-logs?date=` | RN-71 | Detalle del tiempo real de la fecha. |

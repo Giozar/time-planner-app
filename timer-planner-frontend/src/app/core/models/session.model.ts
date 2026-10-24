@@ -9,7 +9,8 @@ export enum SessionStatus {
 export interface ExecutionSession {
   id: string;
   planId: string;
-  scheduledDate: string; // 'YYYY-MM-DD'; única por plan
+  scheduledDate: string; // 'YYYY-MM-DD'; el plan genera una por fecha, una movida puede compartir día (RN-82)
+  rescheduledFrom?: string; // 'YYYY-MM-DD' generada por el plan, si la sesión se movió (RN-82)
   plannedMinutes: number;
   status: SessionStatus;
   completedAt?: string; // ISO; solo cuando está DONE

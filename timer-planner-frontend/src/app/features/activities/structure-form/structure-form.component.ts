@@ -117,9 +117,9 @@ export class StructureFormComponent implements OnInit {
     if (sub.executionPlan.type === ExecutionPlanType.WEEKLY_PATTERN && sub.executionPlan.patternDays) {
       sub.executionPlan.patternDays.forEach(day => this.patternDaysArray.push(new FormControl(day)));
     } else if (sub.executionPlan.type === ExecutionPlanType.SPECIFIC_DATES) {
-      // Las sesiones pasadas y realizadas se conservan solas (RN-51): el formulario solo edita las pendientes.
+      // Las sesiones pasadas, realizadas y movidas se conservan solas (RN-51, RN-82): el formulario solo edita las pendientes.
       this.plannerService.sessionsOf(sub.executionPlan.id)
-        .filter(s => s.scheduledDate >= this.minDate && s.status === SessionStatus.PLANNED)
+        .filter(s => s.scheduledDate >= this.minDate && s.status === SessionStatus.PLANNED && !s.rescheduledFrom)
         .forEach(s => this.specificDatesArray.push(new FormControl(s.scheduledDate)));
     }
   }

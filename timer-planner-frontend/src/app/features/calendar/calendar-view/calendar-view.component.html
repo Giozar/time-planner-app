@@ -42,7 +42,7 @@
 
       @let entries = entriesOf(cell.date);
       <ul class="entries">
-        @for (entry of entries.slice(0, maxVisible); track entry.id) {
+        @for (entry of entries.slice(0, maxVisible); track entry.sessionId) {
         <li class="entry-item">
           <button type="button" class="entry" [class.completed]="entry.isCompleted"
             [class.step]="entry.sourceType === TaskSourceType.SUBACTIVITY" (click)="selectDay(cell.date)">
@@ -88,7 +88,7 @@
   <section class="day-detail" aria-live="polite">
     <h2>{{ date | date:'dd/MM/yyyy' }}</h2>
 
-    @for (entry of selectedEntries(); track entry.id) {
+    @for (entry of selectedEntries(); track entry.sessionId) {
     <article class="detail-item" [class.completed]="entry.isCompleted">
       <div class="detail-main">
         <span class="detail-type">{{ entry.sourceType | label: sourceTypeLabels }}</span>

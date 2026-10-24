@@ -100,7 +100,7 @@ export class DailyDashboardComponent {
     }
 
     if (task.isCompleted || this.isToday()) {
-      this.plannerService.toggleTaskExecution(task.id, task.sourceType);
+      this.plannerService.toggleSession(task.sessionId);
       return;
     }
 
@@ -113,6 +113,14 @@ export class DailyDashboardComponent {
       checkbox.checked = false;
       return;
     }
-    this.plannerService.toggleTaskExecution(task.id, task.sourceType, minutes);
+    this.plannerService.toggleSession(task.sessionId, minutes);
+  }
+
+  /** Mueve solo esta sesión a otra fecha, de hoy hasta el deadline del ítem (CU-30, RN-82). */
+  moveTask(task: AgendaItem, date: string) {
+    if (!date || date === this.selectedDate()) return;
+    if (!this.plannerService.moveSession(task.sessionId, date)) {
+      this.dialog.alert('No se puede mover', `Elige una fecha desde hoy hasta el ${task.deadline}.`);
+    }
   }
 }

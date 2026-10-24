@@ -23,6 +23,8 @@ import {
   DeadlineConflict,
   autoClosure,
   averageProgress,
+  canMoveSession,
+  moveSessionTo,
   closedProgress,
   effectiveActivityDeadline,
   effectiveDeadline,
@@ -203,6 +205,7 @@ export class PlannerService {
 
   /** Sesiones de `date` de tareas simples y pasos visibles. */
   private agendaFor(date: string): AgendaItem[] {
+    const today = DateUtils.getTodayISO();
     const visible = this.visibleActivityIds();
     const owners = this.planOwners();
     const logs = this.workLogsSignal();
@@ -214,6 +217,9 @@ export class PlannerService {
 
       const isCovered = isCoveredByClosure(session, this.closureOfOwner(owner));
       items.push({
+        sessionId: session.id,
+        canMove: canMoveSession(session, today) && !isClosed(owner.step ?? owner.activity),
+        deadline: this.deadlineOfOwner(owner) ?? date,
         id: owner.id,
         title: owner.title,
         sourceType: owner.sourceType,
@@ -267,6 +273,7 @@ export class PlannerService {
 
       const activityLimit = effectiveActivityDeadline(owner.activity, objective);
       add({
+        sessionId: session.id,
         goalTitle: goal.title,
         objectiveTitle: objective.title,
         objectiveDeadline: objective.deadline,
@@ -612,12 +619,21 @@ export class PlannerService {
    * Un día ya cerrado no se actualiza solo: se recalcula al volver a cerrarlo (RN-44).
    */
   toggleTaskExecution(id: string, sourceType: TaskSourceType, minutes?: number, date = this.selectedDateSignal()) {
-    if (isFutureDate(date, DateUtils.getTodayISO())) return;
-    if (minutes !== undefined && !this.isValidMinutes(minutes)) return;
-
     const plan = this.planOf(id, sourceType);
     const session = plan && this.sessionsSignal().find(s => s.planId === plan.id && s.scheduledDate === date);
-    if (!session || isCoveredByClosure(session, this.closureOf(id, sourceType))) return;
+    if (session) this.toggleSession(session.id, minutes);
+  }
+
+  /**
+   * Marca o desmarca una sesión concreta con las mismas reglas que `toggleTaskExecution`.
+   * La agenda la usa porque una sesión movida puede compartir día con otra del mismo ítem (RN-82).
+   */
+  toggleSession(sessionId: string, minutes?: number) {
+    const session = this.sessionsSignal().find(s => s.id === sessionId);
+    const owner = session && this.planOwners().get(session.planId);
+    if (!session || !owner || isFutureDate(session.scheduledDate, DateUtils.getTodayISO())) return;
+    if (minutes !== undefined && !this.isValidMinutes(minutes)) return;
+    if (isCoveredByClosure(session, this.closureOfOwner(owner))) return;
 
     if (session.status === SessionStatus.DONE) {
       this.updateSession(session.id, { status: SessionStatus.PLANNED, completedAt: undefined });
@@ -625,10 +641,30 @@ export class PlannerService {
     } else {
       this.updateSession(session.id, { status: SessionStatus.DONE, completedAt: new Date().toISOString() });
       this.workLogsSignal.update(logs => [...logs, {
-        id: crypto.randomUUID(), sourceType, sourceId: id, date, minutes: minutes ?? session.plannedMinutes, sessionId: session.id,
+        id: crypto.randomUUID(), sourceType: owner.sourceType, sourceId: owner.id, date: session.scheduledDate,
+        minutes: minutes ?? session.plannedMinutes, sessionId: session.id,
       }]);
     }
     this.commit();
+  }
+
+  /**
+   * Mueve una sesión `PLANNED` de hoy o futura a `date`, de hoy hasta el deadline efectivo de su ítem,
+   * sin tocar el resto del plan (RN-82). El ítem debe estar abierto. Devuelve si se movió.
+   */
+  moveSession(sessionId: string, date: string): boolean {
+    const today = DateUtils.getTodayISO();
+    const session = this.sessionsSignal().find(s => s.id === sessionId);
+    const owner = session && this.planOwners().get(session.planId);
+    if (!session || !owner || !isValidISODate(date) || !canMoveSession(session, today)) return false;
+    if (isClosed(owner.step ?? owner.activity)) return false;
+
+    const deadline = this.deadlineOfOwner(owner);
+    if (!deadline || date < today || date > deadline) return false;
+
+    this.sessionsSignal.update(all => all.map(s => s.id === sessionId ? moveSessionTo(s, date) : s));
+    this.commit();
+    return true;
   }
 
   /** Registra tiempo trabajado sin sesión, hoy o en una fecha pasada (RN-71). */
@@ -767,10 +803,12 @@ export class PlannerService {
     return this.subActivitiesSignal().find(s => s.id === id)?.executionPlan ?? null;
   }
 
-  private closureOf(id: string, sourceType: TaskSourceType): ItemClosure | undefined {
-    return sourceType === TaskSourceType.ACTIVITY
-      ? this.activitiesSignal().find(a => a.id === id)?.closure
-      : this.subActivitiesSignal().find(s => s.id === id)?.closure;
+  /** Deadline efectivo del dueño de un plan (RN-48); `null` si no tiene objetivo. */
+  private deadlineOfOwner(owner: PlanOwner): string | null {
+    const objective = this.objectivesSignal().find(o => o.id === owner.activity.objectiveId);
+    if (!objective) return null;
+    const activityLimit = effectiveActivityDeadline(owner.activity, objective);
+    return owner.step ? effectiveDeadline(owner.step, activityLimit) : activityLimit;
   }
 
   /**

@@ -11,6 +11,7 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 | Tema | Definido | Estado del código |
 |------|----------|-------------------|
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
+| Mover una sesión (RN-82, CU-30) | Una sesión de hoy o futura cambia de fecha sin tocar el resto del plan. | ⏳ Pendiente; plan [05](../timer-planner-frontend/docs/planes/05-mover-sesion.md) |
 
 Lo que no aparece en la tabla está implementado y vive en las reglas y en [funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md).
 ## Trabajo pendiente
@@ -58,3 +59,5 @@ El 2026-10-23 se acordó el cierre manual y automático de elementos y días (RN
 - **P-01**, la propuesta que lo definió.
 - **D-03** (objetivo vencido): el objetivo cerrado con menos de 100 % queda `OVERDUE` (RN-78).
 - **D-06** (editar lo cerrado): se editan textos y clasificación, no tipo, deadline ni plan (RN-80).
+
+El 2026-10-23 se acordó mover una sola sesión (RN-82, CU-30); se retiró **P-02**, la propuesta que lo definió.

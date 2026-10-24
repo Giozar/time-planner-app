@@ -1,7 +1,7 @@
 import { ExecutionPlanType, WeekDay } from '../models/activity.model';
 import { SessionStatus } from '../models/session.model';
 import { makeSessions } from '../../testing/builders';
-import { plannedMinutesOf, regenerateFutureSessions } from './session.rules';
+import { canMoveSession, moveSessionTo, plannedMinutesOf, regenerateFutureSessions } from './session.rules';
 
 const TODAY = '2026-10-22'; // jueves
 const dates = (sessions: { scheduledDate: string }[]) => sessions.map(s => s.scheduledDate);
@@ -81,6 +81,37 @@ describe('regenerateFutureSessions (RN-21, RN-22, RN-51)', () => {
       TODAY, '2026-10-23', 'p'
     );
     expect(sessions).toEqual([]);
+  });
+});
+
+describe('mover una sesión (RN-82)', () => {
+  it('solo se mueven las PLANNED de hoy o futuras', () => {
+    const [past, today, future, done] = [
+      ...makeSessions('p', ['2026-10-21', TODAY, '2026-10-26']),
+      ...makeSessions('q', ['2026-10-27'], ['2026-10-27']),
+    ];
+    expect(canMoveSession(past, TODAY)).toBe(false);
+    expect(canMoveSession(today, TODAY)).toBe(true);
+    expect(canMoveSession(future, TODAY)).toBe(true);
+    expect(canMoveSession(done, TODAY)).toBe(false);
+  });
+
+  it('cambia solo la fecha y recuerda la original; si vuelve a ella deja de estar movida', () => {
+    const [monday] = makeSessions('p', ['2026-10-26'], [], 60);
+    const sunday = moveSessionTo(monday, '2026-10-25');
+    expect(sunday).toMatchObject({ id: monday.id, scheduledDate: '2026-10-25', rescheduledFrom: '2026-10-26', plannedMinutes: 60 });
+    expect(moveSessionTo(moveSessionTo(sunday, '2026-10-24'), '2026-10-26').rescheduledFrom).toBeUndefined();
+  });
+
+  it('editar el plan conserva la movida y no vuelve a generar su fecha original (RN-51)', () => {
+    const moved = moveSessionTo(makeSessions('p', ['2026-10-26'])[0], '2026-10-25');
+    const sessions = regenerateFutureSessions(
+      [moved, ...makeSessions('p', ['2026-11-02'])],
+      { type: ExecutionPlanType.WEEKLY_PATTERN, patternDays: [WeekDay.MONDAY], durationPerExecutionMin: 30 },
+      TODAY, '2026-11-02', 'p'
+    );
+    expect(dates(sessions)).toEqual(['2026-10-25', '2026-11-02']);
+    expect(sessions[0].id).toBe(moved.id);
   });
 });
 

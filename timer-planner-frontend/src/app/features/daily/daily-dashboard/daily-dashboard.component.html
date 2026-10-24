@@ -40,7 +40,7 @@
     }
 
     <section class="tasks-list">
-        @for (task of tasks(); track task.id) {
+        @for (task of tasks(); track task.sessionId) {
         <div class="task-item" [class.completed]="task.isCompleted">
 
             <label class="checkbox-wrapper">
@@ -58,6 +58,17 @@
                     </span>
                 </div>
             </div>
+
+            @if (task.canMove) {
+            <span class="move-slot">
+                <button type="button" class="step-btn" (click)="openPicker(movePicker)" title="Mover a otra fecha"
+                    aria-label="Mover a otra fecha">
+                    <mat-icon fontIcon="event_repeat"></mat-icon>
+                </button>
+                <input #movePicker type="date" class="picker-input" tabindex="-1" aria-hidden="true"
+                    [min]="todayISO" [max]="task.deadline" (change)="moveTask(task, movePicker.value)">
+            </span>
+            }
 
         </div>
         } @empty {

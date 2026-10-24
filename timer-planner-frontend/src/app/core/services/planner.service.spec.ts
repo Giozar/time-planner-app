@@ -301,6 +301,61 @@ describe('PlannerService', () => {
     });
   });
 
+  describe('mover una sesión (RN-82)', () => {
+    const sessionOn = (planId: string, date: string) => service.sessionsOf(planId).find(s => s.scheduledDate === date)!;
+
+    it('mueve solo ese lunes al domingo; los demás lunes y el avance no cambian', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-26', '2026-11-02']));
+      expect(service.moveSession(sessionOn('p-a1', '2026-10-26').id, '2026-10-25')).toBe(true);
+
+      expect(service.sessionsOf('p-a1').map(s => s.scheduledDate)).toEqual(['2026-10-25', '2026-11-02']);
+      expect(sessionOn('p-a1', '2026-10-25').rescheduledFrom).toBe('2026-10-26');
+      expect(service.activities()[0].progress).toBe(0);
+
+      service.setSelectedDate('2026-10-25');
+      expect(service.agendaTasks()).toMatchObject([{ id: 'a1', canMove: true }]);
+      service.setSelectedDate('2026-10-26');
+      expect(service.agendaTasks()).toEqual([]);
+    });
+
+    it('rechaza fechas pasadas o después del deadline, sesiones hechas y elementos cerrados', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-26', TODAY], [TODAY], { deadline: '2026-11-30' }));
+      const monday = sessionOn('p-a1', '2026-10-26').id;
+
+      expect(service.moveSession(monday, '2026-10-21')).toBe(false);
+      expect(service.moveSession(monday, '2026-12-01')).toBe(false);
+      expect(service.moveSession(sessionOn('p-a1', TODAY).id, '2026-10-25')).toBe(false);
+
+      service.closeActivity('a1');
+      expect(service.moveSession(monday, '2026-10-25')).toBe(false);
+      expect(sessionOn('p-a1', '2026-10-26')).toBeDefined();
+    });
+
+    it('puede caer el mismo día que otra sesión del ítem y cada una se marca por separado', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY, '2026-10-26']));
+      const monday = sessionOn('p-a1', '2026-10-26').id;
+      expect(service.moveSession(monday, TODAY)).toBe(true);
+
+      expect(service.agendaTasks().map(t => t.sessionId).sort()).toEqual([`p-a1-${TODAY}`, monday].sort());
+      service.toggleSession(monday);
+      expect(service.sessionsOf('p-a1').filter(s => s.status === SessionStatus.DONE).map(s => s.id)).toEqual([monday]);
+      expect(service.activities()[0].progress).toBe(50);
+    });
+
+    it('los pasos también se mueven, dentro del deadline de su tarea', () => {
+      seedHierarchy();
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE, deadline: '2026-10-31' }));
+      addStep(step({ id: 's1', activityId: 'k' }, ['2026-10-26']));
+      const session = sessionOn('p-s1', '2026-10-26').id;
+
+      expect(service.moveSession(session, '2026-11-01')).toBe(false);
+      expect(service.moveSession(session, '2026-10-31')).toBe(true);
+    });
+  });
+
   describe('cierre automático de días (RN-81)', () => {
     it('al abrir, cierra sin notas los días pasados con sesiones o tiempo y sin cierre', () => {
       seedHierarchy();
