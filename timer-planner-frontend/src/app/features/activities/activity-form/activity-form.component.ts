@@ -41,7 +41,7 @@ export class ActivityFormComponent implements OnInit {
   // Datos originales para no perder el progreso al editar
   private originalPlan: ExecutionPlan | null = null;
   private originalProgress = 0;
-  private originalStatus: ActivityStatus = ActivityStatus.PENDING;
+  private originalStatus: ActivityStatus = ActivityStatus.OPEN;
   private originalDeadline: string | undefined;
 
   readonly types = Object.values(ActivityType);
@@ -276,7 +276,7 @@ export class ActivityFormComponent implements OnInit {
       type: newType,
       recurrence: null, // lo calcula el servicio (RN-47)
       deadline: ownDeadline,
-      status: this.isEditMode ? this.originalStatus : ActivityStatus.PENDING,
+      status: this.isEditMode ? this.originalStatus : ActivityStatus.OPEN,
       progress: this.isEditMode ? this.originalProgress : 0,
       executionPlan
     };

@@ -10,6 +10,7 @@ import {
   ActivityRecurrence,
   ActivityStatus,
   ActivityType,
+  ClosureType,
   ExecutionPlanType,
   SubActivityStatus,
   TaskSourceType,
@@ -24,9 +25,9 @@ export const GOAL_HORIZON_LABELS: Record<GoalHorizon, string> = {
 
 export const GOAL_STATUS_LABELS: Record<GoalStatus, string> = {
   [GoalStatus.IDEA]: 'Idea',
-  [GoalStatus.ACTIVE]: 'Activa',
+  [GoalStatus.OPEN]: 'Abierta',
   [GoalStatus.PAUSED]: 'Pausada',
-  [GoalStatus.FINISHED]: 'Finalizada',
+  [GoalStatus.CLOSED]: 'Cerrada',
 };
 
 export const OBJECTIVE_NATURE_LABELS: Record<ObjectiveNature, string> = {
@@ -41,10 +42,9 @@ export const OBJECTIVE_NATURE_LABELS: Record<ObjectiveNature, string> = {
 };
 
 export const OBJECTIVE_STATUS_LABELS: Record<ObjectiveStatus, string> = {
-  [ObjectiveStatus.ACTIVE]: 'Activo',
+  [ObjectiveStatus.OPEN]: 'Abierto',
   [ObjectiveStatus.PAUSED]: 'Pausado',
-  [ObjectiveStatus.COMPLETED]: 'Completado',
-  [ObjectiveStatus.OVERDUE]: 'Vencido',
+  [ObjectiveStatus.CLOSED]: 'Cerrado',
 };
 
 export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
@@ -53,18 +53,23 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
 };
 
 export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
-  [ActivityStatus.PENDING]: 'Pendiente',
-  [ActivityStatus.IN_PROGRESS]: 'En progreso',
-  [ActivityStatus.COMPLETED]: 'Completada',
+  [ActivityStatus.OPEN]: 'Abierta',
   [ActivityStatus.PAUSED]: 'Pausada',
-  [ActivityStatus.OVERDUE]: 'Vencida',
+  [ActivityStatus.CLOSED]: 'Cerrada',
 };
 
 export const SUBACTIVITY_STATUS_LABELS: Record<SubActivityStatus, string> = {
-  [SubActivityStatus.PENDING]: 'Pendiente',
-  [SubActivityStatus.IN_PROGRESS]: 'En progreso',
-  [SubActivityStatus.COMPLETED]: 'Completada',
-  [SubActivityStatus.OVERDUE]: 'Vencida',
+  [SubActivityStatus.OPEN]: 'Abierto',
+  [SubActivityStatus.PAUSED]: 'Pausado',
+  [SubActivityStatus.CLOSED]: 'Cerrado',
+};
+
+/** Motivo del cierre, solo informativo; se muestra junto al estado: «Cerrada · a mano» (RN-77). */
+export const CLOSURE_TYPE_LABELS: Record<ClosureType, string> = {
+  [ClosureType.MANUAL]: 'a mano',
+  [ClosureType.DEADLINE]: 'por fecha límite',
+  [ClosureType.SESSIONS_DONE]: 'por sesiones completas',
+  [ClosureType.CHILDREN_CLOSED]: 'por cierre de sus hijos',
 };
 
 export const ACTIVITY_PRIORITY_LABELS: Record<ActivityPriority, string> = {

@@ -5,28 +5,28 @@ export enum ActivityType {
   COMPOSITE = 'COMPOSITE',
 }
 
+/** Estado calculado (RN-31): solo dice si sigue en curso; el resultado lo dicen las medidas. */
 export enum ActivityStatus {
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
+  OPEN = 'OPEN',
   PAUSED = 'PAUSED',
-  OVERDUE = 'OVERDUE', // Cerrada con menos de 100 % (RN-58)
+  CLOSED = 'CLOSED',
 }
 
 export enum SubActivityStatus {
-  PENDING = 'PENDING',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  OVERDUE = 'OVERDUE', // Cerrado con menos de 100 % (RN-58)
+  OPEN = 'OPEN',
+  PAUSED = 'PAUSED',
+  CLOSED = 'CLOSED',
 }
 
-/** Cómo se cerró una tarea simple o un paso (RN-77). */
+/** Motivo de un cierre, solo informativo (RN-77). */
 export enum ClosureType {
-  MANUAL = 'MANUAL', // el usuario la cerró: queda completada
-  AUTOMATIC = 'AUTOMATIC', // se cerró al día siguiente de su deadline: queda con su avance
+  MANUAL = 'MANUAL', // a mano, también por la cascada de un padre cerrado a mano (RN-78)
+  DEADLINE = 'DEADLINE', // al día siguiente de su deadline efectivo (RN-58)
+  SESSIONS_DONE = 'SESSIONS_DONE', // al hacer todas sus sesiones; se deshace si el avance baja
+  CHILDREN_CLOSED = 'CHILDREN_CLOSED', // al cerrarse o borrarse su último hijo abierto
 }
 
-/** Cierre guardado de una tarea simple o un paso (RN-77). */
+/** Cierre guardado de cualquier nivel (RN-77). Cerrar no cambia avance, constancia ni productividad. */
 export interface ItemClosure {
   type: ClosureType;
   closedOn: string; // 'YYYY-MM-DD'
@@ -117,8 +117,8 @@ export interface Activity {
   totalTimeRequiredMin?: number;
   progress: number;
   status: ActivityStatus;
-  closure?: ItemClosure; // solo en simple; la compuesta se cierra con sus pasos (RN-78)
-  pauses?: PausePeriod[]; // historial de pausas (RN-70)
+  closure?: ItemClosure; // RN-77
+  pauses?: PausePeriod[]; // historial de pausas (RN-57, RN-70)
 }
 
 /**
@@ -136,4 +136,5 @@ export interface SubActivity {
   executionPlan: ExecutionPlan;
   progress: number;
   closure?: ItemClosure; // RN-77
+  pauses?: PausePeriod[]; // historial de pausas (RN-57, RN-70)
 }

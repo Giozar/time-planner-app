@@ -1,3 +1,6 @@
+import { ItemClosure } from './activity.model';
+import { PausePeriod } from './pause.model';
+
 export enum ObjectiveNature {
   PERSONAL = 'PERSONAL',
   PROFESSIONAL = 'PROFESSIONAL',
@@ -9,11 +12,11 @@ export enum ObjectiveNature {
   OTHER = 'OTHER',
 }
 
+/** Estado calculado (RN-31). */
 export enum ObjectiveStatus {
-  ACTIVE = 'ACTIVE',
+  OPEN = 'OPEN',
   PAUSED = 'PAUSED',
-  COMPLETED = 'COMPLETED',
-  OVERDUE = 'OVERDUE', // todas sus tareas cerradas, con menos de 100 % (RN-78)
+  CLOSED = 'CLOSED',
 }
 
 /**
@@ -27,5 +30,7 @@ export interface Objective {
   progress: number;
   status: ObjectiveStatus;
   deadline: string; // 'YYYY-MM-DD'; obligatorio, tope de sus tareas y pasos (RN-65)
+  closure?: ItemClosure; // RN-77
+  pauses?: PausePeriod[]; // historial de pausas (RN-57, RN-70)
   createdAt: Date;
 }

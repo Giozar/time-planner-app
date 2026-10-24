@@ -42,7 +42,6 @@ Ninguno.
 
 | Fase | Alcance | Estado |
 |------|---------|--------|
-| 1 | Modelos, etiquetas, reinicio de datos y reglas puras: estado (RN-31), pausa efectiva (RN-57), avance por suma (RN-32 a RN-35), constancia con pausas de los cuatro niveles y sesiones desde el cierre (RN-70, RN-79), productividad (RN-73), qué reabrir (RN-64). Con sus pruebas. El servicio y las pantallas solo se ajustan lo mínimo para compilar. | ⏳ Pendiente |
 | 2 | Servicio: pausar y reanudar (RN-57), cerrar con cascada hacia abajo y hacia arriba (RN-77, RN-78), cierres automáticos (RN-58, RN-77): los de sesiones completas e hijos cerrados se disparan solo en el evento que los causa, no en el recálculo, y el de sesiones completas se deshace al bajar de 100 %; reabrir con deadline nuevo (RN-64), agregar hijos (RN-53), visibilidad de agenda y calendario (RN-29, RN-79), productividad por id. Con sus pruebas. | ⏳ Pendiente |
 | 3 | Pantallas: botones de pausar, reanudar, cerrar y reabrir en meta, objetivo, tarea y paso (con deadline nuevo si venció); estado con motivo de cierre; las tres medidas en listas y detalles; sugerencia de cerrar con productividad al 100 % y sesiones pendientes; quitar «Cerrada antes» de la agenda; formularios de lo cerrado (RN-80). | ⏳ Pendiente |
 

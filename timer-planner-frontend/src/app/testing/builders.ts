@@ -30,7 +30,7 @@ export const makeGoal = (overrides: Partial<Goal> = {}): Goal => ({
   title: 'Meta',
   horizon: GoalHorizon.SHORT_TERM,
   progress: 0,
-  status: GoalStatus.ACTIVE,
+  status: GoalStatus.OPEN,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   ...overrides,
 });
@@ -41,7 +41,7 @@ export const makeObjective = (overrides: Partial<Objective> = {}): Objective => 
   title: 'Objetivo',
   nature: ObjectiveNature.OTHER,
   progress: 0,
-  status: ObjectiveStatus.ACTIVE,
+  status: ObjectiveStatus.OPEN,
   deadline: '2999-01-01',
   createdAt: new Date('2026-01-01T00:00:00Z'),
   ...overrides,
@@ -58,7 +58,7 @@ export const makeActivity = (overrides: Partial<Activity> = {}): Activity => ({
   recurrence: null,
   executionPlan: null,
   progress: 0,
-  status: ActivityStatus.PENDING,
+  status: ActivityStatus.OPEN,
   ...overrides,
 });
 
@@ -67,7 +67,7 @@ export const makeStep = (overrides: Partial<SubActivity> = {}): SubActivity => (
   activityId: 'a1',
   title: 'Paso',
   complexity: ActivityComplexity.MEDIUM,
-  status: SubActivityStatus.PENDING,
+  status: SubActivityStatus.OPEN,
   executionPlan: makePlan('p-s1'),
   progress: 0,
   ...overrides,

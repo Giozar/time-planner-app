@@ -39,9 +39,21 @@ describe('consistency.rules', () => {
       expect(computeConsistency(all, TODAY, false)).toBe(33);
     });
 
-    it('no cuenta las sesiones cubiertas por un cierre manual (RN-79)', () => {
-      const closure = { type: ClosureType.MANUAL, closedOn: '2026-10-18' };
-      const all = makeSessions('p', ['2026-10-12', '2026-10-19'], ['2026-10-12']).map(session => ({ session, pauses: [], closure }));
+    it('no cuenta las no realizadas desde el día del cierre, incluido (RN-79)', () => {
+      const closure = { type: ClosureType.MANUAL, closedOn: '2026-10-19' };
+      const all = makeSessions('p', ['2026-10-12', '2026-10-19', '2026-10-20'], ['2026-10-12'])
+        .map(session => ({ session, pauses: [], closure }));
+      expect(computeConsistency(all, TODAY, false)).toBe(100);
+    });
+
+    it('al reabrir, las pasadas sin marcar vuelven a contar (RN-64)', () => {
+      const all = makeSessions('p', ['2026-10-12', '2026-10-19'], ['2026-10-12']).map(session => ({ session, pauses: [] }));
+      expect(computeConsistency(all, TODAY, false)).toBe(50);
+    });
+
+    it('cuenta las pausas de cualquier padre (RN-57)', () => {
+      const goalPause = { from: '2026-10-18', to: '2026-10-20' };
+      const all = entries(['2026-10-12', '2026-10-19'], ['2026-10-12'], [goalPause]);
       expect(computeConsistency(all, TODAY, false)).toBe(100);
     });
 

@@ -39,7 +39,7 @@ export class StructureFormComponent implements OnInit {
   // Guardar estado original
   private originalPlan: ExecutionPlan | null = null;
   private originalProgress = 0;
-  private originalStatus: SubActivityStatus = SubActivityStatus.PENDING;
+  private originalStatus: SubActivityStatus = SubActivityStatus.OPEN;
 
   readonly planTypes = Object.values(ExecutionPlanType);
   readonly complexities = Object.values(ActivityComplexity);
@@ -225,7 +225,7 @@ export class StructureFormComponent implements OnInit {
       complexity: val.complexity!,
       deadline: ownDeadline,
       executionPlan,
-      status: this.isEditMode ? this.originalStatus : SubActivityStatus.PENDING,
+      status: this.isEditMode ? this.originalStatus : SubActivityStatus.OPEN,
       progress: this.isEditMode ? this.originalProgress : 0
     };
 

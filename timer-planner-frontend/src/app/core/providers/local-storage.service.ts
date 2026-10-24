@@ -25,7 +25,7 @@ export class LocalStorageService extends DataProvider {
 
   /** Cambia cuando el formato de los datos deja de ser compatible; los datos anteriores se descartan. */
   private readonly SCHEMA_KEY = 'time_planner_schema';
-  private readonly SCHEMA_VERSION = '2';
+  private readonly SCHEMA_VERSION = '3'; // 3: estados abierto, pausado y cerrado (RN-31)
 
   // Inyectamos el ID de la plataforma para saber si estamos en Server o Browser
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {

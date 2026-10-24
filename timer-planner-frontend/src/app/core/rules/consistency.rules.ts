@@ -2,9 +2,9 @@ import { ItemClosure } from '../models/activity.model';
 import { PausePeriod } from '../models/pause.model';
 import { ExecutionSession, SessionStatus } from '../models/session.model';
 import { addDays } from './calendar.rules';
-import { isCoveredByClosure } from './closure.rules';
+import { isHiddenByClosure } from './closure.rules';
 
-/** Sesión junto con las pausas de su meta y de su tarea, y el cierre de su tarea simple o paso. */
+/** Sesión junto con las pausas de su ítem y de todos sus padres, y el cierre de su tarea simple o paso. */
 export interface ConsistencyEntry {
   session: ExecutionSession;
   pauses: readonly PausePeriod[];
@@ -36,8 +36,8 @@ export function endPause(pauses: readonly PausePeriod[] | undefined, today: stri
 /**
  * Constancia (RN-70): `round(DONE / (DONE + no realizadas) × 100)` sobre las sesiones exigibles; `null` si no hay ninguna.
  * - Cuenta las `DONE` hasta hoy y las `PLANNED` de fechas pasadas; la `PLANNED` de hoy solo si el día está cerrado.
- * - No cuenta las sesiones futuras, las `PLANNED` de fechas con la meta o la tarea pausada
- *   ni las cubiertas por un cierre manual (RN-79).
+ * - No cuenta las sesiones futuras, las `PLANNED` de fechas en que el ítem o alguno de sus padres estaba pausado (RN-57)
+ *   ni las no realizadas desde el día del cierre del ítem (RN-79).
  */
 export function computeConsistency(
   entries: readonly ConsistencyEntry[],
@@ -49,7 +49,7 @@ export function computeConsistency(
 
   for (const { session, pauses, closure } of entries) {
     const date = session.scheduledDate;
-    if (date > today || isCoveredByClosure(session, closure)) continue;
+    if (date > today || isHiddenByClosure(session, closure)) continue;
 
     if (session.status === SessionStatus.DONE) {
       done++;

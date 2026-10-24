@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 import { Activity, ActivityStatus, ActivityType, SubActivity } from '../../../core/models/activity.model';
 import { DeletableType } from '../../../core/models/deletion-impact.model';
-import { effectiveActivityDeadline, isClosed, isOverdue } from '../../../core/rules';
+import { effectiveActivityDeadline, isClosed } from '../../../core/rules';
 import { DateUtils } from '../../../core/utils/date.utils';
 import {
   ACTIVITY_COMPLEXITY_LABELS, ACTIVITY_CRITICALITY_LABELS, ACTIVITY_PRIORITY_LABELS,
@@ -73,9 +73,9 @@ export class ObjectiveDetailComponent implements OnInit {
     return !!obj && !isClosed(obj) && this.activities().length > 0;
   });
 
-  /** Estado a mostrar: el guardado o, en una compuesta sin pasos con deadline pasado, vencida (RN-58). */
+  /** Estado a mostrar (RN-31). */
   displayStatus(activity: Activity): ActivityStatus {
-    return isOverdue(activity, this.deadlineOf(activity), this.today) ? ActivityStatus.OVERDUE : activity.status;
+    return activity.status;
   }
 
   /** Deadline efectivo de la tarea: el propio o el del objetivo (RN-14). */

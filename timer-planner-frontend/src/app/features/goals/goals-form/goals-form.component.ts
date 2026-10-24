@@ -28,7 +28,7 @@ export class GoalsFormComponent implements OnInit {
 
   private originalCreatedAt: Date = new Date();
   private originalProgress: number = 0;
-  private originalStatus: GoalStatus = GoalStatus.ACTIVE;
+  private originalStatus: GoalStatus = GoalStatus.OPEN;
 
   // Sin horizonte la meta es una idea (RN-55). La meta no tiene fecha límite (RN-56).
   goalForm = this.fb.group({
@@ -86,7 +86,7 @@ export class GoalsFormComponent implements OnInit {
         title: formValue.title!,
         horizon,
         progress: 0,
-        status: horizon ? GoalStatus.ACTIVE : GoalStatus.IDEA,
+        status: horizon ? GoalStatus.OPEN : GoalStatus.IDEA,
         createdAt: new Date()
       };
 

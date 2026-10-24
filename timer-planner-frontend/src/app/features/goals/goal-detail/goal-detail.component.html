@@ -5,7 +5,7 @@
     <div class="header-top">
       <a routerLink="/goals" class="back-link">← Volver a Metas</a>
       <div class="header-actions">
-        @if (currentGoal.status === GoalStatus.ACTIVE || currentGoal.status === GoalStatus.PAUSED) {
+        @if (currentGoal.status === GoalStatus.OPEN || currentGoal.status === GoalStatus.PAUSED) {
         <button type="button" class="btn-icon-edit" (click)="onTogglePause(currentGoal.id, currentGoal.status)"
           [title]="currentGoal.status === GoalStatus.PAUSED ? 'Reanudar Meta' : 'Pausar Meta'">
           <mat-icon>{{ currentGoal.status === GoalStatus.PAUSED ? 'play_arrow' : 'pause' }}</mat-icon>

@@ -12,9 +12,9 @@ describe('LabelPipe', () => {
     expect(pipe.transform(ActivityPriority.HIGH, ACTIVITY_PRIORITY_LABELS)).toBe('Alta');
   });
 
-  it('un mismo valor en enums distintos usa su diccionario (ACTIVE)', () => {
-    expect(pipe.transform(GoalStatus.ACTIVE, GOAL_STATUS_LABELS)).toBe('Activa');
-    expect(pipe.transform(ObjectiveStatus.ACTIVE, OBJECTIVE_STATUS_LABELS)).toBe('Activo');
+  it('un mismo valor en enums distintos usa su diccionario y su género (OPEN)', () => {
+    expect(pipe.transform(GoalStatus.OPEN, GOAL_STATUS_LABELS)).toBe('Abierta');
+    expect(pipe.transform(ObjectiveStatus.OPEN, OBJECTIVE_STATUS_LABELS)).toBe('Abierto');
   });
 
   it('devuelve cadena vacía con null o undefined', () => {

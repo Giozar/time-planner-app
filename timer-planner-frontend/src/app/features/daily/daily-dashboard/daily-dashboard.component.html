@@ -44,7 +44,7 @@
         <div class="task-item" [class.completed]="task.isCompleted">
 
             <label class="checkbox-wrapper">
-                <input type="checkbox" [checked]="task.isCompleted" [disabled]="readOnly() || task.isCovered"
+                <input type="checkbox" [checked]="task.isCompleted" [disabled]="readOnly()"
                     (change)="toggleTask(task, $event)">
                 <span class="checkmark"></span>
             </label>
@@ -53,8 +53,7 @@
                 <div class="task-main">
                     <span class="task-title">{{ task.title }}</span>
                     <span class="task-time">
-                        @if (task.isCovered) { Cerrada antes }
-                        @else { @if (task.isCompleted) { {{ task.executedMinutes }} / }{{ task.estimatedDurationMin }} min }
+                        @if (task.isCompleted) { {{ task.executedMinutes }} / }{{ task.estimatedDurationMin }} min
                     </span>
                 </div>
             </div>

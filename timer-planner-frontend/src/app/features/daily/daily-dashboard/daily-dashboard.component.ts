@@ -93,8 +93,8 @@ export class DailyDashboardComponent {
   /** En días pasados se piden los minutos reales, con los previstos por defecto (RN-27, RN-71). */
   async toggleTask(task: AgendaItem, event: Event) {
     const checkbox = event.target as HTMLInputElement;
-    // Fechas futuras y sesiones cubiertas por un cierre manual no se marcan (RN-27, RN-79).
-    if (this.readOnly() || task.isCovered) {
+    // Las fechas futuras no se marcan (RN-27).
+    if (this.readOnly()) {
       checkbox.checked = task.isCompleted;
       return;
     }

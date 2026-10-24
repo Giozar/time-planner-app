@@ -1,6 +1,5 @@
-import { ActivityStatus, SubActivityStatus } from '../models/activity.model';
 import { makeSessions } from '../../testing/builders';
-import { averageProgress, computeProgress, deriveStatus, deriveSubActivityStatus } from './progress.rules';
+import { computeProductivity, computeProgress } from './progress.rules';
 
 describe('progress.rules', () => {
   describe('computeProgress (RN-30)', () => {
@@ -19,50 +18,26 @@ describe('progress.rules', () => {
     });
   });
 
-  describe('averageProgress (RN-32 a RN-35)', () => {
-    it('es el promedio simple redondeado', () => {
-      expect(averageProgress([100, 0])).toBe(50);
-      expect(averageProgress([100, 50, 0])).toBe(50);
-      expect(averageProgress([33, 33, 34])).toBe(33);
-    });
-
-    it('es 0 si no hay hijos', () => {
-      expect(averageProgress([])).toBe(0);
+  describe('avance de los padres (RN-32 a RN-35)', () => {
+    it('suma sesiones de sus hijos, no promedia: 1 de 1 y 0 de 9 dan 10 %', () => {
+      const a = makeSessions('a', ['d1'], ['d1']);
+      const b = makeSessions('b', ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9']);
+      expect(computeProgress([...a, ...b])).toBe(10);
     });
   });
 
-  describe('deriveStatus (RN-31, RN-32)', () => {
-    it('deriva del progreso', () => {
-      expect(deriveStatus(0)).toBe(ActivityStatus.PENDING);
-      expect(deriveStatus(40)).toBe(ActivityStatus.IN_PROGRESS);
-      expect(deriveStatus(100)).toBe(ActivityStatus.COMPLETED);
+  describe('computeProductivity (RN-73)', () => {
+    it('es minutos reales / previstos, redondeado', () => {
+      expect(computeProductivity(90, 240)).toBe(38);
+      expect(computeProductivity(300, 300)).toBe(100);
     });
 
-    it('conserva PAUSED (RN-59) y sin cierre no devuelve OVERDUE', () => {
-      expect(deriveStatus(50, ActivityStatus.PAUSED)).toBe(ActivityStatus.PAUSED);
-      expect(deriveStatus(50, ActivityStatus.OVERDUE)).toBe(ActivityStatus.IN_PROGRESS);
+    it('puede pasar de 100 %', () => {
+      expect(computeProductivity(120, 100)).toBe(120);
     });
 
-    it('cerrada queda completada al 100 % o vencida, aunque estuviera pausada (RN-77, RN-78)', () => {
-      expect(deriveStatus(100, ActivityStatus.PAUSED, true)).toBe(ActivityStatus.COMPLETED);
-      expect(deriveStatus(40, ActivityStatus.PAUSED, true)).toBe(ActivityStatus.OVERDUE);
-    });
-
-    it('llegar a 100 % la completa aunque esté pausada (RN-31, RN-77)', () => {
-      expect(deriveStatus(100, ActivityStatus.PAUSED)).toBe(ActivityStatus.COMPLETED);
-    });
-  });
-
-  describe('deriveSubActivityStatus (RN-31)', () => {
-    it('deriva del progreso', () => {
-      expect(deriveSubActivityStatus(0)).toBe(SubActivityStatus.PENDING);
-      expect(deriveSubActivityStatus(1)).toBe(SubActivityStatus.IN_PROGRESS);
-      expect(deriveSubActivityStatus(100)).toBe(SubActivityStatus.COMPLETED);
-    });
-
-    it('cerrado con menos de 100 % queda vencido (RN-77)', () => {
-      expect(deriveSubActivityStatus(40, true)).toBe(SubActivityStatus.OVERDUE);
-      expect(deriveSubActivityStatus(100, true)).toBe(SubActivityStatus.COMPLETED);
+    it('es null sin minutos previstos', () => {
+      expect(computeProductivity(30, 0)).toBeNull();
     });
   });
 });

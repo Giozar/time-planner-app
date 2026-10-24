@@ -38,7 +38,7 @@ export class ObjectiveFormComponent implements OnInit {
 
   private originalCreatedAt: Date = new Date();
   private originalProgress: number = 0;
-  private originalStatus: ObjectiveStatus = ObjectiveStatus.ACTIVE;
+  private originalStatus: ObjectiveStatus = ObjectiveStatus.OPEN;
 
   objectiveForm = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
@@ -113,7 +113,7 @@ export class ObjectiveFormComponent implements OnInit {
           title: formValue.title!,
           nature: formValue.nature!,
           progress: 0,
-          status: ObjectiveStatus.ACTIVE,
+          status: ObjectiveStatus.OPEN,
           deadline,
           createdAt: new Date()
         };

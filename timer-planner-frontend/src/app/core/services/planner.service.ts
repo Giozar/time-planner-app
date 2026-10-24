@@ -2,7 +2,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { DataProvider } from '../providers/data.provider';
 import { Goal, GoalStatus } from '../models/goal.model';
-import { Objective } from '../models/objective.model';
+import { Objective, ObjectiveStatus } from '../models/objective.model';
 import {
   Activity,
   ActivityStatus,
@@ -11,6 +11,7 @@ import {
   ExecutionPlan,
   ItemClosure,
   SubActivity,
+  SubActivityStatus,
   TaskSourceType,
 } from '../models/activity.model';
 import { DailyRecord } from '../models/daily-record.model';
@@ -21,21 +22,17 @@ import { DeletableType, DeletionImpact, TypeChangeImpact } from '../models/delet
 import { DateUtils } from '../utils/date.utils';
 import {
   DeadlineConflict,
-  autoClosure,
-  averageProgress,
   canMoveSession,
   moveSessionTo,
-  closedProgress,
+  deadlineClosure,
   effectiveActivityDeadline,
   effectiveDeadline,
   computeProgress,
-  deriveGoalStatus,
-  deriveObjectiveStatus,
   deriveRecurrence,
   deriveStatus,
-  deriveSubActivityStatus,
+  hasOpenPause,
   isClosed,
-  isCoveredByClosure,
+  isHiddenByClosure,
   isFutureDate,
   isValidISODate,
   ConsistencyEntry,
@@ -164,7 +161,7 @@ export class PlannerService {
 
   /**
    * Tareas cuyas sesiones se muestran (RN-29, RN-66): excluye las de metas PAUSED/IDEA y las tareas PAUSED.
-   * Una meta finalizada sigue visible: lo cerrado aparece como completo (RN-78).
+   * De lo cerrado solo se ocultan las sesiones no realizadas desde su cierre (RN-79).
    * Única fuente de visibilidad: la usan la agenda de hoy y el calendario, para que nunca difieran.
    */
   private visibleActivityIds = computed<Set<string>>(() => {
@@ -175,7 +172,7 @@ export class PlannerService {
       if (activity.status === ActivityStatus.PAUSED) return false;
       const objective = objectives.find(o => o.id === activity.objectiveId);
       const goal = goals.find(g => g.id === objective?.goalId);
-      return !!goal && (goal.status === GoalStatus.ACTIVE || goal.status === GoalStatus.FINISHED);
+      return !!goal && goal.status !== GoalStatus.IDEA && goal.status !== GoalStatus.PAUSED;
     }).map(a => a.id));
   });
 
@@ -214,8 +211,8 @@ export class PlannerService {
     for (const session of this.sessionsSignal()) {
       const owner = owners.get(session.planId);
       if (session.scheduledDate !== date || !owner || !visible.has(owner.activity.id)) continue;
+      if (isHiddenByClosure(session, this.closureOfOwner(owner))) continue;
 
-      const isCovered = isCoveredByClosure(session, this.closureOfOwner(owner));
       items.push({
         sessionId: session.id,
         canMove: canMoveSession(session, today) && !isClosed(owner.step ?? owner.activity),
@@ -224,8 +221,7 @@ export class PlannerService {
         title: owner.title,
         sourceType: owner.sourceType,
         parentId: owner.step ? owner.activity.id : null,
-        isCompleted: session.status === SessionStatus.DONE || isCovered,
-        isCovered,
+        isCompleted: session.status === SessionStatus.DONE,
         estimatedDurationMin: session.plannedMinutes,
         executedMinutes: logs.filter(l => l.sessionId === session.id).reduce((sum, l) => sum + l.minutes, 0),
       });
@@ -234,12 +230,8 @@ export class PlannerService {
     return items;
   }
 
-  /**
-   * Métricas de la fecha sin las sesiones cubiertas por un cierre manual (RN-79).
-   * `executedTimeMin` suma todo el `WorkLog` de la fecha, también el trabajo sin sesión (RN-72).
-   */
-  private metricsOf(agenda: AgendaItem[], date: string) {
-    const tasks = agenda.filter(t => !t.isCovered);
+  /** `executedTimeMin` suma todo el `WorkLog` de la fecha, también el trabajo sin sesión (RN-72). */
+  private metricsOf(tasks: AgendaItem[], date: string) {
     const total = tasks.length;
     const completed = tasks.filter(t => t.isCompleted).length;
     const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
@@ -267,6 +259,7 @@ export class PlannerService {
     for (const session of this.sessionsSignal()) {
       const owner = owners.get(session.planId);
       if (!owner || !visible.has(owner.activity.id)) continue;
+      if (isHiddenByClosure(session, this.closureOfOwner(owner))) continue;
       const objective = objectives.find(o => o.id === owner.activity.objectiveId);
       const goal = goals.find(g => g.id === objective?.goalId);
       if (!objective || !goal) continue;
@@ -282,7 +275,7 @@ export class PlannerService {
         id: owner.id,
         sourceType: owner.sourceType,
         title: owner.title,
-        isCompleted: session.status === SessionStatus.DONE || isCoveredByClosure(session, this.closureOfOwner(owner)),
+        isCompleted: session.status === SessionStatus.DONE,
         durationMin: session.plannedMinutes,
         effectiveDeadline: owner.step ? effectiveDeadline(owner.step, activityLimit) : activityLimit,
       });
@@ -374,11 +367,11 @@ export class PlannerService {
 
   /** Solo cambia el estado; no toca deadlines, sesiones ni progreso (RN-57). */
   pauseGoal(id: string) {
-    this.setGoalStatus(id, GoalStatus.ACTIVE, GoalStatus.PAUSED);
+    this.setGoalStatus(id, GoalStatus.OPEN, GoalStatus.PAUSED);
   }
 
   resumeGoal(id: string) {
-    this.setGoalStatus(id, GoalStatus.PAUSED, GoalStatus.ACTIVE);
+    this.setGoalStatus(id, GoalStatus.PAUSED, GoalStatus.OPEN);
   }
 
   deleteGoal(id: string) {
@@ -411,12 +404,15 @@ export class PlannerService {
     return [];
   }
 
-  /**
-   * Cierra a mano el objetivo: sus tareas simples y pasos abiertos quedan completados (RN-77, RN-78).
-   * Devuelve si cerró algo.
-   */
+  /** Cierra a mano el objetivo y sus tareas y pasos abiertos, sin cambiar su avance (RN-77, RN-78). Devuelve si cerró algo. */
   closeObjective(id: string): boolean {
-    return this.closeItems(this.activitiesSignal().filter(a => a.objectiveId === id).map(a => a.id));
+    const objective = this.objectivesSignal().find(o => o.id === id);
+    if (!objective || isClosed(objective)) return false;
+    const closure: ItemClosure = { type: ClosureType.MANUAL, closedOn: DateUtils.getTodayISO() };
+    this.objectivesSignal.update(obs => obs.map(o => o.id === id ? { ...o, closure } : o));
+    this.closeItems(this.activitiesSignal().filter(a => a.objectiveId === id).map(a => a.id));
+    this.commit();
+    return true;
   }
 
   deleteObjective(id: string) {
@@ -513,13 +509,12 @@ export class PlannerService {
   resumeActivity(id: string) {
     const activity = this.activitiesSignal().find(a => a.id === id);
     if (activity?.status !== ActivityStatus.PAUSED) return;
-    // El estado real se deriva del progreso en el recálculo.
-    this.setActivityStatus(id, ActivityStatus.PENDING);
+    this.setActivityStatus(id, ActivityStatus.OPEN);
   }
 
   /**
-   * Cierra a mano la tarea (RN-77, RN-78): la simple queda completada aunque le falten sesiones (RN-79);
-   * la compuesta cierra sus pasos abiertos. Devuelve si cerró algo.
+   * Cierra a mano la tarea sin cambiar su avance (RN-77, RN-78); la compuesta cierra también sus pasos abiertos.
+   * Devuelve si cerró algo.
    */
   closeActivity(id: string): boolean {
     return this.closeItems([id]);
@@ -552,7 +547,7 @@ export class PlannerService {
     return this.saveSubActivity(step, sessions, subs => subs.map(s => s.id === step.id ? step : s));
   }
 
-  /** Cierra a mano el paso: queda completado aunque le falten sesiones (RN-77, RN-79). Devuelve si cerró algo. */
+  /** Cierra a mano el paso sin cambiar su avance (RN-77). Devuelve si cerró algo. */
   closeStep(id: string): boolean {
     return this.closeItems([], [id]);
   }
@@ -569,7 +564,7 @@ export class PlannerService {
     const activities = this.activitiesSignal();
     const steps = this.subActivitiesSignal();
 
-    const isDone = (status: string) => status === 'COMPLETED';
+    const isDone = (status: string) => isClosed({ status });
     const collect = (objs: Objective[], acts: Activity[], subs: SubActivity[], title: string, own: boolean): DeletionImpact => ({
       title,
       objectives: objs.length,
@@ -617,7 +612,7 @@ export class PlannerService {
    * Marca o desmarca la sesión de `date` (la de la agenda por defecto), de hoy o pasada (RN-27).
    * Marcar crea un `WorkLog` vinculado con `minutes` o, si falta, los minutos previstos;
    * desmarcar vuelve la sesión a `PLANNED` y elimina los bloques vinculados.
-   * Las fechas futuras, sin sesión, cubiertas por un cierre manual (RN-79) o con minutos no válidos se ignoran.
+   * Las fechas futuras, sin sesión, ocultas por un cierre (RN-79) o con minutos no válidos se ignoran.
    * Un día ya cerrado no se actualiza solo: se recalcula al volver a cerrarlo (RN-44).
    */
   toggleTaskExecution(id: string, sourceType: TaskSourceType, minutes?: number, date = this.selectedDateSignal()) {
@@ -635,7 +630,7 @@ export class PlannerService {
     const owner = session && this.planOwners().get(session.planId);
     if (!session || !owner || isFutureDate(session.scheduledDate, DateUtils.getTodayISO())) return;
     if (minutes !== undefined && !this.isValidMinutes(minutes)) return;
-    if (isCoveredByClosure(session, this.closureOfOwner(owner))) return;
+    if (isHiddenByClosure(session, this.closureOfOwner(owner))) return;
 
     if (session.status === SessionStatus.DONE) {
       this.updateSession(session.id, { status: SessionStatus.PLANNED, completedAt: undefined });
@@ -814,20 +809,20 @@ export class PlannerService {
   }
 
   /**
-   * Cierre manual (RN-77): las tareas simples de `activityIds`, los pasos abiertos de sus compuestas
-   * y los pasos `stepIds` que sigan abiertos quedan completados desde hoy. Devuelve si cerró algo.
+   * Cierre a mano (RN-77, RN-78): las tareas de `activityIds` que sigan abiertas, los pasos abiertos de sus compuestas
+   * y los pasos `stepIds` que sigan abiertos quedan cerrados desde hoy, sin cambiar su avance. Devuelve si cerró algo.
    */
   private closeItems(activityIds: string[], stepIds: string[] = []): boolean {
     const closure: ItemClosure = { type: ClosureType.MANUAL, closedOn: DateUtils.getTodayISO() };
     const activities = this.activitiesSignal().filter(a => activityIds.includes(a.id));
-    const simpleIds = activities.filter(a => a.type === ActivityType.SIMPLE && !isClosed(a)).map(a => a.id);
+    const openActivityIds = activities.filter(a => !isClosed(a)).map(a => a.id);
     const compositeIds = activities.filter(a => a.type === ActivityType.COMPOSITE).map(a => a.id);
     const openStepIds = this.subActivitiesSignal()
       .filter(s => !isClosed(s) && (stepIds.includes(s.id) || compositeIds.includes(s.activityId)))
       .map(s => s.id);
-    if (simpleIds.length === 0 && openStepIds.length === 0) return false;
+    if (openActivityIds.length === 0 && openStepIds.length === 0) return false;
 
-    this.activitiesSignal.update(acts => acts.map(a => simpleIds.includes(a.id) ? { ...a, closure } : a));
+    this.activitiesSignal.update(acts => acts.map(a => openActivityIds.includes(a.id) ? { ...a, closure } : a));
     this.subActivitiesSignal.update(subs => subs.map(s => openStepIds.includes(s.id) ? { ...s, closure } : s));
     this.commit();
     return true;
@@ -919,9 +914,9 @@ export class PlannerService {
   }
 
   /**
-   * Recalcula todo el árbol de abajo hacia arriba: paso → tarea → objetivo → meta (RN-30 a RN-36),
-   * con el cierre automático de tareas simples y pasos y el cierre en cascada de sus padres (RN-77, RN-78).
-   * Es la única función de recálculo: se ejecuta tras cada mutación.
+   * Recalcula todo el árbol de abajo hacia arriba: paso → tarea → objetivo → meta (RN-30 a RN-36).
+   * El avance de cada padre suma las sesiones de sus ítems ejecutables (RN-35). Aplica el cierre por fecha límite
+   * (RN-58) y deriva el estado de cada nivel (RN-31). Es la única función de recálculo: se ejecuta tras cada mutación.
    */
   private cascade() {
     const today = DateUtils.getTodayISO();
@@ -929,7 +924,7 @@ export class PlannerService {
     for (const session of this.sessionsSignal()) {
       byPlan.set(session.planId, [...(byPlan.get(session.planId) ?? []), session]);
     }
-    const sessionsOfPlan = (planId: string) => byPlan.get(planId) ?? [];
+    const sessionsOfPlan = (planId: string | undefined) => (planId && byPlan.get(planId)) || [];
 
     const objectivesById = new Map(this.objectivesSignal().map(o => [o.id, o]));
     const activitiesById = new Map(this.activitiesSignal().map(a => [a.id, a]));
@@ -938,55 +933,53 @@ export class PlannerService {
       const objective = activity && objectivesById.get(activity.objectiveId);
       return activity && objective ? effectiveActivityDeadline(activity, objective) : null;
     };
-    /** Cierre y avance de una tarea simple o un paso (RN-30, RN-77). */
-    const closeLeaf = (closure: ItemClosure | undefined, sessions: ExecutionSession[], deadline: string | null) => {
-      const raw = computeProgress(sessions);
-      const current = deadline ? autoClosure(closure, raw, deadline, today) : closure;
-      return { closure: current, progress: closedProgress(raw, current) };
-    };
+    const closeByDeadline = (closure: ItemClosure | undefined, deadline: string | null) =>
+      deadline ? deadlineClosure(closure, deadline, today) : closure;
 
     const steps = this.subActivitiesSignal().map(s => {
       const parentLimit = limitOf(activitiesById.get(s.activityId));
-      const deadline = parentLimit ? effectiveDeadline(s, parentLimit) : null;
-      const { closure, progress } = closeLeaf(s.closure, sessionsOfPlan(s.executionPlan.id), deadline);
-      return { ...s, closure, progress, status: deriveSubActivityStatus(progress, !!closure) };
+      const closure = closeByDeadline(s.closure, parentLimit ? effectiveDeadline(s, parentLimit) : null);
+      const progress = computeProgress(sessionsOfPlan(s.executionPlan.id));
+      return { ...s, closure, progress, status: deriveStatus(closure, hasOpenPause(s.pauses), SubActivityStatus) };
     });
 
+    /** Sesiones de los ítems ejecutables de una tarea: las de su plan o las de sus pasos. */
+    const sessionsOfActivity = (a: Activity) => a.type === ActivityType.COMPOSITE
+      ? steps.filter(s => s.activityId === a.id).flatMap(s => sessionsOfPlan(s.executionPlan.id))
+      : sessionsOfPlan(a.executionPlan?.id);
+
     const activities = this.activitiesSignal().map(a => {
-      if (a.type === ActivityType.COMPOSITE) {
-        const own = steps.filter(s => s.activityId === a.id);
-        const progress = averageProgress(own.map(s => s.progress));
-        return {
-          ...a,
-          progress,
-          status: deriveStatus(progress, a.status, own.length > 0 && own.every(isClosed)),
-          totalTimeRequiredMin: own.reduce((sum, s) => sum + plannedMinutesOf(sessionsOfPlan(s.executionPlan.id)), 0),
-        };
-      }
-      const ownSessions = a.executionPlan ? sessionsOfPlan(a.executionPlan.id) : [];
-      const { closure, progress } = closeLeaf(a.closure, ownSessions, limitOf(a));
+      const own = sessionsOfActivity(a);
+      const closure = closeByDeadline(a.closure, limitOf(a));
       return {
         ...a,
         closure,
-        progress,
-        status: deriveStatus(progress, a.status, !!closure),
-        totalTimeRequiredMin: plannedMinutesOf(ownSessions),
+        progress: computeProgress(own),
+        status: deriveStatus(closure, hasOpenPause(a.pauses), ActivityStatus),
+        totalTimeRequiredMin: plannedMinutesOf(own),
       };
     });
 
+    const sessionsOfObjective = (id: string) => activities.filter(a => a.objectiveId === id).flatMap(sessionsOfActivity);
+
     const objectives = this.objectivesSignal().map(o => {
-      const tasks = activities.filter(a => a.objectiveId === o.id);
-      const progress = averageProgress(tasks.map(a => a.progress));
-      return { ...o, progress, status: deriveObjectiveStatus(o.status, progress, tasks) };
+      const closure = closeByDeadline(o.closure, o.deadline);
+      return {
+        ...o,
+        closure,
+        progress: computeProgress(sessionsOfObjective(o.id)),
+        status: deriveStatus(closure, hasOpenPause(o.pauses), ObjectiveStatus),
+      };
     });
 
     const goals = this.goalsSignal().map(g => {
       const own = objectives.filter(o => o.goalId === g.id);
-      const progress = averageProgress(own.map(o => o.progress));
-      // RN-55: la idea pasa a ACTIVE cuando tiene horizonte y ya tiene tareas.
+      const progress = computeProgress(own.flatMap(o => sessionsOfObjective(o.id)));
+      // RN-55: la idea pasa a OPEN cuando tiene horizonte y ya tiene tareas.
       const hasTasks = activities.some(a => own.some(o => o.id === a.objectiveId));
-      const status = g.status === GoalStatus.IDEA && g.horizon && hasTasks ? GoalStatus.ACTIVE : g.status;
-      return { ...g, progress, status: deriveGoalStatus(status, own) };
+      const isIdea = g.status === GoalStatus.IDEA && !(g.horizon && hasTasks);
+      const status = isIdea ? GoalStatus.IDEA : deriveStatus(g.closure, hasOpenPause(g.pauses), GoalStatus);
+      return { ...g, progress, status };
     });
 
     this.subActivitiesSignal.set(steps);

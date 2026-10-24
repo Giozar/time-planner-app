@@ -1,83 +1,98 @@
-import { ClosureType } from '../models/activity.model';
+import { ActivityStatus, ClosureType } from '../models/activity.model';
 import { GoalStatus } from '../models/goal.model';
-import { ObjectiveStatus } from '../models/objective.model';
 import { makeSessions } from '../../testing/builders';
 import {
-  autoClosure, closedProgress, deriveGoalStatus, deriveObjectiveStatus, isClosed, isCoveredByClosure,
+  deadlineClosure, deriveStatus, hasOpenPause, isClosed, isEffectivelyPaused, isHiddenByClosure,
+  reopensWithParent, sessionsDoneClosure,
 } from './closure.rules';
 
 const TODAY = '2026-10-22';
 const manual = { type: ClosureType.MANUAL, closedOn: '2026-10-25' };
-const automatic = { type: ClosureType.AUTOMATIC, closedOn: '2026-10-22' };
 
 describe('closure.rules', () => {
-  describe('isClosed (RN-77)', () => {
-    it('completado y vencido están cerrados; lo demás no', () => {
-      expect(isClosed({ status: 'COMPLETED' })).toBe(true);
-      expect(isClosed({ status: 'OVERDUE' })).toBe(true);
-      expect(isClosed({ status: 'IN_PROGRESS' })).toBe(false);
+  describe('isClosed (RN-31)', () => {
+    it('solo CLOSED está cerrado', () => {
+      expect(isClosed({ status: 'CLOSED' })).toBe(true);
+      expect(isClosed({ status: 'OPEN' })).toBe(false);
       expect(isClosed({ status: 'PAUSED' })).toBe(false);
     });
   });
 
-  describe('autoClosure (RN-77)', () => {
-    it('cierra al día siguiente del deadline con el avance que tenga', () => {
-      expect(autoClosure(undefined, 50, '2026-10-21', TODAY)).toEqual(automatic);
+  describe('deriveStatus (RN-31)', () => {
+    it('cerrado si tiene cierre, aunque esté pausado; si no, pausado o abierto', () => {
+      expect(deriveStatus(manual, true, ActivityStatus)).toBe(ActivityStatus.CLOSED);
+      expect(deriveStatus(undefined, true, ActivityStatus)).toBe(ActivityStatus.PAUSED);
+      expect(deriveStatus(undefined, false, ActivityStatus)).toBe(ActivityStatus.OPEN);
     });
 
-    it('no cierra el mismo día del deadline, al 100 % ni lo ya cerrado', () => {
-      expect(autoClosure(undefined, 50, TODAY, TODAY)).toBeUndefined();
-      expect(autoClosure(undefined, 100, '2026-10-21', TODAY)).toBeUndefined();
-      expect(autoClosure(manual, 50, '2026-10-21', TODAY)).toBe(manual);
-    });
-  });
-
-  describe('closedProgress (RN-79)', () => {
-    it('el cierre manual deja 100 %; el automático conserva el avance', () => {
-      expect(closedProgress(75, manual)).toBe(100);
-      expect(closedProgress(75, automatic)).toBe(75);
-      expect(closedProgress(75, undefined)).toBe(75);
+    it('usa los valores del nivel que se le pasa', () => {
+      expect(deriveStatus(undefined, false, GoalStatus)).toBe(GoalStatus.OPEN);
     });
   });
 
-  describe('isCoveredByClosure (RN-79)', () => {
-    it('cubre las sesiones no realizadas posteriores al cierre manual', () => {
-      const [before, onDay, after, afterDone] = [
-        ...makeSessions('p', ['2026-10-19', '2026-10-25', '2026-10-26']),
-        ...makeSessions('q', ['2026-10-27'], ['2026-10-27']),
-      ];
-      expect(isCoveredByClosure(before, manual)).toBe(false);
-      expect(isCoveredByClosure(onDay, manual)).toBe(false);
-      expect(isCoveredByClosure(after, manual)).toBe(true);
-      expect(isCoveredByClosure(afterDone, manual)).toBe(false);
-      expect(isCoveredByClosure(after, { ...automatic, closedOn: '2026-10-20' })).toBe(false);
+  describe('pausa efectiva (RN-57)', () => {
+    it('una pausa abierta del ítem o de un padre lo pausa; una terminada no', () => {
+      const ended = [{ from: '2026-10-01', to: '2026-10-05' }];
+      const open = [{ from: '2026-10-10' }];
+      expect(hasOpenPause(ended)).toBe(false);
+      expect(hasOpenPause(open)).toBe(true);
+      expect(isEffectivelyPaused([undefined, ended, open])).toBe(true);
+      expect(isEffectivelyPaused([undefined, ended])).toBe(false);
+    });
+
+    it('pausar la tarea, pausar y reanudar la meta deja la tarea pausada', () => {
+      const task = [{ from: '2026-10-10' }];
+      const goal = [{ from: '2026-10-12', to: '2026-10-14' }];
+      expect(isEffectivelyPaused([goal, task])).toBe(true);
     });
   });
 
-  describe('deriveObjectiveStatus (RN-78)', () => {
-    it('se cierra cuando todas sus tareas están cerradas: completado al 100 % y vencido si no', () => {
-      expect(deriveObjectiveStatus(ObjectiveStatus.ACTIVE, 100, [{ status: 'COMPLETED' }])).toBe(ObjectiveStatus.COMPLETED);
-      expect(deriveObjectiveStatus(ObjectiveStatus.ACTIVE, 60, [{ status: 'COMPLETED' }, { status: 'OVERDUE' }]))
-        .toBe(ObjectiveStatus.OVERDUE);
+  describe('deadlineClosure (RN-58, RN-77)', () => {
+    it('cierra al día siguiente del deadline, aunque esté al 100 %', () => {
+      expect(deadlineClosure(undefined, '2026-10-21', TODAY)).toEqual({ type: ClosureType.DEADLINE, closedOn: TODAY });
     });
 
-    it('se reabre con una tarea abierta y sin tareas no se cierra', () => {
-      expect(deriveObjectiveStatus(ObjectiveStatus.COMPLETED, 50, [{ status: 'COMPLETED' }, { status: 'PENDING' }]))
-        .toBe(ObjectiveStatus.ACTIVE);
-      expect(deriveObjectiveStatus(ObjectiveStatus.COMPLETED, 0, [])).toBe(ObjectiveStatus.ACTIVE);
+    it('no cierra el mismo día del deadline ni cambia un cierre existente', () => {
+      expect(deadlineClosure(undefined, TODAY, TODAY)).toBeUndefined();
+      expect(deadlineClosure(manual, '2026-10-01', TODAY)).toBe(manual);
     });
   });
 
-  describe('deriveGoalStatus (RN-78)', () => {
-    it('una meta activa queda finalizada con todos sus objetivos cerrados y se reabre con uno abierto', () => {
-      expect(deriveGoalStatus(GoalStatus.ACTIVE, [{ status: 'COMPLETED' }, { status: 'OVERDUE' }])).toBe(GoalStatus.FINISHED);
-      expect(deriveGoalStatus(GoalStatus.FINISHED, [{ status: 'COMPLETED' }, { status: 'ACTIVE' }])).toBe(GoalStatus.ACTIVE);
-      expect(deriveGoalStatus(GoalStatus.ACTIVE, [])).toBe(GoalStatus.ACTIVE);
+  describe('sessionsDoneClosure (RN-77)', () => {
+    it('llegar a 100 % cierra por sesiones completas', () => {
+      expect(sessionsDoneClosure(undefined, 75, 100, TODAY)).toEqual({ type: ClosureType.SESSIONS_DONE, closedOn: TODAY });
     });
 
-    it('no cambia ideas ni metas pausadas', () => {
-      expect(deriveGoalStatus(GoalStatus.PAUSED, [{ status: 'COMPLETED' }])).toBe(GoalStatus.PAUSED);
-      expect(deriveGoalStatus(GoalStatus.IDEA, [{ status: 'COMPLETED' }])).toBe(GoalStatus.IDEA);
+    it('no vuelve a cerrar lo que ya estaba al 100 % (reabierto a mano)', () => {
+      expect(sessionsDoneClosure(undefined, 100, 100, TODAY)).toBeUndefined();
+    });
+
+    it('bajar de 100 % deshace solo el cierre por sesiones completas', () => {
+      const done = { type: ClosureType.SESSIONS_DONE, closedOn: '2026-10-20' };
+      expect(sessionsDoneClosure(done, 100, 75, TODAY)).toBeUndefined();
+      expect(sessionsDoneClosure(manual, 100, 75, TODAY)).toBe(manual);
+      const deadline = { type: ClosureType.DEADLINE, closedOn: '2026-10-20' };
+      expect(sessionsDoneClosure(deadline, 100, 75, TODAY)).toBe(deadline);
+    });
+  });
+
+  describe('reopensWithParent (RN-64)', () => {
+    it('se reabre si sigue dentro de su deadline y tiene sesiones pendientes', () => {
+      expect(reopensWithParent(TODAY, 50, TODAY)).toBe(true);
+      expect(reopensWithParent('2026-10-21', 50, TODAY)).toBe(false);
+      expect(reopensWithParent('2026-12-01', 100, TODAY)).toBe(false);
+    });
+  });
+
+  describe('isHiddenByClosure (RN-79)', () => {
+    it('oculta las no realizadas desde el día del cierre, incluido; nunca las realizadas', () => {
+      const [before, onDay, after] = makeSessions('p', ['2026-10-19', '2026-10-25', '2026-10-26']);
+      const [afterDone] = makeSessions('q', ['2026-10-27'], ['2026-10-27']);
+      expect(isHiddenByClosure(before, manual)).toBe(false);
+      expect(isHiddenByClosure(onDay, manual)).toBe(true);
+      expect(isHiddenByClosure(after, manual)).toBe(true);
+      expect(isHiddenByClosure(afterDone, manual)).toBe(false);
+      expect(isHiddenByClosure(after, undefined)).toBe(false);
     });
   });
 });

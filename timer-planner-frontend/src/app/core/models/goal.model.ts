@@ -1,3 +1,4 @@
+import { ItemClosure } from './activity.model';
 import { PausePeriod } from './pause.model';
 
 export enum GoalHorizon {
@@ -6,11 +7,12 @@ export enum GoalHorizon {
   LONG_TERM = 'LONG_TERM',
 }
 
+/** `IDEA` hasta su promoción (RN-55); después, el estado calculado de RN-31. */
 export enum GoalStatus {
   IDEA = 'IDEA',
-  ACTIVE = 'ACTIVE',
+  OPEN = 'OPEN',
   PAUSED = 'PAUSED',
-  FINISHED = 'FINISHED', // todos sus objetivos cerrados (RN-78)
+  CLOSED = 'CLOSED',
 }
 
 /**
@@ -23,6 +25,7 @@ export interface Goal {
   horizon: GoalHorizon | null; // null mientras sea IDEA
   progress: number;
   status: GoalStatus;
-  pauses?: PausePeriod[]; // historial de pausas (RN-70)
+  closure?: ItemClosure; // RN-77
+  pauses?: PausePeriod[]; // historial de pausas (RN-57, RN-70)
   createdAt: Date;
 }

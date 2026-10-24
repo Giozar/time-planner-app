@@ -1,63 +1,76 @@
 import { ClosureType, ItemClosure } from '../models/activity.model';
-import { GoalStatus } from '../models/goal.model';
-import { ObjectiveStatus } from '../models/objective.model';
+import { PausePeriod } from '../models/pause.model';
 import { ExecutionSession, SessionStatus } from '../models/session.model';
 import { addDays } from './calendar.rules';
 
-/** Cerrado: completado (100 %) o vencido (RN-77, RN-78). Vale para paso, tarea y objetivo. */
+/** Valores de estado comunes a meta, objetivo, tarea y paso (RN-31). */
+interface StatusValues<S> {
+  OPEN: S;
+  PAUSED: S;
+  CLOSED: S;
+}
+
+/** Cerrado: tiene estado `CLOSED` (RN-31). Vale para los cuatro niveles. */
 export function isClosed(item: { status: string }): boolean {
-  return item.status === 'COMPLETED' || item.status === 'OVERDUE';
+  return item.status === 'CLOSED';
+}
+
+/** `true` si tiene una pausa abierta (sin `to`). */
+export function hasOpenPause(pauses: readonly PausePeriod[] | undefined): boolean {
+  return (pauses ?? []).some(p => p.to === undefined);
+}
+
+/** Pausa efectiva (RN-57): el elemento o alguno de sus padres tiene una pausa abierta. */
+export function isEffectivelyPaused(chain: readonly (readonly PausePeriod[] | undefined)[]): boolean {
+  return chain.some(hasOpenPause);
 }
 
 /**
- * Cierre vigente de una tarea simple o un paso (RN-77).
- * Si no está cerrado ni al 100 % y su deadline efectivo ya pasó, se cierra solo al día siguiente.
+ * Estado de cualquier nivel (RN-31): `CLOSED` si tiene cierre guardado, `PAUSED` si está en pausa efectiva,
+ * y si no `OPEN`. `values` es el enum del nivel (`ActivityStatus`, `GoalStatus`…). La idea la resuelve quien llama.
  */
-export function autoClosure(
+export function deriveStatus<S>(closure: ItemClosure | undefined, paused: boolean, values: StatusValues<S>): S {
+  if (closure) return values.CLOSED;
+  return paused ? values.PAUSED : values.OPEN;
+}
+
+/**
+ * Cierre por fecha límite (RN-58, RN-77): un elemento abierto o pausado se cierra al día siguiente
+ * de su deadline efectivo. Lo ya cerrado conserva su cierre.
+ */
+export function deadlineClosure(closure: ItemClosure | undefined, deadline: string, today: string): ItemClosure | undefined {
+  if (closure || deadline >= today) return closure;
+  return { type: ClosureType.DEADLINE, closedOn: addDays(deadline, 1) };
+}
+
+/**
+ * Cierre por sesiones completas tras un cambio de avance (RN-77). Solo se evalúa en el evento que lo causa:
+ * pasar de menos de 100 % a 100 % cierra lo abierto; bajar de 100 % deshace un cierre por sesiones completas.
+ * Los cierres a mano, por fecha límite y por hijos cerrados no cambian.
+ */
+export function sessionsDoneClosure(
   closure: ItemClosure | undefined,
+  previousProgress: number,
   progress: number,
-  deadline: string,
   today: string,
 ): ItemClosure | undefined {
-  if (closure || progress >= 100 || deadline >= today) return closure;
-  return { type: ClosureType.AUTOMATIC, closedOn: addDays(deadline, 1) };
-}
-
-/** El cierre manual deja el avance en 100 %; el automático conserva el calculado (RN-77, RN-79). */
-export function closedProgress(progress: number, closure: ItemClosure | undefined): number {
-  return closure?.type === ClosureType.MANUAL ? 100 : progress;
+  if (!closure && previousProgress < 100 && progress >= 100) return { type: ClosureType.SESSIONS_DONE, closedOn: today };
+  if (closure?.type === ClosureType.SESSIONS_DONE && progress < 100) return undefined;
+  return closure;
 }
 
 /**
- * Sesión cubierta por un cierre manual: no realizada y posterior al día del cierre (RN-79).
- * Se muestra completa, no se marca y no cuenta para la constancia ni para el cierre del día.
+ * Un descendiente cerrado se reabre con su padre si su deadline efectivo no ha pasado
+ * y le quedan sesiones pendientes (avance menor a 100 %) (RN-64).
  */
-export function isCoveredByClosure(session: ExecutionSession, closure: ItemClosure | undefined): boolean {
-  return closure?.type === ClosureType.MANUAL
-    && session.status !== SessionStatus.DONE
-    && session.scheduledDate > closure.closedOn;
+export function reopensWithParent(effectiveDeadline: string, progress: number, today: string): boolean {
+  return effectiveDeadline >= today && progress < 100;
 }
 
 /**
- * Estado del objetivo (RN-78): cerrado cuando todas sus tareas lo están, completado al 100 % y vencido si no.
- * Si recibe una tarea abierta vuelve a `ACTIVE` (reapertura).
+ * Sesión oculta por el cierre de su ítem (RN-79): no realizada y desde el día del cierre, incluido.
+ * No aparece en agenda ni calendario, no se marca y no cuenta para la constancia ni para el cierre del día.
  */
-export function deriveObjectiveStatus(
-  current: ObjectiveStatus,
-  progress: number,
-  tasks: readonly { status: string }[],
-): ObjectiveStatus {
-  if (tasks.length > 0 && tasks.every(isClosed)) {
-    return progress >= 100 ? ObjectiveStatus.COMPLETED : ObjectiveStatus.OVERDUE;
-  }
-  return current === ObjectiveStatus.PAUSED ? ObjectiveStatus.PAUSED : ObjectiveStatus.ACTIVE;
-}
-
-/**
- * Estado de la meta (RN-78): una meta activa queda `FINISHED` cuando todos sus objetivos están cerrados,
- * y vuelve a `ACTIVE` si recibe uno abierto. Las ideas y las metas pausadas no cambian.
- */
-export function deriveGoalStatus(current: GoalStatus, objectives: readonly { status: string }[]): GoalStatus {
-  if (current !== GoalStatus.ACTIVE && current !== GoalStatus.FINISHED) return current;
-  return objectives.length > 0 && objectives.every(isClosed) ? GoalStatus.FINISHED : GoalStatus.ACTIVE;
+export function isHiddenByClosure(session: ExecutionSession, closure: ItemClosure | undefined): boolean {
+  return !!closure && session.status !== SessionStatus.DONE && session.scheduledDate >= closure.closedOn;
 }
