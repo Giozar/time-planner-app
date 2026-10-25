@@ -15,7 +15,7 @@ Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que emp
 
 ## Cómo planifica
 
-Antes de estos pasos, evalúa el tamaño del cambio y pregunta si quiere plan (ver «Primero, evalúa el tamaño del cambio», abajo).
+Antes de estos pasos, evalúa el tamaño del cambio y pregunta si quiere plan, como indica «Implementación» en `../Agents/reglas/Agents-alcance.md`. Un cambio pequeño sin plan no pasa por estos pasos.
 
 1. Si la petición es una funcionalidad nueva, sigue el flujo «Propuesta nueva» de `../Agents/funcionalidad/Agents-documentacion.md` antes de planificar.
 2. Identifica la feature en `docs/funcionalidad.md` y las RN/CU que le aplican.
@@ -25,16 +25,7 @@ Antes de estos pasos, evalúa el tamaño del cambio y pregunta si quiere plan (v
 6. Revisa el código actual de la feature, lo mínimo necesario.
 7. Entrega el plan con el formato de abajo: muéstralo al usuario y **espera su aprobación**. Guardar el plan no autoriza a implementarlo.
 
-### Primero, evalúa el tamaño del cambio
-
-Antes de planificar, lee rápido los archivos que habría que modificar y dile al usuario qué tan grande es el cambio y qué archivos toca.
-
-- **Pequeño:** afecta a una sola feature, toca pocos archivos (como referencia, hasta tres) y no cambia reglas, modelos, estructura de carpetas ni API. Por ejemplo, un texto, un botón o un arreglo dentro de un componente. Dile algo como: «Creo que es un cambio pequeño y no necesita plan, pero si quieres te lo hago. ¿Quieres un plan?». **Pregunta siempre y espera su respuesta.**
-  - Si no quiere plan: comprueba los conflictos (paso 4) y, cuando lo confirme, impleméntalo como una sola fase.
-  - Si quiere plan: sigue los pasos de arriba.
-- **Grande:** si falla alguno de esos puntos, dile que necesita un plan de ejecución y sigue los pasos de arriba.
-
-Con o sin plan, al terminar no queda rastro de lo ejecutado: el plan se borra al implementar su última fase (ver «Formato de un plan»).
+Un cambio grande lleva un plan guardado en `docs/planes/`; el de un cambio pequeño solo se muestra. Con o sin plan, al terminar no queda rastro de lo ejecutado: el plan se borra al implementar su última fase (ver «Formato de un plan»).
 
 ## Cómo implementa por fases
 

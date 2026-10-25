@@ -4,8 +4,8 @@ Mantiene la documentación del monorepo coherente. Sabe qué va en cada document
 
 ## Permisos
 
-- **La documentación se modifica sin pedir autorización** cuando el usuario pide un cambio o cuando un trabajo que él pidió lo exige: documento de reglas, `estado-y-pendientes.md`, planes, `docs/` de cada proyecto y agentes. No preguntes «¿me autorizas?»: haz el cambio e informa qué cambiaste.
-- **Las reglas nuevas no se escriben por iniciativa propia.** Una regla o funcionalidad nueva se discute primero con el usuario (ver «Propuesta nueva»). Solo cuando el usuario la acuerda pasa al documento de reglas.
+- **La documentación se modifica sin pedir autorización** cuando el usuario pide el cambio, o cuando un cambio de código que él pidió exige actualizarla: documento de reglas, `estado-y-pendientes.md`, planes, `docs/` de cada proyecto y agentes. En ese caso no preguntes «¿me autorizas?»: haz el cambio e informa qué cambiaste. No aplica cuando el usuario pidió solo analizar, validar o revisar: ahí rige «Análisis y revisión» de [../reglas/Agents-alcance.md](../reglas/Agents-alcance.md).
+- **Las reglas no se escriben ni se cambian por iniciativa propia.** Una regla o funcionalidad nueva, y cualquier cambio de lo que dice una RN o CU existente, se discute primero con el usuario (ver «Propuesta nueva»). Solo cuando el usuario lo acuerda pasa al documento de reglas.
 - Una decisión abierta (`D-xx`) no se resuelve por tu cuenta: se pregunta.
 - Para todo lo de git aplica [../tecnologia/Agents-git-monorepo.md](../tecnologia/Agents-git-monorepo.md).
 
@@ -57,7 +57,9 @@ Aplica a todo cambio de código, sea una fase de un plan o un arreglo suelto, en
 
 **Duda sobre algo ya definido.** Agrégala a «Decisiones abiertas» con el siguiente `D-xx` libre y las reglas que toca. Si un plan depende de ella, la cita en «Decisiones que lo bloquean». Cuando el usuario decide, escribe la regla, quita la `D-xx` y actualiza los planes y `funcionalidad.md` que la citaban.
 
-**Inconsistencia en el documento de reglas.** Regístrala como `C-xx` con su corrección propuesta. Si el usuario pide corregirla, aplícala y quítala de la lista sin dejar nota de qué se corrigió ni cuándo.
+**Inconsistencia en el documento de reglas.** Regístrala como `C-xx` con su corrección propuesta. Si el usuario pide corregirla, aplícala y quítala de la lista sin dejar nota de qué se corrigió ni cuándo. Durante un análisis o una validación solo se reporta: se registra cuando el usuario lo pide.
+
+**Validar la documentación contra el código.** Es solo lectura (ver «Análisis y revisión» en [../reglas/Agents-alcance.md](../reglas/Agents-alcance.md)). Compara por tema: enums y modelos con `core/models` y con las secciones 3 y 4.2; reglas con `core/rules` y `core/services`, buscando su RN en `src/`; `arquitectura.md` con las carpetas reales; `funcionalidad.md` con las rutas y pantallas. Reporta cada diferencia diciendo qué lado está mal, la regla o el código, y la corrección propuesta. No edites ni registres `C-xx` hasta que el usuario lo pida.
 
 **Se implementa algo.** En el mismo cambio, aplica «Qué documento tocar según el cambio». Si es comportamiento nuevo, queda en las reglas o en `funcionalidad.md`.
 

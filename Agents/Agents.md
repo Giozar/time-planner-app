@@ -4,7 +4,7 @@ Punto de entrada de todos los agentes del repositorio. Cada proyecto tiene adem�
 
 ## Siempre
 
-- [reglas/Agents-alcance.md](reglas/Agents-alcance.md): límite de trabajo, comandos, implementación (conflictos con las reglas y fases), documentación y estilo de respuesta.
+- [reglas/Agents-alcance.md](reglas/Agents-alcance.md): límite de trabajo, comandos, análisis y revisión (sin modificar nada), implementación (tamaño del cambio, conflictos con las reglas y fases), documentación y estilo de respuesta.
 
 ## Proyectos
 
