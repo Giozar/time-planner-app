@@ -42,13 +42,15 @@ Aplica a todo cambio de código, sea una fase de un plan o un arreglo suelto, en
 | Un archivo nuevo, movido o borrado en `core/` o `shared/` | «Estructura actual» de `arquitectura.md`. |
 | Las ayudas de prueba (`timer-planner-frontend/src/app/testing/`) o una convención | `buenas-practicas.md`. |
 | Una fase de un plan | El plan: se quita la fase; si era la última, se borra el plan (ver «Termina un plan»). |
-| Algo que queda por verificar (pruebas, recorrido manual, avisos de compilación) | «Trabajo pendiente» de `estado-y-pendientes.md`. |
+| Algo que queda por verificar (pruebas, recorrido manual, avisos de compilación) | «Trabajo pendiente» de `estado-y-pendientes.md`. Si ya hay una fila del mismo tema, se reescribe completa con los términos vigentes y sin repetir; no se le va agregando texto al final. |
+| Algo ya verificado o resuelto (pruebas que pasaron, un aviso corregido) | Se quita su línea de «Trabajo pendiente» y cualquier mención en README u otros documentos. |
+| Un término: estado, medida o nombre en español (nuevo, renombrado o quitado) | Todos los documentos y agentes que usen la palabra vieja (ver «Cómo encontrar lo afectado»). |
 | Una propuesta, una duda o una inconsistencia en las reglas | P, D o C de `estado-y-pendientes.md` (ver «Flujos»). |
 | Un agente, un permiso o un comando | El agente que lo contiene; si es nuevo o se borra, también ver «Documento o agente nuevo». |
 | Un documento nuevo o borrado | El mapa de arriba y, si es del frontend, el índice de `timer-planner-frontend/docs/README.md`. |
 | Solo la lógica interna, sin cambiar lo acordado ni la estructura | Nada. |
 
-**Cómo encontrar lo afectado sin leer todo.** Busca con `grep` el ID (`RN-67`), el nombre del campo o enum (`completedAt`) o la ruta del archivo en `docs/`, `Agents/` y en los `docs/` y `Agents/` de cada proyecto; si es una RN, busca también en `src/` (pruebas y comentarios la citan). Abre solo los archivos que aparezcan.
+**Cómo encontrar lo afectado sin leer todo.** Busca con `grep` el ID (`RN-67`), el nombre del campo o enum (`completedAt`) o la ruta del archivo en `docs/`, `Agents/` y en los `docs/` y `Agents/` de cada proyecto; si es una RN, busca también en `src/` (pruebas y comentarios la citan). Si cambia o desaparece un término (un estado, una medida o un nombre en español), busca también la palabra vieja por su raíz (`complet`, `vencid`, `cubiert`) en esos mismos lugares, incluidos los README, y reemplázala por el término vigente: una palabra en español no tiene ID y la búsqueda por ID no la encuentra. Abre solo los archivos que aparezcan.
 
 ## Flujos
 
@@ -84,7 +86,7 @@ Aplica a todo cambio de código, sea una fase de un plan o un arreglo suelto, en
 
 ## Revisión después de cada cambio
 
-Solo sobre los documentos que tocaste y los que encontró la búsqueda por ID; no sobre toda la documentación. Una revisión completa se hace únicamente cuando el usuario la pide.
+Solo sobre los documentos que tocaste y los que encontró la búsqueda por ID o por término; no sobre toda la documentación. Una revisión completa se hace únicamente cuando el usuario la pide.
 
 1. El documento de reglas no tiene estados, propuestas ni referencias al código.
 2. Toda RN o CU citada existe y no está en «Números libres»; las P, D y C citadas como pendientes siguen abiertas.
@@ -93,3 +95,5 @@ Solo sobre los documentos que tocaste y los que encontró la búsqueda por ID; n
 5. Ninguna regla está definida en dos lugares, ni con el mismo texto ni con uno distinto.
 6. No queda historial: fechas de aplicación, notas de «se corrigió» o «se acordó» ni planes con todas sus fases implementadas.
 7. Los agentes que deben leer un documento lo tienen indicado en sus fuentes y pueden acceder a él dentro de `time-planner-app`.
+8. No quedan términos del modelo anterior ni pendientes ya verificados o resueltos.
+9. Las rutas escritas como texto empiezan en la raíz del monorepo (convención de `Agents/Agents.md`).
