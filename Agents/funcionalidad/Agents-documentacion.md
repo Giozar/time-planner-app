@@ -4,12 +4,14 @@ Mantiene la documentación del monorepo coherente. Sabe qué va en cada document
 
 ## Permisos
 
-- **La documentación se modifica sin pedir autorización** cuando el usuario pide el cambio, o cuando un cambio de código que él pidió exige actualizarla: documento de reglas, `estado-y-pendientes.md`, planes, `docs/` de cada proyecto y agentes. En ese caso no preguntes «¿me autorizas?»: haz el cambio e informa qué cambiaste. No aplica cuando el usuario pidió solo analizar, validar o revisar: ahí rige «Análisis y revisión» de [../reglas/Agents-alcance.md](../reglas/Agents-alcance.md).
+- **La documentación se modifica sin pedir autorización** cuando el usuario pide el cambio, o cuando un cambio de código que él pidió exige actualizarla: documento de reglas, `estado-y-pendientes.md`, planes, `docs/` de cada proyecto y agentes. En ese caso no preguntes «¿me autorizas?»: haz el cambio e informa qué cambiaste. No aplica cuando el usuario pidió solo analizar, validar o revisar: ahí rige «Análisis y revisión» de [Agents/reglas/Agents-alcance.md](../reglas/Agents-alcance.md).
 - **Las reglas no se escriben ni se cambian por iniciativa propia.** Una regla o funcionalidad nueva, y cualquier cambio de lo que dice una RN o CU existente, se discute primero con el usuario (ver «Propuesta nueva»). Solo cuando el usuario lo acuerda pasa al documento de reglas.
 - Una decisión abierta (`D-xx`) no se resuelve por tu cuenta: se pregunta.
-- Para todo lo de git aplica [../tecnologia/Agents-git-monorepo.md](../tecnologia/Agents-git-monorepo.md).
+- Para todo lo de git aplica [Agents/tecnologia/Agents-git-monorepo.md](../tecnologia/Agents-git-monorepo.md).
 
 ## Mapa de documentos
+
+Las rutas siguen la convención de [Agents/Agents.md](../Agents.md): empiezan en la raíz del monorepo. En el resto de este archivo, `funcionalidad.md`, `arquitectura.md` y `buenas-practicas.md` son los de `timer-planner-frontend/docs/`.
 
 | Documento | Contiene | No contiene |
 |-----------|----------|-------------|
@@ -38,7 +40,7 @@ Aplica a todo cambio de código, sea una fase de un plan o un arreglo suelto, en
 | Un comportamiento de pantalla que no es una regla (botón, aviso, diseño) | «Notas» de `funcionalidad.md`. |
 | Una feature, carpeta o ruta nueva, movida o borrada | Su fila del mapa en `funcionalidad.md` y «Estructura actual» de `arquitectura.md`. |
 | Un archivo nuevo, movido o borrado en `core/` o `shared/` | «Estructura actual» de `arquitectura.md`. |
-| Las ayudas de prueba (`src/app/testing/`) o una convención | `buenas-practicas.md`. |
+| Las ayudas de prueba (`timer-planner-frontend/src/app/testing/`) o una convención | `buenas-practicas.md`. |
 | Una fase de un plan | El plan: se quita la fase; si era la última, se borra el plan (ver «Termina un plan»). |
 | Algo que queda por verificar (pruebas, recorrido manual, avisos de compilación) | «Trabajo pendiente» de `estado-y-pendientes.md`. |
 | Una propuesta, una duda o una inconsistencia en las reglas | P, D o C de `estado-y-pendientes.md` (ver «Flujos»). |
@@ -53,13 +55,13 @@ Aplica a todo cambio de código, sea una fase de un plan o un arreglo suelto, en
 **Propuesta nueva (regla o funcionalidad).**
 1. Regístrala en «Propuestas en discusión» de `estado-y-pendientes.md` con el siguiente `P-xx` libre: qué se quiere, por qué y cómo se implementaría, más las RN y CU existentes que toca.
 2. Discútela con el usuario: dudas, alternativas e impacto en las reglas vigentes. Las preguntas que surjan van dentro de la propuesta.
-3. Cuando el usuario la acuerda, escribe las RN y CU en el documento de reglas, crea o actualiza su plan en `docs/planes/`, agrega sus filas pendientes a «Comparación con el código» y a `funcionalidad.md`, y quita la `P-xx`. Luego entrega el plan y espera su aprobación antes de implementar (ver `timer-planner-frontend/Agents/funcionalidad/Agents-planner.md`).
+3. Cuando el usuario la acuerda, escribe las RN y CU en el documento de reglas, crea o actualiza su plan en `timer-planner-frontend/docs/planes/`, agrega sus filas pendientes a «Comparación con el código» y a `funcionalidad.md`, y quita la `P-xx`. Luego entrega el plan y espera su aprobación antes de implementar (ver `timer-planner-frontend/Agents/funcionalidad/Agents-planner.md`).
 
 **Duda sobre algo ya definido.** Agrégala a «Decisiones abiertas» con el siguiente `D-xx` libre y las reglas que toca. Si un plan depende de ella, la cita en «Decisiones que lo bloquean». Cuando el usuario decide, escribe la regla, quita la `D-xx` y actualiza los planes y `funcionalidad.md` que la citaban.
 
 **Inconsistencia en el documento de reglas.** Regístrala como `C-xx` con su corrección propuesta. Si el usuario pide corregirla, aplícala y quítala de la lista sin dejar nota de qué se corrigió ni cuándo. Durante un análisis o una validación solo se reporta: se registra cuando el usuario lo pide.
 
-**Validar la documentación contra el código.** Es solo lectura (ver «Análisis y revisión» en [../reglas/Agents-alcance.md](../reglas/Agents-alcance.md)). Compara por tema: enums y modelos con `core/models` y con las secciones 3 y 4.2; reglas con `core/rules` y `core/services`, buscando su RN en `src/`; `arquitectura.md` con las carpetas reales; `funcionalidad.md` con las rutas y pantallas. Reporta cada diferencia diciendo qué lado está mal, la regla o el código, y la corrección propuesta. No edites ni registres `C-xx` hasta que el usuario lo pida.
+**Validar la documentación contra el código.** Es solo lectura (ver «Análisis y revisión» en [Agents/reglas/Agents-alcance.md](../reglas/Agents-alcance.md)). Compara por tema: enums y modelos con `core/models` y con las secciones 3 y 4.2; reglas con `core/rules` y `core/services`, buscando su RN en `src/`; `arquitectura.md` con las carpetas reales; `funcionalidad.md` con las rutas y pantallas. Reporta cada diferencia diciendo qué lado está mal, la regla o el código, y la corrección propuesta. No edites ni registres `C-xx` hasta que el usuario lo pida.
 
 **Se implementa algo.** En el mismo cambio, aplica «Qué documento tocar según el cambio». Si es comportamiento nuevo, queda en las reglas o en `funcionalidad.md`.
 

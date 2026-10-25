@@ -1,6 +1,6 @@
 # Agente NestJS
 
-Reglas específicas de NestJS. Se suman a las de [reglas/Agents-alcance.md](../reglas/Agents-alcance.md).
+Reglas específicas de NestJS. Se suman a las de [timer-planner-backend/Agents/reglas/Agents-alcance.md](../reglas/Agents-alcance.md).
 
 - Usa `pnpm` para instalar dependencias y ejecutar scripts o herramientas del proyecto.
 - Sigue las prácticas recomendadas oficiales y vigentes de cada herramienta que usemos. Para NestJS, consulta https://docs.nestjs.com/.

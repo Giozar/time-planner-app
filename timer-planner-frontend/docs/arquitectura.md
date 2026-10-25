@@ -6,7 +6,7 @@ La arquitectura actual se mantiene: **simple, compacta y todo en uno**. Se toman
 
 ## Estructura actual
 
-Contenido de `src/app`:
+Contenido de `timer-planner-frontend/src/app`:
 
 ```
 src/app/

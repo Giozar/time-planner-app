@@ -1,10 +1,10 @@
 # Estado de implementación y decisiones abiertas
 
-La especificación del producto está en [analisis-reglas-de-negocio.md](analisis-reglas-de-negocio.md). Este documento es su complemento de trabajo: compara esa definición con el código, reúne lo que falta decidir y señala lo que hay que corregir en la especificación. **No define reglas.**
+La especificación del producto está en [docs/analisis-reglas-de-negocio.md](analisis-reglas-de-negocio.md). Este documento es su complemento de trabajo: compara esa definición con el código, reúne lo que falta decidir y señala lo que hay que corregir en la especificación. **No define reglas.**
 
 ## Cómo se usa
 
-Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisiones `D-xx`, correcciones `C-xx`, filas de la comparación) y qué estados se usan está en el agente de documentación: [../Agents/funcionalidad/Agents-documentacion.md](../Agents/funcionalidad/Agents-documentacion.md).
+Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisiones `D-xx`, correcciones `C-xx`, filas de la comparación) y qué estados se usan está en el agente de documentación: [Agents/funcionalidad/Agents-documentacion.md](../Agents/funcionalidad/Agents-documentacion.md).
 
 ## Comparación con el código
 
@@ -13,14 +13,13 @@ Cómo entra y sale cada elemento de este documento (propuestas `P-xx`, decisione
 | Fecha de finalización (`completedAt`) | Tarea simple y paso fijan `completedAt` al llegar a 100 % y lo limpian si baja; en compuesta se calcula desde sus pasos (sección 3.3, sección 3.4, RN-67). | ⏳ Pendiente. `Activity` y `SubActivity` guardan `closure`, pero no tienen `completedAt`. |
 | Backend | Aplica las mismas reglas y persiste el modelo de las secciones 7 y 8. | ⏳ Pendiente. Solo existe el proyecto base de NestJS. |
 
-Lo que no aparece en la tabla está implementado y vive en las reglas y en [funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md).
+Lo que no aparece en la tabla está implementado y vive en las reglas y en [timer-planner-frontend/docs/funcionalidad.md](../timer-planner-frontend/docs/funcionalidad.md).
 
 ## Trabajo pendiente
 
 | Tema | Estado |
 |------|--------|
-| Recorrido manual en el navegador de los casos de uso implementados (idea y su promoción, patrón semanal sin desfase de día, bloqueo de deadline mayor al del padre, pausa de meta, borrado con confirmación escrita, cierre del día repetido, historial, calendario con hover y cambio de mes, agenda de días pasados con minutos y recálculo del cierre, estados abierto, pausado y cerrado en los cuatro niveles con su motivo de cierre, cerrar y reabrir (con deadline nuevo si venció), pausa heredada, cierre automático por sesiones completas y por hijos cerrados, sugerencia de cerrar con la productividad al 100 % y las tres medidas en listas y detalles, y cierre de elementos: manual de paso, tarea y objetivo, automático al vencer, sesiones cubiertas en agenda y calendario, cascada hasta la meta finalizada, reapertura al agregar hijos, formularios bloqueados de lo cerrado y cierre automático de días al abrir la app, y mover una sesión: un lunes al domingo, fecha pasada o después del deadline rechazada, dos sesiones del mismo ítem en un día y editar el plan después de mover) | ⏳ Pendiente |
-| Pruebas y compilación de estados, cierre, reapertura y productividad (RN-31, RN-57, RN-64, RN-73, RN-77 a RN-80) y de mover una sesión (RN-82): `pnpm ng test --watch=false` y `pnpm ng build` | ⏳ Pendiente; las ejecuta el usuario |
+| Recorrido manual en el navegador: idea y su promoción; patrón semanal sin desfase de día; deadline mayor al del padre rechazado; borrado con confirmación escrita; agenda de días pasados con minutos, cierre del día repetido y cierre automático de días al abrir la app; historial; calendario con hover y cambio de mes; estados abierto, pausado y cerrado en los cuatro niveles con su motivo de cierre; pausa heredada; cierre a mano en cascada, por fecha límite, por sesiones completas y por cierre de sus hijos; sesiones ocultas por un cierre en agenda y calendario; reabrir (con deadline nuevo si venció) y reapertura al agregar hijos; formularios bloqueados de lo cerrado; sugerencia de cerrar con la productividad al 100 %; avance, constancia y productividad en listas y detalles; mover una sesión (un lunes al domingo, fecha pasada o después del deadline rechazada, dos sesiones del mismo ítem en un día y editar el plan después de moverla) | ⏳ Pendiente |
 | Backend | ⏳ Pendiente; requiere D-01 |
 | Agente planificador del backend (`timer-planner-backend/Agents/funcionalidad/`) | ⏳ Pendiente; se crea al empezar el backend |
 

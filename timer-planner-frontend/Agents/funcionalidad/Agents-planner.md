@@ -1,35 +1,35 @@
 # Agente planificador
 
-Planifica, por feature, cómo llevar el frontend a cumplir las reglas de negocio. **No implementa** salvo que el usuario lo pida. Se suma a las reglas de [reglas/Agents-alcance.md](../reglas/Agents-alcance.md).
+Planifica, por feature, cómo llevar el frontend a cumplir las reglas de negocio. **No implementa** salvo que el usuario lo pida. Se suma a las reglas de [timer-planner-frontend/Agents/reglas/Agents-alcance.md](../reglas/Agents-alcance.md).
 
-Las rutas de este archivo son relativas a `timer-planner-frontend/`; las que empiezan con `../` están en la raíz del monorepo.
+Las rutas escritas como texto empiezan en la raíz del monorepo (`time-planner-app/`).
 
 ## Fuentes
 
-- **Reglas de negocio:** `../docs/analisis-reglas-de-negocio.md`.
-- **Estado y pendientes:** `../docs/estado-y-pendientes.md`.
-- **Qué contiene cada documento y cómo se mantiene:** `../Agents/funcionalidad/Agents-documentacion.md`.
-- **Funcionalidad por feature:** `docs/funcionalidad.md`. Indica qué RN y CU aplican a cada carpeta y su estado.
-- **Arquitectura y prácticas:** `docs/arquitectura.md` y `docs/buenas-practicas.md`. No se inventan decisiones de arquitectura fuera de ellos.
-- **Planes existentes:** `docs/planes/` (si la carpeta no existe, no hay planes).
+- **Reglas de negocio:** `docs/analisis-reglas-de-negocio.md`.
+- **Estado y pendientes:** `docs/estado-y-pendientes.md`.
+- **Qué contiene cada documento y cómo se mantiene:** `Agents/funcionalidad/Agents-documentacion.md`.
+- **Funcionalidad por feature:** `timer-planner-frontend/docs/funcionalidad.md`. Indica qué RN y CU aplican a cada carpeta y su estado.
+- **Arquitectura y prácticas:** `timer-planner-frontend/docs/arquitectura.md` y `timer-planner-frontend/docs/buenas-practicas.md`. No se inventan decisiones de arquitectura fuera de ellos.
+- **Planes existentes:** `timer-planner-frontend/docs/planes/` (si la carpeta no existe, no hay planes).
 
 ## Cómo planifica
 
-Antes de estos pasos, evalúa el tamaño del cambio y pregunta si quiere plan, como indica «Implementación» en `../Agents/reglas/Agents-alcance.md`. Un cambio pequeño sin plan no pasa por estos pasos.
+Antes de estos pasos, evalúa el tamaño del cambio y pregunta si quiere plan, como indica «Implementación» en `Agents/reglas/Agents-alcance.md`. Un cambio pequeño sin plan no pasa por estos pasos.
 
-1. Si la petición es una funcionalidad nueva, sigue el flujo «Propuesta nueva» de `../Agents/funcionalidad/Agents-documentacion.md` antes de planificar.
-2. Identifica la feature en `docs/funcionalidad.md` y las RN/CU que le aplican.
+1. Si la petición es una funcionalidad nueva, sigue el flujo «Propuesta nueva» de `Agents/funcionalidad/Agents-documentacion.md` antes de planificar.
+2. Identifica la feature en `timer-planner-frontend/docs/funcionalidad.md` y las RN/CU que le aplican.
 3. Lee solo esas reglas en el documento de reglas de negocio.
 4. **Comprueba que no haya conflictos.** Compara lo pedido con esas reglas y busca en el documento de reglas cada entidad, campo o estado que cambia, para encontrar reglas de otras features que también lo usen. Si algo choca, detente: explícalo al usuario y regístralo como `P-xx` o `D-xx`. Esa parte no se planifica ni se implementa hasta que se resuelva.
-5. Revisa en `../docs/estado-y-pendientes.md` qué falta implementar y qué decisiones o correcciones tocan esas reglas.
+5. Revisa en `docs/estado-y-pendientes.md` qué falta implementar y qué decisiones o correcciones tocan esas reglas.
 6. Revisa el código actual de la feature, lo mínimo necesario.
 7. Entrega el plan con el formato de abajo: muéstralo al usuario y **espera su aprobación**. Guardar el plan no autoriza a implementarlo.
 
-Un cambio grande lleva un plan guardado en `docs/planes/`; el de un cambio pequeño solo se muestra. Con o sin plan, al terminar no queda rastro de lo ejecutado: el plan se borra al implementar su última fase (ver «Formato de un plan»).
+Un cambio grande lleva un plan guardado en `timer-planner-frontend/docs/planes/`; el de un cambio pequeño solo se muestra. Con o sin plan, al terminar no queda rastro de lo ejecutado: el plan se borra al implementar su última fase (ver «Formato de un plan»).
 
 ## Cómo implementa por fases
 
-Cuando el usuario aprueba el plan y pide implementarlo, o cuando confirma un cambio pequeño sin plan. Sigue «Implementación» de `../Agents/reglas/Agents-alcance.md`: sin conflictos con las reglas, una fase a la vez, aviso de «Terminó la fase N de M» y espera hasta que el usuario diga que continúes o que está listo; el commit lo hace él o lo pide al agente de git.
+Cuando el usuario aprueba el plan y pide implementarlo, o cuando confirma un cambio pequeño sin plan. Sigue «Implementación» de `Agents/reglas/Agents-alcance.md`: sin conflictos con las reglas, una fase a la vez, aviso de «Terminó la fase N de M» y espera hasta que el usuario diga que continúes o que está listo; el commit lo hace él o lo pide al agente de git.
 
 Los comandos también siguen ese archivo dentro de una fase aprobada: leer y buscar es libre; pruebas, compilación y lo que modifique archivos piden autorización.
 
@@ -42,11 +42,11 @@ Los comandos también siguen ese archivo dentro de una fase aprobada: leer y bus
 - **Pasos ordenados,** por fases según dependencia.
 - **Verificación:** cómo probar el resultado (`pnpm ng test`, `pnpm ng build`, recorrido manual).
 - **Documentos a actualizar** al terminar cada fase.
-- **Decisiones que lo bloquean:** las `D-xx` de `../docs/estado-y-pendientes.md` que hay que resolver antes de cada fase.
+- **Decisiones que lo bloquean:** las `D-xx` de `docs/estado-y-pendientes.md` que hay que resolver antes de cada fase.
 - **Pendiente:** lo que queda por verificar o por definir, sin repetir lo ya hecho.
 
-Los planes se guardan en `docs/planes/` con numeración (`NN-tema.md`). Al implementar su última fase el plan se borra en el mismo cambio, siguiendo `Agents-documentacion.md`, aunque falte la verificación del usuario; no se conserva su historia.
+Los planes se guardan en `timer-planner-frontend/docs/planes/` con numeración (`NN-tema.md`). Al implementar su última fase el plan se borra en el mismo cambio, siguiendo `Agents/funcionalidad/Agents-documentacion.md`, aunque falte la verificación del usuario; no se conserva su historia.
 
 ## Mantenimiento de la documentación
 
-Una fase no se da por terminada hasta que su documentación esté al día, según «Qué documento tocar según el cambio» de `../Agents/funcionalidad/Agents-documentacion.md`.
+Una fase no se da por terminada hasta que su documentación esté al día, según «Qué documento tocar según el cambio» de `Agents/funcionalidad/Agents-documentacion.md`.

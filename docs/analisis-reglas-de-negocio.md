@@ -121,7 +121,7 @@ No almacena constancia ni minutos reales; se consultan desde sus ítems ejecutab
 | `patternDays` | `WeekDay[]` opcional | Obligatorio si el plan es semanal. |
 | `durationPerExecutionMin` | entero | Duración prevista por defecto, mínimo 5. |
 
-Un plan pertenece a una tarea simple o a un paso. Sus fechas materializadas viven en `ExecutionSession`; el plan no guarda una lista paralela de fechas completadas.
+Un plan pertenece a una tarea simple o a un paso. Sus fechas materializadas viven en `ExecutionSession`; el plan no guarda una lista paralela de fechas realizadas.
 
 ### 3.6 ExecutionSession (Sesión programada)
 
@@ -721,7 +721,7 @@ erDiagram
 | `AuthModule` / `UsersModule` | Registro, login (JWT), zona horaria del usuario. |
 | `GoalsModule` | CRUD de metas. |
 | `ObjectivesModule` | CRUD de objetivos. |
-| `ActivitiesModule` | CRUD de tareas, cambio de tipo (RN-39/40). |
+| `ActivitiesModule` | CRUD de tareas, cambio de tipo (RN-39, RN-40). |
 | `SubActivitiesModule` | CRUD de pasos. |
 | `ExecutionPlansModule` | Generación de sesiones (RN-21, RN-22, RN-47 a RN-51), servicio de fechas. |
 | `ProgressModule` (servicio) | Calcular avance, productividad y estado desde sesiones, `WorkLog` y cierres, y recalcular ancestros (RN-30 a RN-37, RN-73). |
@@ -740,12 +740,12 @@ Rutas anidadas para creación y listado por padre; operaciones sobre un recurso 
 | Método | Ruta | Caso de uso | Notas |
 |--------|------|-------------|-------|
 | GET | `/goals` | CU-01 | Lista con `progress`, `status`. |
-| POST | `/goals` | CU-02, CU-22 | `{ title, horizon?, status? }`. Sin horizonte se crea como `IDEA`. |
+| POST | `/goals` | CU-02, CU-22 | `{ title, horizon? }`. Sin horizonte se crea como `IDEA`; el estado no se envía (RN-31). |
 | GET | `/goals/:id` | CU-03 | Incluye objetivos (o usar endpoint de abajo). |
 | PATCH | `/goals/:id` | CU-04 | `{ title?, horizon? }` |
 | POST | `/goals/:id/pause`, `/goals/:id/resume` | CU-23 | Abre o termina un periodo de pausa (RN-57). |
 | POST | `/goals/:id/close` | CU-25 | Cierra a mano la meta y sus descendientes abiertos (RN-77, RN-78). |
-| POST | `/goals/:id/reopen` | CU-20 | Borra su cierre y reabre sus descendientes que sigan dentro de su deadline (RN-64). |
+| POST | `/goals/:id/reopen` | CU-20 | Borra su cierre y reabre sus descendientes que sigan dentro de su deadline y tengan sesiones pendientes (RN-64). |
 | DELETE | `/goals/:id` | CU-05 | Cascada. |
 
 ### Objetivos
@@ -805,7 +805,7 @@ Ejemplo de cuerpo (tarea simple):
 | Método | Ruta | Caso de uso | Notas |
 |--------|------|-------------|-------|
 | GET | `/daily?date=` | CU-17 | Devuelve sesiones visibles de la fecha (hoy si se omite), sus estados, trabajo registrado y métricas. "Hoy" según `user.timezone`. |
-| POST | `/execution-sessions/:id/complete` | CU-18, RN-27/69/71 | `{ minutes? }`: obligatorio en fecha pasada; hoy se usan los previstos. Sesión de hoy o pasada (`422` si es futura o posterior al cierre de su ítem, RN-79): crea `WorkLog` en la fecha de la sesión, marca `DONE` y recalcula `progress` en una transacción (RN-30). |
+| POST | `/execution-sessions/:id/complete` | CU-18, RN-27, RN-69, RN-71 | `{ minutes? }`: obligatorio en fecha pasada; hoy se usan los previstos. Sesión de hoy o pasada (`422` si es futura o posterior al cierre de su ítem, RN-79): crea `WorkLog` en la fecha de la sesión, marca `DONE` y recalcula `progress` en una transacción (RN-30). |
 | PATCH | `/execution-sessions/:id` | CU-30, RN-82 | `{ scheduledDate }`: mueve una sesión `PLANNED` de hoy o futura; `422` si la fecha es pasada, supera el deadline efectivo o el elemento está cerrado. |
 | DELETE | `/execution-sessions/:id/completion` | CU-18 | Vuelve a `PLANNED`, elimina los `WorkLog` vinculados a la sesión (RN-27) y recalcula `progress`. |
 | POST | `/work-logs` | RN-71 | `{ sourceType, sourceId, minutes, sessionId?, date? }`; `date` es hoy si se omite y nunca futura. Registra trabajo con o sin sesión. |
