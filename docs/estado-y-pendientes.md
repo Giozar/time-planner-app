@@ -20,12 +20,22 @@ Lo que no aparece en la tabla está implementado y vive en las reglas y en [time
 | Tema | Estado |
 |------|--------|
 | Recorrido manual en el navegador: idea y su promoción; patrón semanal sin desfase de día; deadline mayor al del padre rechazado; borrado con confirmación escrita; agenda de días pasados con minutos, cierre del día repetido y cierre automático de días al abrir la app; historial; calendario con hover y cambio de mes; estados abierto, pausado y cerrado en los cuatro niveles con su motivo de cierre; pausa heredada; cierre a mano en cascada, por fecha límite, por sesiones completas y por cierre de sus hijos; sesiones ocultas por un cierre en agenda y calendario; reabrir (con deadline nuevo si venció) y reapertura al agregar hijos; formularios bloqueados de lo cerrado; sugerencia de cerrar con la productividad al 100 %; avance, constancia y productividad en listas y detalles; mover una sesión (un lunes al domingo, fecha pasada o después del deadline rechazada, dos sesiones del mismo ítem en un día y editar el plan después de moverla) | ⏳ Pendiente |
+| Borrar `toggleTaskExecution` de `PlannerService`: busca la sesión por tarea y fecha, y con dos sesiones del mismo ítem en un día tomaría la primera (RN-82). Sus pruebas pasan a `toggleSession`. | ⏳ Pendiente |
+| Textos de pantalla: «Finalizar Día» pasa a «Cerrar día» (CU-19) y «completada(s)» a «realizada(s)» en el aviso de cambio de tipo de tarea | ⏳ Pendiente |
 | Backend | ⏳ Pendiente; requiere D-01 |
 | Agente planificador del backend (`timer-planner-backend/Agents/funcionalidad/`) | ⏳ Pendiente; se crea al empezar el backend |
 
 ## Propuestas en discusión
 
-Ninguna por ahora.
+P-01 a P-04 están acordadas: falta escribirlas en el documento de reglas y planificarlas. P-05 sigue en discusión.
+
+| ID | Qué se quiere | Reglas que toca |
+|----|---------------|-----------------|
+| P-01 | **Reabrir con fecha vencida.** Al reabrir, un solo diálogo lista lo vencido que tiene trabajo pendiente (el elemento, sus padres y sus hijos sin terminar) y pide una fecha nueva que se aplica a todos: desde hoy y sin pasar la de un padre que no haya vencido. Los hijos al 100 % siguen cerrados. Las sesiones no realizadas que quedaron atrás por una pausa o un cierre se pueden mover a hoy o después. Ejemplo: se reabre «Inglés», que venció el 30 de octubre, con «Leer», que venció el 20 sin terminar; los dos reciben la fecha nueva y las sesiones atrasadas de «Leer» se pueden mover. | RN-57, RN-64, RN-79, RN-82, CU-20, CU-23, CU-30 |
+| P-02 | **Historial con avance y día cerrado fijo.** Al cerrar el día se guarda el avance de cada tarea y paso de su agenda, y el historial lo muestra: «Correr 2 de 4». Volver a cerrar un día ya cerrado solo cambia sus notas, sin recalcular: lo que se marque después no cambia ese día. | RN-41 a RN-44, RN-72, RN-76, RN-81, CU-18, CU-19, CU-21, CU-27, CU-28, secciones 3.8, 7 y 8 |
+| P-03 | **Completada / Sin completar.** Un dato aparte del estado, calculado del avance al 100 %. Se muestra junto al estado («Cerrada · Sin completar») y servirá para filtrar. | RN-31, RN-67, RN-68 |
+| P-04 | **Aviso de borrado simple.** El aviso solo dice qué se elimina en cascada («2 tareas, 3 pasos») y pide escribir el título; ya no cuenta los elementos cerrados. | RN-62 |
+| P-05 | **Ideas en los cuatro niveles.** Además de la meta, un objetivo, una tarea o un paso pueden ser una idea, sin fechas ni deadline. Pausar un padre pausa a sus hijos, como hoy. | RN-55, RN-57, RN-77, D-05 |
 
 ## Decisiones abiertas
 
@@ -36,7 +46,7 @@ Ninguna está decidida. Mientras no se decida, el código no la implementa por s
 | ID | Pregunta | Reglas relacionadas |
 |----|----------|---------------------|
 | D-01 | Autenticación y número de usuarios; motor de base de datos y ORM. | sección 7.2 punto 1, sección 7.4 |
-| D-05 | En qué momento una idea acepta objetivos y tareas y pasa a meta activa. RN-55 la abre al tener horizonte y tareas; CU-02 crea `OPEN` una meta nueva con horizonte. Tampoco está definido qué pasa si se quita el horizonte a una meta activa. | RN-55, CU-02, CU-22 |
+| D-05 | En qué momento una idea acepta objetivos y tareas y pasa a meta activa. RN-55 la abre al tener horizonte y tareas; CU-02 crea `OPEN` una meta nueva con horizonte. Tampoco está definido qué pasa si se quita el horizonte a una meta activa. | RN-55, CU-02, CU-22, P-05 |
 | D-07 | Si objetivos, tareas y pasos necesitan orden manual. | — |
 | D-08 | Respaldos y recuperación de elementos borrados (fuera del MVP). | RN-52 |
 | D-09 | Endpoint de consulta del calendario por rango de fechas y cómo expone la API la constancia y la productividad calculadas de un ítem o padre (CU-28). | RN-66, RN-70, RN-73, CU-28, sección 7.2 punto 11, sección 8 |
@@ -45,6 +55,8 @@ Ninguna está decidida. Mientras no se decida, el código no la implementa por s
 
 | ID | Ubicación | Problema y corrección propuesta |
 |----|-----------|---------------------------------|
+| C-01 | RN-70 (Constancia) | Excluye todas las sesiones de fechas en pausa; debe excluir solo las no realizadas. Una sesión hecha en un día en pausa cuenta, como hace el código. |
+| C-02 | RN-77 (Formas de cerrar) | Dice que un cierre por sesiones completas se deshace «al desmarcar una sesión o al editar el plan», pero lo cerrado no deja editar el plan (RN-80). Quitar «o al editar el plan». |
 | C-13 | Sección 7.1 (Diagrama ER y tablas) | Las secciones 3.1 a 3.4 y RN-70 definen `pauses: [{ from, to? }]` en `Goal`, `Objective`, `Activity` y `SubActivity`, pero en las tablas de la sección 7.1 no aparece columna ni tabla para persistir los periodos de pausa. Agregar su representación en el modelo de BD (por ejemplo `jsonb` o tabla de pausas). |
 
 ## Números libres
@@ -52,6 +64,5 @@ Ninguna está decidida. Mientras no se decida, el código no la implementa por s
 Se pueden reutilizar para un elemento nuevo; al usar uno, se quita de aquí (ver el agente de documentación).
 
 - **RN:** RN-23, RN-38, RN-45, RN-46.
-- **P:** P-01, P-02.
 - **D:** D-02, D-03, D-04, D-06, D-10 a D-18.
-- **C:** C-01 a C-12.
+- **C:** C-03 a C-12.
