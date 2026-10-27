@@ -23,7 +23,7 @@ import { DateUtils } from '../utils/date.utils';
 import {
   DeadlineConflict,
   actualMinutesOf,
-  canMoveSession,
+  canPlaceSession,
   moveSessionTo,
   completedClosure,
   deadlineClosure,
@@ -41,6 +41,7 @@ import {
   isFutureDate,
   isOverdue,
   isValidISODate,
+  isValidPlannedMinutes,
   endPause,
   plannedMinutesOf,
   reopensWithParent,
@@ -201,7 +202,7 @@ export class PlannerService {
   private selectedDateSignal = signal<string>(DateUtils.getTodayISO());
   public selectedDate = this.selectedDateSignal.asReadonly();
 
-  /** En fechas futuras no se marcan sesiones (RN-27, RN-71); sí se mueven (RN-82). */
+  /** En fechas futuras no se marcan sesiones (RN-27, RN-71); sí se editan (RN-82). */
   public isSelectedDateReadOnly = computed(() => isFutureDate(this.selectedDateSignal(), DateUtils.getTodayISO()));
 
   /** Cambia la fecha de la agenda. Devuelve `false` si no es una fecha válida. */
@@ -223,7 +224,6 @@ export class PlannerService {
 
   /** Sesiones de `date` de tareas simples y pasos visibles. */
   private agendaFor(date: string): AgendaItem[] {
-    const today = DateUtils.getTodayISO();
     const visible = this.visiblePlanIds();
     const owners = this.planOwners();
     const items: AgendaItem[] = [];
@@ -235,7 +235,7 @@ export class PlannerService {
 
       items.push({
         sessionId: session.id,
-        canMove: canMoveSession(session, today) && !isClosed(owner.step ?? owner.activity),
+        canEdit: !isClosed(owner.step ?? owner.activity),
         deadline: this.deadlineOfOwner(owner) ?? date,
         id: owner.id,
         title: owner.title,
@@ -706,20 +706,45 @@ export class PlannerService {
   }
 
   /**
-   * Mueve una sesión `PLANNED` de hoy o futura a `date`, de hoy hasta el deadline efectivo de su ítem,
-   * sin tocar el resto del plan (RN-82). El ítem debe estar abierto. Devuelve si se movió.
+   * Cambia la fecha o el tiempo previsto de una sola sesión, aunque esté hecha o vencida, sin tocar el resto del plan (RN-82).
+   * La fecha no pasa el deadline efectivo de su ítem: una no hecha va de hoy en adelante; una hecha, hasta hoy.
+   * El tiempo previsto es de al menos 5 minutos (RN-15). Su tarea simple o paso no debe estar cerrado (RN-80).
+   * Devuelve si se guardó.
    */
-  moveSession(sessionId: string, date: string): boolean {
+  editSession(sessionId: string, changes: { date?: string; plannedMinutes?: number }): boolean {
     const today = DateUtils.getTodayISO();
     const session = this.sessionsSignal().find(s => s.id === sessionId);
     const owner = session && this.planOwners().get(session.planId);
-    if (!session || !owner || !isValidISODate(date) || !canMoveSession(session, today)) return false;
-    if (isClosed(owner.step ?? owner.activity)) return false;
+    if (!session || !owner || isClosed(owner.step ?? owner.activity)) return false;
 
-    const deadline = this.deadlineOfOwner(owner);
-    if (!deadline || date < today || date > deadline) return false;
+    const { date, plannedMinutes } = changes;
+    if (plannedMinutes !== undefined && !isValidPlannedMinutes(plannedMinutes)) return false;
+    if (date !== undefined && date !== session.scheduledDate) {
+      const deadline = this.deadlineOfOwner(owner);
+      const done = session.status === SessionStatus.DONE;
+      if (!deadline || !isValidISODate(date) || !canPlaceSession(done, date, today, deadline)) return false;
+    }
 
-    this.sessionsSignal.update(all => all.map(s => s.id === sessionId ? moveSessionTo(s, date) : s));
+    this.sessionsSignal.update(all => all.map(s => {
+      if (s.id !== sessionId) return s;
+      const moved = date !== undefined && date !== s.scheduledDate ? moveSessionTo(s, date) : s;
+      return plannedMinutes !== undefined ? { ...moved, plannedMinutes } : moved;
+    }));
+    this.commit();
+    return true;
+  }
+
+  /**
+   * Borra una sesión de una tarea simple o un paso no cerrado (RN-83). Siempre le debe quedar al menos una (RN-20).
+   * Devuelve si se borró.
+   */
+  deleteSession(sessionId: string): boolean {
+    const session = this.sessionsSignal().find(s => s.id === sessionId);
+    const owner = session && this.planOwners().get(session.planId);
+    if (!session || !owner || isClosed(owner.step ?? owner.activity)) return false;
+    if (this.sessionsSignal().filter(s => s.planId === session.planId).length <= 1) return false;
+
+    this.sessionsSignal.update(all => all.filter(s => s.id !== sessionId));
     this.commit();
     return true;
   }

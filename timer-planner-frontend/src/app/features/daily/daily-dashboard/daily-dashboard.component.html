@@ -36,7 +36,7 @@
     </header>
 
     @if (readOnly()) {
-    <p class="readonly-note">Es una fecha futura: todavía no puedes marcar sesiones, pero sí moverlas a otro día.</p>
+    <p class="readonly-note">Es una fecha futura: todavía no puedes marcar sesiones, pero sí editarlas.</p>
     }
 
     <section class="tasks-list">
@@ -58,14 +58,16 @@
                 </div>
             </div>
 
-            @if (task.canMove) {
-            <span class="move-slot">
-                <button type="button" class="step-btn" (click)="openPicker(movePicker)" title="Mover a otra fecha"
-                    aria-label="Mover a otra fecha">
-                    <mat-icon fontIcon="event_repeat"></mat-icon>
+            @if (task.canEdit) {
+            <span class="session-actions">
+                <button type="button" class="step-btn" (click)="editTask(task)" title="Editar sesión"
+                    aria-label="Editar sesión">
+                    <mat-icon fontIcon="edit_calendar"></mat-icon>
                 </button>
-                <input #movePicker type="date" class="picker-input" tabindex="-1" aria-hidden="true"
-                    [min]="todayISO" [max]="task.deadline" (change)="moveTask(task, movePicker.value)">
+                <button type="button" class="step-btn" (click)="deleteTask(task)" title="Borrar sesión"
+                    aria-label="Borrar sesión">
+                    <mat-icon fontIcon="delete"></mat-icon>
+                </button>
             </span>
             }
 

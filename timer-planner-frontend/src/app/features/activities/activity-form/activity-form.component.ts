@@ -1,7 +1,9 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { merge } from 'rxjs';
 import { PlannerService } from '../../../core/services/planner.service';
 import {
   Activity, ActivityComplexity, ActivityCriticality, ActivityPriority, ActivityStatus, ActivityType,
@@ -10,17 +12,19 @@ import {
 import { ExecutionSession, SessionStatus } from '../../../core/models/session.model';
 import { DateUtils } from '../../../core/utils/date.utils';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
-import { effectiveDeadline, isClosed, regenerateFutureSessions } from '../../../core/rules';
+import { isClosed } from '../../../core/rules';
 import {
   ACTIVITY_COMPLEXITY_LABELS, ACTIVITY_CRITICALITY_LABELS, ACTIVITY_PRIORITY_LABELS,
   ACTIVITY_TYPE_LABELS, EXECUTION_PLAN_TYPE_LABELS, WEEK_DAY_LABELS
 } from '../../../core/i18n/labels';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
+import { PlanSessionsEditor } from '../plan-sessions-editor';
+import { SessionListComponent } from '../session-list/session-list.component';
 
 @Component({
   selector: 'app-activity-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LabelPipe],
+  imports: [CommonModule, ReactiveFormsModule, LabelPipe, SessionListComponent],
   templateUrl: './activity-form.component.html',
   styleUrl: './activity-form.component.css'
 })
@@ -30,6 +34,7 @@ export class ActivityFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private dialog = inject(NativeDialogService);
+  private destroyRef = inject(DestroyRef);
 
   objectiveId: string | null = null;
   activityId: string | null = null;
@@ -38,8 +43,10 @@ export class ActivityFormComponent implements OnInit {
   closed = false;
   minDate = DateUtils.getTodayISO();
 
+  /** Sesiones del plan que se ajustan antes de guardar (CU-31). */
+  readonly editor = new PlanSessionsEditor(crypto.randomUUID(), this.minDate);
+
   // Datos originales para no perder el progreso al editar
-  private originalPlan: ExecutionPlan | null = null;
   private originalProgress = 0;
   private originalStatus: ActivityStatus = ActivityStatus.OPEN;
   private originalDeadline: string | undefined;
@@ -69,6 +76,7 @@ export class ActivityFormComponent implements OnInit {
 
     planType: [ExecutionPlanType.WEEKLY_PATTERN],
     duration: [60, [Validators.required, Validators.min(5)]], // RN-15
+    sameTime: [true], // «mismo tiempo»: todas las sesiones pendientes usan la duración (CU-31)
 
     patternDays: this.fb.array([]),
     specificDates: this.fb.array([])
@@ -76,6 +84,7 @@ export class ActivityFormComponent implements OnInit {
 
   get isSimple() { return this.activityForm.get('type')?.value === ActivityType.SIMPLE; }
   get isPattern() { return this.activityForm.get('planType')?.value === ExecutionPlanType.WEEKLY_PATTERN; }
+  get sameTime() { return !!this.activityForm.get('sameTime')?.value; }
   get objectiveDeadline(): string {
     return this.plannerService.objectives().find(o => o.id === this.objectiveId)?.deadline ?? '';
   }
@@ -97,6 +106,32 @@ export class ActivityFormComponent implements OnInit {
       this.isEditMode = true;
       this.loadActivityData(this.activityId);
     }
+    this.watchPlan();
+  }
+
+  /** Al cambiar el plan se regeneran las sesiones; al cambiar el tiempo con «mismo tiempo», todas lo toman. */
+  private watchPlan() {
+    const form = this.activityForm;
+    merge(form.get('planType')!.valueChanges, form.get('deadline')!.valueChanges)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.refreshSessions());
+    merge(form.get('duration')!.valueChanges, form.get('sameTime')!.valueChanges)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.sameTime) this.editor.applySameTime(Number(form.get('duration')?.value));
+      });
+  }
+
+  /** Regenera las sesiones de hoy en adelante con el plan del formulario (RN-21, RN-22, RN-51). */
+  private refreshSessions() {
+    const val = this.activityForm.getRawValue();
+    const isPattern = val.planType === ExecutionPlanType.WEEKLY_PATTERN;
+    this.editor.regenerate({
+      type: val.planType!,
+      patternDays: isPattern ? (val.patternDays as WeekDay[]) : undefined,
+      dates: isPattern ? undefined : [...(val.specificDates as string[])].sort(),
+      durationPerExecutionMin: Number(val.duration),
+    }, this.deadlineValue, this.sameTime);
   }
 
   private loadActivityData(id: string) {
@@ -111,7 +146,6 @@ export class ActivityFormComponent implements OnInit {
     this.originalProgress = activity.progress;
     this.originalStatus = activity.status;
     this.originalDeadline = activity.deadline;
-    this.originalPlan = activity.executionPlan;
 
     this.activityForm.patchValue({
       title: activity.title,
@@ -131,14 +165,24 @@ export class ActivityFormComponent implements OnInit {
 
     const plan = activity.executionPlan;
     if (activity.type === ActivityType.SIMPLE && plan) {
+      const sessions = this.plannerService.sessionsOf(plan.id);
+      this.editor.planId = plan.id;
+      this.editor.load(sessions);
+      // «Mismo tiempo» si todas las pendientes de hoy en adelante tienen la duración del plan.
+      this.activityForm.patchValue({
+        sameTime: sessions
+          .filter(s => s.status === SessionStatus.PLANNED && s.scheduledDate >= this.minDate)
+          .every(s => s.plannedMinutes === plan.durationPerExecutionMin),
+      });
+
       if (plan.type === ExecutionPlanType.WEEKLY_PATTERN && plan.patternDays) {
         plan.patternDays.forEach(day => this.patternDaysArray.push(new FormControl(day)));
       }
 
-      // Las sesiones pasadas, realizadas y movidas se conservan solas (RN-51, RN-82): el formulario solo edita las pendientes.
+      // Las fechas del plan son las pendientes que generó; las pasadas, realizadas, movidas y agregadas se conservan solas (RN-51).
       if (plan.type === ExecutionPlanType.SPECIFIC_DATES) {
-        this.plannerService.sessionsOf(plan.id)
-          .filter(s => s.scheduledDate >= this.minDate && s.status === SessionStatus.PLANNED && !s.rescheduledFrom)
+        sessions
+          .filter(s => s.scheduledDate >= this.minDate && s.status === SessionStatus.PLANNED && !s.rescheduledFrom && !s.manual)
           .forEach(s => this.specificDatesArray.push(new FormControl(s.scheduledDate)));
       }
     }
@@ -156,6 +200,7 @@ export class ActivityFormComponent implements OnInit {
       const index = this.patternDaysArray.value.indexOf(input.value);
       if (index >= 0) this.patternDaysArray.removeAt(index);
     }
+    this.refreshSessions();
   }
 
   addSpecificDate(dateInput: HTMLInputElement) {
@@ -172,11 +217,21 @@ export class ActivityFormComponent implements OnInit {
     }
 
     this.specificDatesArray.push(new FormControl(date));
+    this.editor.include(date);
+    this.refreshSessions();
     dateInput.value = '';
   }
 
-  removeSpecificDate(index: number) {
-    this.specificDatesArray.removeAt(index);
+  /** Borra una sesión de la lista; si era una fecha específica del plan, también sale del plan (RN-83). */
+  removeSession(id: string) {
+    const generated = this.editor.remove(id);
+    const index = generated ? this.specificDatesArray.value.indexOf(generated) : -1;
+    if (!this.isPattern && index >= 0) this.specificDatesArray.removeAt(index);
+  }
+
+  /** Agrega una sesión suelta con la duración del plan (RN-83). */
+  addSession(date: string) {
+    this.editor.add(date, Number(this.activityForm.get('duration')?.value));
   }
 
   onSubmit() {
@@ -201,7 +256,6 @@ export class ActivityFormComponent implements OnInit {
     const val = this.activityForm.value;
     const newType = val.type!;
     const ownDeadline = val.deadline || undefined;
-    const deadline = effectiveDeadline({ deadline: ownDeadline }, this.objectiveDeadline);
 
     // RN-14: ningún deadline nuevo o modificado puede ser anterior a hoy.
     if (ownDeadline && ownDeadline < this.minDate && (!this.isEditMode || ownDeadline !== this.originalDeadline)) {
@@ -226,22 +280,17 @@ export class ActivityFormComponent implements OnInit {
         return;
       }
 
-      const planId = this.originalPlan?.id ?? crypto.randomUUID();
       executionPlan = {
-        id: planId,
+        id: this.editor.planId,
         type: val.planType!,
         patternDays: isPattern ? patternDays : undefined,
         durationPerExecutionMin: val.duration!,
       };
 
-      // RN-51: conserva las sesiones pasadas y realizadas y regenera las de hoy y futuras.
-      sessions = regenerateFutureSessions(
-        this.plannerService.sessionsOf(planId),
-        { ...executionPlan, dates: isPattern ? undefined : specificDates },
-        this.minDate,
-        deadline,
-        planId
-      );
+      // RN-51: la lista ya conserva las pasadas, hechas, movidas y agregadas, y sigue el plan desde hoy.
+      // Si todavía no se generó (por ejemplo, se eligieron los días antes de escribir el tiempo), se genera ahora.
+      if (!this.editor.upcoming().length) this.refreshSessions();
+      sessions = this.editor.sessions();
 
       // RN-20: el plan debe generar al menos una sesión desde hoy.
       if (!sessions.some(s => s.scheduledDate >= this.minDate)) {

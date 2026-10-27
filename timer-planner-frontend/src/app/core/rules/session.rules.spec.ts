@@ -1,7 +1,10 @@
 import { ExecutionPlanType, WeekDay } from '../models/activity.model';
 import { SessionStatus } from '../models/session.model';
 import { makeSessions } from '../../testing/builders';
-import { actualMinutesOf, canMoveSession, moveSessionTo, plannedMinutesOf, regenerateFutureSessions } from './session.rules';
+import {
+  actualMinutesOf, applySameTime, canPlaceSession, isValidPlannedMinutes, manualSession, moveSessionTo, plannedMinutesOf,
+  regenerateFutureSessions, sessionDateRange,
+} from './session.rules';
 
 const TODAY = '2026-10-22'; // jueves
 const dates = (sessions: { scheduledDate: string }[]) => sessions.map(s => s.scheduledDate);
@@ -39,16 +42,35 @@ describe('regenerateFutureSessions (RN-21, RN-22, RN-51)', () => {
     expect(sessions[1].status).toBe(SessionStatus.PLANNED);
   });
 
-  it('reemplaza la sesión PLANNED de hoy (RN-51)', () => {
+  it('una fecha que sigue en el plan conserva su sesión y su tiempo; las nuevas usan el del plan (RN-51)', () => {
     const previous = makeSessions('p', ['2026-10-22'], [], 30);
     const sessions = regenerateFutureSessions(
       previous,
-      { type: ExecutionPlanType.SPECIFIC_DATES, dates: ['2026-10-22'], durationPerExecutionMin: 90 },
+      { type: ExecutionPlanType.SPECIFIC_DATES, dates: ['2026-10-22', '2026-10-23'], durationPerExecutionMin: 90 },
       TODAY, '2026-12-31', 'p'
     );
-    expect(sessions).toHaveLength(1);
-    expect(sessions[0].plannedMinutes).toBe(90);
-    expect(sessions[0].id).not.toBe(previous[0].id);
+    expect(sessions.map(s => [s.scheduledDate, s.plannedMinutes])).toEqual([['2026-10-22', 30], ['2026-10-23', 90]]);
+    expect(sessions[0].id).toBe(previous[0].id);
+  });
+
+  it('conserva las sesiones agregadas a mano (RN-83)', () => {
+    const added = manualSession('p', '2026-10-24', 20);
+    const sessions = regenerateFutureSessions(
+      [added],
+      { type: ExecutionPlanType.SPECIFIC_DATES, dates: ['2026-10-25'], durationPerExecutionMin: 30 },
+      TODAY, '2026-12-31', 'p'
+    );
+    expect(sessions.map(s => s.scheduledDate)).toEqual(['2026-10-24', '2026-10-25']);
+    expect(sessions[0]).toMatchObject({ id: added.id, manual: true, plannedMinutes: 20 });
+  });
+
+  it('no vuelve a generar las fechas excluidas mientras se edita', () => {
+    const sessions = regenerateFutureSessions(
+      [],
+      { type: ExecutionPlanType.WEEKLY_PATTERN, patternDays: [WeekDay.THURSDAY], durationPerExecutionMin: 30 },
+      TODAY, '2026-11-05', 'p', new Set(['2026-10-29'])
+    );
+    expect(dates(sessions)).toEqual(['2026-10-22', '2026-11-05']);
   });
 
   it('conserva la sesión DONE de hoy sin duplicarla', () => {
@@ -84,16 +106,19 @@ describe('regenerateFutureSessions (RN-21, RN-22, RN-51)', () => {
   });
 });
 
-describe('mover una sesión (RN-82)', () => {
-  it('solo se mueven las PLANNED de hoy o futuras', () => {
-    const [past, today, future, done] = [
-      ...makeSessions('p', ['2026-10-21', TODAY, '2026-10-26']),
-      ...makeSessions('q', ['2026-10-27'], ['2026-10-27']),
-    ];
-    expect(canMoveSession(past, TODAY)).toBe(false);
-    expect(canMoveSession(today, TODAY)).toBe(true);
-    expect(canMoveSession(future, TODAY)).toBe(true);
-    expect(canMoveSession(done, TODAY)).toBe(false);
+describe('editar una sesión (RN-82)', () => {
+  it('una no hecha va de hoy al deadline; una hecha, hasta hoy', () => {
+    expect(sessionDateRange(false, TODAY, '2026-12-31')).toEqual({ min: TODAY, max: '2026-12-31' });
+    expect(sessionDateRange(true, TODAY, '2026-12-31')).toEqual({ min: null, max: TODAY });
+    expect(sessionDateRange(true, TODAY, '2026-10-20')).toEqual({ min: null, max: '2026-10-20' });
+  });
+
+  it('canPlaceSession aplica ese rango', () => {
+    expect(canPlaceSession(false, '2026-10-21', TODAY, '2026-12-31')).toBe(false);
+    expect(canPlaceSession(false, '2026-10-30', TODAY, '2026-12-31')).toBe(true);
+    expect(canPlaceSession(false, '2027-01-01', TODAY, '2026-12-31')).toBe(false);
+    expect(canPlaceSession(true, '2026-10-01', TODAY, '2026-12-31')).toBe(true);
+    expect(canPlaceSession(true, '2026-10-23', TODAY, '2026-12-31')).toBe(false);
   });
 
   it('cambia solo la fecha y recuerda la original; si vuelve a ella deja de estar movida', () => {
@@ -101,6 +126,12 @@ describe('mover una sesión (RN-82)', () => {
     const sunday = moveSessionTo(monday, '2026-10-25');
     expect(sunday).toMatchObject({ id: monday.id, scheduledDate: '2026-10-25', rescheduledFrom: '2026-10-26', plannedMinutes: 60 });
     expect(moveSessionTo(moveSessionTo(sunday, '2026-10-24'), '2026-10-26').rescheduledFrom).toBeUndefined();
+  });
+
+  it('una agregada a mano se mueve sin fecha generada (RN-83)', () => {
+    const moved = moveSessionTo(manualSession('p', '2026-10-24', 20), '2026-10-25');
+    expect(moved).toMatchObject({ scheduledDate: '2026-10-25', manual: true });
+    expect(moved.rescheduledFrom).toBeUndefined();
   });
 
   it('editar el plan conserva la movida y no vuelve a generar su fecha original (RN-51)', () => {
@@ -119,6 +150,22 @@ describe('plannedMinutesOf (RN-24)', () => {
   it('suma los minutos previstos de las sesiones', () => {
     expect(plannedMinutesOf(makeSessions('p', ['a', 'b'], [], 45))).toBe(90);
     expect(plannedMinutesOf([])).toBe(0);
+  });
+});
+
+describe('tiempo de cada sesión (RN-15, CU-31)', () => {
+  it('el tiempo previsto es un entero de al menos 5 minutos', () => {
+    expect(isValidPlannedMinutes(5)).toBe(true);
+    expect(isValidPlannedMinutes(4)).toBe(false);
+    expect(isValidPlannedMinutes(7.5)).toBe(false);
+  });
+
+  it('«mismo tiempo» cambia las pendientes de hoy en adelante; no las pasadas ni las hechas', () => {
+    const sessions = [
+      ...makeSessions('p', ['2026-10-20', TODAY, '2026-10-29'], [], 30),
+      ...makeSessions('p', ['2026-10-30'], ['2026-10-30'], 30),
+    ];
+    expect(applySameTime(sessions, 45, TODAY).map(s => s.plannedMinutes)).toEqual([30, 45, 45, 30]);
   });
 });
 

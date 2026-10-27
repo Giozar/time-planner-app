@@ -1,0 +1,28 @@
+<div class="session-list">
+  @for (s of sessions(); track s.id) {
+  <div class="session-row">
+    <span class="session-date">{{ s.scheduledDate | date:'EEE d MMM y' }}</span>
+    @if (s.status === SessionStatus.DONE) {
+    <span class="session-tag">Realizada</span>
+    } @else if (s.manual) {
+    <span class="session-tag">Agregada</span>
+    }
+    @if (sameTime() || s.status === SessionStatus.DONE) {
+    <span class="session-minutes">{{ s.plannedMinutes }} min</span>
+    } @else {
+    <input #minutesInput type="number" class="session-minutes-input" [min]="minMinutes" step="1"
+      [value]="s.plannedMinutes" (change)="onMinutes(s, minutesInput)" aria-label="Minutos de la sesión">
+    }
+    <button type="button" class="session-remove" (click)="remove.emit(s.id)" aria-label="Borrar sesión">×</button>
+  </div>
+  } @empty {
+  <p class="session-empty">Sin sesiones de hoy en adelante.</p>
+  }
+
+  @if (canAdd()) {
+  <div class="session-adder">
+    <input #addInput type="date" [min]="minDate()" [max]="maxDate() || null" aria-label="Fecha de la sesión">
+    <button type="button" (click)="onAdd(addInput)">+ Agregar sesión</button>
+  </div>
+  }
+</div>

@@ -68,8 +68,12 @@
       <h3>Plan de Ejecución</h3>
 
       <div class="form-group">
-        <label>Duración por Sesión (min, mínimo 5)</label>
+        <label>Tiempo de cada sesión (min, mínimo 5)</label>
         <input type="number" formControlName="duration" min="5">
+        <label class="same-time">
+          <input type="checkbox" formControlName="sameTime">
+          Mismo tiempo para todas las sesiones
+        </label>
       </div>
 
       <div class="form-group">
@@ -107,19 +111,15 @@
           <input type="date" #dateInput [min]="minDate" [max]="deadlineValue || null">
           <button type="button" (click)="addSpecificDate(dateInput)">+</button>
         </div>
-
-        <div class="selected-dates">
-          @for (date of specificDatesArray.value; track $index) {
-          <span class="date-tag">
-            {{ date }}
-            <span class="remove" (click)="removeSpecificDate($index)">×</span>
-          </span>
-          } @empty {
-          <span class="empty-hint">Sin fechas añadidas</span>
-          }
-        </div>
       </div>
       }
+
+      <div class="form-group">
+        <label>Sesiones de hoy en adelante</label>
+        <app-session-list [sessions]="editor.upcoming()" [sameTime]="sameTime" [canAdd]="isPattern"
+          [minDate]="minDate" [maxDate]="deadlineValue" (minutesChange)="editor.setMinutes($event.id, $event.minutes)"
+          (remove)="removeSession($event)" (add)="addSession($event)" />
+      </div>
     </div>
     } @else {
     <div class="info-box fade-in">

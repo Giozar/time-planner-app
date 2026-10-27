@@ -167,34 +167,17 @@ select:focus {
   font-size: 1.5rem;
 }
 
-.selected-dates {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.date-tag {
-  background: #e3f2fd;
-  color: #1565c0;
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
+/* «Mismo tiempo» (CU-31) */
+.same-time {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-weight: 500;
 }
 
-.date-tag .remove {
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-.date-tag .remove:hover {
-  color: #c0392b;
+.same-time input {
+  width: auto;
 }
 
 /* Actions */

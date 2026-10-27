@@ -1,0 +1,49 @@
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.session-row,
+.session-adder {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.session-date {
+  flex: 1;
+  text-transform: capitalize;
+  color: #34495e;
+  font-size: 0.9rem;
+}
+
+.session-tag {
+  font-size: 0.75rem;
+  color: #7f8c8d;
+}
+
+.session-minutes {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.session-minutes-input {
+  width: 5rem;
+}
+
+.session-remove {
+  border: none;
+  background: transparent;
+  color: #e74c3c;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.session-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}

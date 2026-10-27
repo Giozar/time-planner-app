@@ -9,6 +9,7 @@ export interface ExecutionSession {
   planId: string;
   scheduledDate: string; // 'YYYY-MM-DD'; el plan genera una por fecha, una movida puede compartir día (RN-82)
   rescheduledFrom?: string; // 'YYYY-MM-DD' generada por el plan, si la sesión se movió (RN-82)
+  manual?: boolean; // agregada a mano, fuera del plan; se conserva al editarlo (RN-83, RN-51)
   plannedMinutes: number;
   status: SessionStatus;
   actualMinutes?: number; // tiempo realizado, entero positivo; solo cuando está DONE (RN-71)

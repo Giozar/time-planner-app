@@ -252,20 +252,16 @@ h1 {
   pointer-events: none;
 }
 
-/* Mover una sesión (RN-82): el selector se abre junto a su botón */
-.move-slot {
-  position: relative;
+/* Editar y borrar una sesión (RN-82, RN-83) */
+.session-actions {
   display: inline-flex;
+  gap: 0.25rem;
 }
 
-.move-slot mat-icon {
+.session-actions mat-icon {
   font-size: 20px;
   width: 20px;
   height: 20px;
-}
-
-.move-slot .picker-input {
-  left: 0;
 }
 
 .readonly-note {

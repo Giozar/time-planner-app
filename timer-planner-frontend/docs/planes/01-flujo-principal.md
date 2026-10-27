@@ -2,11 +2,11 @@
 
 ## Contexto
 
-Llevar el frontend al flujo acordado y ya escrito en `docs/analisis-reglas-de-negocio.md`: sesiones que se editan, agregan y borran, con su tiempo realizado y su nota; registro diario en la agenda y métricas.
+Llevar el frontend al flujo acordado y ya escrito en `docs/analisis-reglas-de-negocio.md`: sesiones con su tiempo realizado y su nota, registro diario en la agenda y métricas.
 
 ## RN y CU cubiertas
 
-RN-27, RN-41, RN-51, RN-69, RN-72, RN-75, RN-76, RN-82 a RN-86; CU-17 a CU-19, CU-30 a CU-32.
+RN-27, RN-41, RN-69, RN-72, RN-75, RN-76, RN-84 a RN-86; CU-17 a CU-19, CU-30, CU-32.
 
 ## Conflictos con reglas existentes
 
@@ -14,21 +14,16 @@ Ninguno: las reglas ya describen el flujo acordado.
 
 ## Archivos a tocar
 
-- **Modelos y reglas:** `core/models` (`session`, `daily-record`), `core/rules` (`session`, `progress` y una regla de métricas).
+- **Modelos y reglas:** `core/models` (`session`, `daily-record`), `core/rules` (estado de la sesión y una regla de métricas).
 - **Servicio:** `core/services/planner.service.ts` y sus pruebas.
-- **Pantallas:** `features/activities`, `features/daily`; se borra `features/history` y se crea `features/metrics`.
+- **Pantallas:** `features/daily`; se borra `features/history` y se crea `features/metrics`.
 - **Compartido:** `core/i18n/labels.ts`, `shared/layout/main-layout` (menú), `app.routes.ts`.
 
 ## Pasos ordenados
 
-### Fase 3 — Editar, agregar y borrar sesiones
-1. `ExecutionSession.manual`; reglas para editar la fecha y el tiempo previsto de una sesión (no hecha: de hoy al deadline; hecha: hasta hoy), agregar una suelta y borrar una dejando al menos una. `regenerateFutureSessions` conserva las agregadas.
-2. Servicio: `editSession`, `addSession` y `deleteSession`; `editSession` reemplaza a `moveSession`.
-3. Formularios de tarea simple y paso: check «mismo tiempo»; sin marcar, la lista de sesiones muestra el tiempo de cada una y permite agregar y borrar.
-
 ### Fase 4 — Agenda y registro diario
 1. `ExecutionSession.notes` y `DailyRecord.sessionIds`.
-2. Agenda: marcar (también hoy) pide tiempo realizado y nota; cada sesión se edita con fecha, tiempo previsto, tiempo realizado y nota (CU-30) y muestra su estado, su resultado y si está vencida (RN-69).
+2. Agenda: marcar (también hoy) pide tiempo realizado y nota; el diálogo de editar una sesión hecha suma su tiempo realizado y su nota (CU-30, RN-76); cada sesión muestra su estado, su resultado y si está vencida (RN-69).
 3. Cierre del día: guarda sus sesiones y la nota del día.
 4. La agenda muestra el registro diario de la fecha elegida. Se borran `features/history`, su ruta y su entrada del menú.
 

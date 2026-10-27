@@ -18,7 +18,7 @@ src/app/
 │   ├── services/      planner.service.ts, lifecycle-actions.service.ts, native-dialog.service.ts
 │   └── utils/         date.utils.ts (getTodayISO)
 ├── features/
-│   ├── activities/    activity-form, structure-form
+│   ├── activities/    activity-form, structure-form, session-list y plan-sessions-editor.ts (sesiones que se ajustan en ambos formularios)
 │   ├── calendar/      calendar-view
 │   ├── daily/         daily-dashboard, daily-summary
 │   ├── goals/         goals-list, goals-form, goal-detail

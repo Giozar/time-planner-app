@@ -3,6 +3,20 @@ import { DeletableType, DeletionImpact } from '../models/deletion-impact.model';
 import { DELETABLE_TYPE_LABELS, DEADLINE_CONFLICT_LABELS } from '../i18n/labels';
 import { DeadlineConflict } from '../rules';
 
+/** Valores de un diálogo con varios campos, por `key`: texto o fecha como cadena, minutos como número. */
+export type DialogValues = Record<string, string | number>;
+
+/** Campo de un diálogo con varios datos a la vez. */
+export interface DialogField {
+  key: string;
+  label: string;
+  /** `number`: entero desde `min` (1 si falta). `date`: `YYYY-MM-DD` entre `min` y `max`. `text`: libre. */
+  type: 'number' | 'date' | 'text';
+  value: string | number;
+  min?: string | number;
+  max?: string;
+}
+
 export interface DialogOptions {
   title: string;
   message: string;
@@ -19,8 +33,10 @@ export interface DialogOptions {
   dateMin?: string;
   dateMax?: string;
   dateLabel?: string;
+  /** Si se indica, el diálogo pide estos campos juntos y devuelve sus valores. */
+  fields?: DialogField[];
   type: 'confirm' | 'alert';
-  resolve: (value: boolean, input?: number | string) => void;
+  resolve: (value: boolean, input?: number | string | DialogValues) => void;
 }
 
 @Injectable({
@@ -82,6 +98,21 @@ export class NativeDialogService {
     });
   }
 
+  /** Pide varios campos a la vez, por ejemplo la fecha y el tiempo de una sesión (RN-82). `null` si se cancela. */
+  promptFields(title: string, message: string, fields: DialogField[], confirmText = 'Guardar'): Promise<DialogValues | null> {
+    return new Promise((resolve) => {
+      this.dialogState.set({
+        title,
+        message,
+        confirmText,
+        cancelText: 'Cancelar',
+        fields,
+        type: 'confirm',
+        resolve: (ok, input) => resolve(ok && typeof input === 'object' ? input : null),
+      });
+    });
+  }
+
   /** Confirmación de borrado con escritura del título y resumen de lo que se elimina (RN-62). */
   confirmDelete(type: DeletableType, impact: DeletionImpact): Promise<boolean> {
     const label = DELETABLE_TYPE_LABELS[type];
@@ -124,7 +155,7 @@ export class NativeDialogService {
     });
   }
 
-  close(result: boolean, input?: number | string) {
+  close(result: boolean, input?: number | string | DialogValues) {
     const current = this.dialogState();
     if (current) {
       current.resolve(result, input);

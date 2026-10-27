@@ -275,43 +275,65 @@ describe('PlannerService', () => {
     });
   });
 
-  describe('mover una sesión (RN-82)', () => {
+  describe('editar y borrar una sesión (RN-82, RN-83)', () => {
     const sessionOn = (planId: string, date: string) => service.sessionsOf(planId).find(s => s.scheduledDate === date)!;
 
     it('mueve solo ese lunes al domingo; los demás lunes y el avance no cambian', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-26', '2026-11-02']));
-      expect(service.moveSession(sessionOn('p-a1', '2026-10-26').id, '2026-10-25')).toBe(true);
+      expect(service.editSession(sessionOn('p-a1', '2026-10-26').id, { date: '2026-10-25' })).toBe(true);
 
       expect(service.sessionsOf('p-a1').map(s => s.scheduledDate)).toEqual(['2026-10-25', '2026-11-02']);
       expect(sessionOn('p-a1', '2026-10-25').rescheduledFrom).toBe('2026-10-26');
       expect(service.activities()[0].progress).toBe(0);
 
       service.setSelectedDate('2026-10-25');
-      expect(service.agendaTasks()).toMatchObject([{ id: 'a1', canMove: true }]);
+      expect(service.agendaTasks()).toMatchObject([{ id: 'a1', canEdit: true }]);
       service.setSelectedDate('2026-10-26');
       expect(service.agendaTasks()).toEqual([]);
     });
 
-    it('rechaza fechas pasadas o después del deadline, sesiones hechas y elementos cerrados', () => {
+    it('una no hecha va de hoy al deadline; una hecha, solo hasta hoy; nada en lo cerrado', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-26', TODAY], [TODAY], { deadline: '2026-11-30' }));
       const monday = sessionOn('p-a1', '2026-10-26').id;
+      const done = sessionOn('p-a1', TODAY).id;
 
-      expect(service.moveSession(monday, '2026-10-21')).toBe(false);
-      expect(service.moveSession(monday, '2026-12-01')).toBe(false);
-      expect(service.moveSession(sessionOn('p-a1', TODAY).id, '2026-10-25')).toBe(false);
+      expect(service.editSession(monday, { date: '2026-10-21' })).toBe(false);
+      expect(service.editSession(monday, { date: '2026-12-01' })).toBe(false);
+      expect(service.editSession(done, { date: '2026-10-25' })).toBe(false);
+      expect(service.editSession(done, { date: '2026-10-20' })).toBe(true);
+      expect(service.sessionsOf('p-a1')[0]).toMatchObject({ id: done, scheduledDate: '2026-10-20', status: SessionStatus.DONE });
 
       service.closeActivity('a1');
-      expect(service.moveSession(monday, '2026-10-25')).toBe(false);
+      expect(service.editSession(monday, { date: '2026-10-25' })).toBe(false);
+      expect(service.editSession(monday, { plannedMinutes: 45 })).toBe(false);
       expect(sessionOn('p-a1', '2026-10-26')).toBeDefined();
+    });
+
+    it('una sesión vencida se puede llevar a hoy o después', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-20', '2026-10-30']));
+      expect(service.editSession(sessionOn('p-a1', '2026-10-20').id, { date: TODAY })).toBe(true);
+      expect(service.sessionsOf('p-a1').map(s => s.scheduledDate)).toEqual([TODAY, '2026-10-30']);
+    });
+
+    it('cambia el tiempo previsto de una sola sesión, de al menos 5 minutos', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY, '2026-10-30']));
+      const today = sessionOn('p-a1', TODAY).id;
+
+      expect(service.editSession(today, { plannedMinutes: 3 })).toBe(false);
+      expect(service.editSession(today, { plannedMinutes: 45 })).toBe(true);
+      expect(service.sessionsOf('p-a1').map(s => s.plannedMinutes)).toEqual([45, 30]);
+      expect(service.activities()[0].totalTimeRequiredMin).toBe(75);
     });
 
     it('puede caer el mismo día que otra sesión del ítem y cada una se marca por separado', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY, '2026-10-26']));
       const monday = sessionOn('p-a1', '2026-10-26').id;
-      expect(service.moveSession(monday, TODAY)).toBe(true);
+      expect(service.editSession(monday, { date: TODAY })).toBe(true);
 
       expect(service.agendaTasks().map(t => t.sessionId).sort()).toEqual([`p-a1-${TODAY}`, monday].sort());
       service.toggleSession(monday);
@@ -319,14 +341,38 @@ describe('PlannerService', () => {
       expect(service.activities()[0].progress).toBe(50);
     });
 
-    it('los pasos también se mueven, dentro del deadline de su tarea', () => {
+    it('los pasos también se editan, dentro del deadline de su tarea', () => {
       seedHierarchy();
       addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE, deadline: '2026-10-31' }));
       addStep(step({ id: 's1', activityId: 'k' }, ['2026-10-26']));
       const session = sessionOn('p-s1', '2026-10-26').id;
 
-      expect(service.moveSession(session, '2026-11-01')).toBe(false);
-      expect(service.moveSession(session, '2026-10-31')).toBe(true);
+      expect(service.editSession(session, { date: '2026-11-01' })).toBe(false);
+      expect(service.editSession(session, { date: '2026-10-31' })).toBe(true);
+    });
+
+    it('borra una sola sesión y le deja al menos una (RN-20, RN-83)', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY, '2026-10-30']));
+
+      expect(service.deleteSession(sessionOn('p-a1', TODAY).id)).toBe(true);
+      expect(service.sessionsOf('p-a1').map(s => s.scheduledDate)).toEqual(['2026-10-30']);
+      expect(service.deleteSession(sessionOn('p-a1', '2026-10-30').id)).toBe(false);
+    });
+
+    it('borrar la única sesión pendiente puede completar la tarea (RN-77)', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-20', '2026-10-30'], ['2026-10-20']));
+      service.deleteSession(sessionOn('p-a1', '2026-10-30').id);
+
+      expect(service.activities()[0]).toMatchObject({ progress: 100, closure: { type: ClosureType.COMPLETED } });
+    });
+
+    it('no se borran sesiones de lo cerrado', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY, '2026-10-30']));
+      service.closeActivity('a1');
+      expect(service.deleteSession(sessionOn('p-a1', TODAY).id)).toBe(false);
     });
   });
 

@@ -6,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { PlannerService } from '../../../core/services/planner.service';
 import { NativeDialogService } from '../../../core/services/native-dialog.service';
 import { AgendaItem } from '../../../core/models/agenda-item.model';
-import { addDays } from '../../../core/rules';
+import { MIN_SESSION_MINUTES, addDays, sessionDateRange } from '../../../core/rules';
 import { DateUtils } from '../../../core/utils/date.utils';
 
 @Component({
@@ -83,11 +83,35 @@ export class DailyDashboardComponent {
     this.plannerService.toggleSession(task.sessionId, minutes);
   }
 
-  /** Mueve solo esta sesión a otra fecha, de hoy hasta el deadline del ítem (CU-30, RN-82). */
-  moveTask(task: AgendaItem, date: string) {
-    if (!date || date === this.selectedDate()) return;
-    if (!this.plannerService.moveSession(task.sessionId, date)) {
-      this.dialog.alert('No se puede mover', `Elige una fecha desde hoy hasta el ${task.deadline}.`);
+  /**
+   * Cambia la fecha o el tiempo previsto de solo esta sesión (CU-30, RN-82): una no hecha, de hoy al deadline del ítem;
+   * una hecha, hasta hoy.
+   */
+  async editTask(task: AgendaItem) {
+    const { min, max } = sessionDateRange(task.isCompleted, this.todayISO, task.deadline);
+    // Una sesión vencida puede quedarse en su día para cambiar solo su tiempo.
+    const current = this.selectedDate();
+    const dateMin = min === null ? undefined : current < min ? current : min;
+    const values = await this.dialog.promptFields('Editar sesión', `"${task.title}"`, [
+      { key: 'date', label: 'Fecha', type: 'date', value: current, min: dateMin, max },
+      { key: 'minutes', label: 'Tiempo previsto (min)', type: 'number', value: task.estimatedDurationMin, min: MIN_SESSION_MINUTES },
+    ]);
+    if (!values) return;
+
+    const changes = { date: String(values['date']), plannedMinutes: Number(values['minutes']) };
+    if (!this.plannerService.editSession(task.sessionId, changes)) {
+      this.dialog.alert('No se puede guardar', 'Revisa la fecha: no puede pasar la fecha límite y, si la sesión no está hecha, va de hoy en adelante.');
+    }
+  }
+
+  /** Borra solo esta sesión; a su tarea o paso le debe quedar al menos una (CU-31, RN-83). */
+  async deleteTask(task: AgendaItem) {
+    const ok = await this.dialog.confirm('Borrar sesión', `Se borrará la sesión de "${task.title}" de este día.`, {
+      confirmText: 'Borrar',
+      isDanger: true,
+    });
+    if (ok && !this.plannerService.deleteSession(task.sessionId)) {
+      this.dialog.alert('No se puede borrar', 'Es la única sesión de su plan.');
     }
   }
 }

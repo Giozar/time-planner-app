@@ -23,12 +23,26 @@
                     (keydown.enter)="onConfirm()">
             </label>
             }
+            @for (f of d.fields ?? []; track f.key) {
+            <label class="confirm-label">{{ f.label }}
+                @if (f.type === 'text') {
+                <textarea class="confirm-input" rows="3" [value]="fieldText(f)"
+                    (input)="setField(f.key, $any($event.target).value)"></textarea>
+                } @else {
+                <input class="confirm-input" [type]="f.type" [attr.min]="f.min" [attr.max]="f.max"
+                    [attr.step]="f.type === 'number' ? 1 : null" [value]="fieldText(f)"
+                    (input)="setField(f.key, $any($event.target).value)" (keydown.enter)="onConfirm()">
+                }
+            </label>
+            }
         </div>
         <div class="dialog-actions">
             @if (d.type === 'confirm') {
             <button class="btn-secondary" (click)="onCancel()">{{ d.cancelText }}</button>
             }
-            <button [class]="d.isDanger ? 'btn-danger' : 'btn-primary'" [disabled]="!canConfirm(d.requireText, d.numberDefault, dateRange(d))" (click)="onConfirm()">
+            <button [class]="d.isDanger ? 'btn-danger' : 'btn-primary'"
+                [disabled]="d.fields ? !fieldsValid(d.fields) : !canConfirm(d.requireText, d.numberDefault, dateRange(d))"
+                (click)="onConfirm()">
                 {{ d.confirmText }}
             </button>
         </div>

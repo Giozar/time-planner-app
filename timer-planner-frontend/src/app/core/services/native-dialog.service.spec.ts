@@ -36,6 +36,21 @@ describe('NativeDialogService', () => {
     expect(await cancelled).toBeNull();
   });
 
+  it('promptFields devuelve los valores de todos sus campos y null al cancelar (RN-82)', async () => {
+    const fields = [
+      { key: 'date', label: 'Fecha', type: 'date' as const, value: '2026-10-22', min: '2026-10-22' },
+      { key: 'minutes', label: 'Minutos', type: 'number' as const, value: 30, min: 5 },
+    ];
+    const ok = dialog.promptFields('t', 'm', fields);
+    expect(dialog.state()?.fields).toEqual(fields);
+    dialog.close(true, { date: '2026-10-25', minutes: 45 });
+    expect(await ok).toEqual({ date: '2026-10-25', minutes: 45 });
+
+    const cancelled = dialog.promptFields('t', 'm', fields);
+    dialog.close(false);
+    expect(await cancelled).toBeNull();
+  });
+
   it('confirmDelete exige escribir el título y resume el impacto (RN-62)', async () => {
     const impact: DeletionImpact = { title: 'Mi meta', objectives: 2, activities: 5, steps: 3, completed: 4 };
     const pending = dialog.confirmDelete(DeletableType.GOAL, impact);
