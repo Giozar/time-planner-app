@@ -39,12 +39,14 @@ import {
   isEffectivelyPaused,
   isHiddenByClosure,
   isFutureDate,
+  isOverdue,
   isValidISODate,
   endPause,
   plannedMinutesOf,
   reopensWithParent,
   startPause,
   validateDeadlines,
+  validateGoalDeadline,
 } from '../rules';
 import { PausePeriod } from '../models/pause.model';
 
@@ -357,6 +359,23 @@ export class PlannerService {
       return [id, { actualMinutes, plannedMinutes, percentage: computeProductivity(actualMinutes, plannedMinutes) }];
     })));
 
+  /**
+   * Ids de meta, objetivo, tarea y paso vencidos (RN-85): su deadline efectivo ya pasó y su avance es 0 %.
+   * Una meta sin deadline no se vence.
+   */
+  public overdue = computed<ReadonlySet<string>>(() => {
+    const today = DateUtils.getTodayISO();
+    const items: { level: HierarchyLevel; id: string; progress: number }[] = [
+      ...this.goalsSignal().map(g => ({ level: 'goal' as const, id: g.id, progress: g.progress })),
+      ...this.objectivesSignal().map(o => ({ level: 'objective' as const, id: o.id, progress: o.progress })),
+      ...this.activitiesSignal().map(a => ({ level: 'activity' as const, id: a.id, progress: a.progress })),
+      ...this.subActivitiesSignal().map(s => ({ level: 'step' as const, id: s.id, progress: s.progress })),
+    ];
+    return new Set(items
+      .filter(item => isOverdue(this.effectiveDeadlineOf(item.level, item.id), item.progress, today))
+      .map(item => item.id));
+  });
+
   // --- METAS ---
 
   addGoal(goal: Goal) {
@@ -364,10 +383,22 @@ export class PlannerService {
     this.commit();
   }
 
-  /** El cierre y las pausas no se editan con el formulario: se conservan. */
-  updateGoal(updated: Goal) {
-    this.goalsSignal.update(goals => goals.map(g => g.id === updated.id ? { ...updated, closure: g.closure, pauses: g.pauses } : g));
+  /**
+   * El cierre y las pausas no se editan con el formulario: se conservan; una meta cerrada conserva además su deadline (RN-80).
+   * Devuelve los objetivos que superarían el deadline nuevo (RN-49); si hay alguno, no se guarda.
+   */
+  updateGoal(updated: Goal): DeadlineConflict[] {
+    const previous = this.goalsSignal().find(g => g.id === updated.id);
+    if (previous) updated = { ...updated, closure: previous.closure, pauses: previous.pauses };
+    if (previous && isClosed(previous)) updated = { ...updated, deadline: previous.deadline };
+
+    const conflicts = validateGoalDeadline(updated, this.objectivesSignal().filter(o => o.goalId === updated.id));
+    if (conflicts.length > 0) return conflicts;
+
+    const goal = updated;
+    this.goalsSignal.update(goals => goals.map(g => g.id === goal.id ? goal : g));
     this.commit();
+    return [];
   }
 
   /** Pausar no toca deadlines, sesiones ni progreso; lo de abajo queda en pausa efectiva (RN-57). Una idea no se pausa. */
@@ -386,9 +417,9 @@ export class PlannerService {
     return this.closeManually('goal', id);
   }
 
-  /** Reabre la meta y lo de abajo que siga dentro de su deadline (RN-64). */
-  reopenGoal(id: string): ReopenResult {
-    return this.reopen('goal', id);
+  /** Reabre la meta y lo de abajo que siga dentro de su deadline. `deadline`: obligatorio si el suyo ya pasó (RN-64). */
+  reopenGoal(id: string, deadline?: string): ReopenResult {
+    return this.reopen('goal', id, deadline);
   }
 
   deleteGoal(id: string) {
@@ -400,15 +431,22 @@ export class PlannerService {
 
   // --- OBJETIVOS ---
 
-  /** Un objetivo nuevo reabre su meta si estaba cerrada (RN-53). */
-  addObjective(objective: Objective) {
+  /**
+   * Un objetivo nuevo reabre su meta si estaba cerrada (RN-53).
+   * Devuelve el conflicto si supera el deadline de su meta (RN-48); en ese caso no se guarda.
+   */
+  addObjective(objective: Objective): DeadlineConflict[] {
+    const conflicts = this.goalConflictsFor(objective);
+    if (conflicts.length > 0) return conflicts;
+
     this.objectivesSignal.update(o => [...o, objective]);
     this.reopenAncestors('objective', objective.id);
     this.commit();
+    return [];
   }
 
   /**
-   * Devuelve los conflictos de deadline (RN-49); si hay alguno, no se guarda.
+   * Devuelve los conflictos de deadline con su meta y con sus tareas y pasos (RN-48, RN-49); si hay alguno, no se guarda.
    * Conserva el cierre y las pausas; un objetivo cerrado conserva además su deadline (RN-80).
    */
   updateObjective(updated: Objective): DeadlineConflict[] {
@@ -416,7 +454,7 @@ export class PlannerService {
     if (previous) updated = { ...updated, closure: previous.closure, pauses: previous.pauses };
     if (previous && isClosed(previous)) updated = { ...updated, deadline: previous.deadline };
 
-    const conflicts = this.conflictsFor(updated.id, { objective: updated });
+    const conflicts = [...this.goalConflictsFor(updated), ...this.conflictsFor(updated.id, { objective: updated })];
     if (conflicts.length > 0) return conflicts;
 
     this.objectivesSignal.update(obs => obs.map(o => o.id === updated.id ? updated : o));
@@ -785,10 +823,10 @@ export class PlannerService {
     }
   }
 
-  /** Deadline efectivo (RN-48); la meta no tiene (RN-56). */
+  /** Deadline efectivo (RN-48); `null` en una meta sin deadline (RN-56). */
   private effectiveDeadlineOf(level: HierarchyLevel, id: string): string | null {
     switch (level) {
-      case 'goal': return null;
+      case 'goal': return this.goalsSignal().find(g => g.id === id)?.deadline ?? null;
       case 'objective': return this.objectivesSignal().find(o => o.id === id)?.deadline ?? null;
       case 'activity': {
         const activity = this.activitiesSignal().find(a => a.id === id);
@@ -803,7 +841,7 @@ export class PlannerService {
     }
   }
 
-  /** Cambia el cierre, las pausas o el deadline de un elemento. La meta no tiene deadline. */
+  /** Cambia el cierre, las pausas o el deadline de un elemento. */
   private patchNode(level: HierarchyLevel, id: string, changes: { closure?: ItemClosure; pauses?: PausePeriod[]; deadline?: string }) {
     const apply = <T extends { id: string }>(items: T[]): T[] => items.map(item => item.id === id ? { ...item, ...changes } : item);
     switch (level) {
@@ -927,6 +965,12 @@ export class PlannerService {
     const steps = this.subActivitiesSignal().filter(s => stepIds.includes(s.id));
     this.purgeSessions(steps.map(s => s.executionPlan.id));
     this.subActivitiesSignal.update(subs => subs.filter(s => !stepIds.includes(s.id)));
+  }
+
+  /** El objetivo no supera el deadline de su meta (RN-48, RN-56). */
+  private goalConflictsFor(objective: Objective): DeadlineConflict[] {
+    const goal = this.goalsSignal().find(g => g.id === objective.goalId);
+    return goal ? validateGoalDeadline(goal, [objective]) : [];
   }
 
   /**
@@ -1107,9 +1151,10 @@ export class PlannerService {
     const goals = this.goalsSignal().map(g => {
       const own = objectives.filter(o => o.goalId === g.id);
       // RN-55: la idea pasa a OPEN cuando tiene horizonte y ya tiene tareas. Una idea no se cierra.
+      // La meta con deadline se cierra al día siguiente, como los demás niveles (RN-58).
       const hasTasks = activities.some(a => own.some(o => o.id === a.objectiveId));
       const isIdea = g.status === GoalStatus.IDEA && !(g.horizon && hasTasks);
-      const closure = isIdea ? undefined : parentClosure(g.id, g.closure, own);
+      const closure = isIdea ? undefined : parentClosure(g.id, closeByDeadline(g.closure, g.deadline ?? null), own);
       const status = isIdea ? GoalStatus.IDEA : deriveStatus(closure, hasOpenPause(g.pauses), GoalStatus);
       return { ...g, closure, status, progress: computeProgress(own.flatMap(o => sessionsOfObjective(o.id))) };
     });

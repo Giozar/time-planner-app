@@ -27,6 +27,11 @@ export class ObjectiveFormComponent implements OnInit {
   minDate = DateUtils.getTodayISO();
   private originalDeadline = '';
 
+  /** Tope de la fecha del objetivo: la de su meta, si la tiene (RN-48). */
+  get goalDeadline(): string {
+    return this.plannerService.goals().find(g => g.id === this.goalId)?.deadline ?? '';
+  }
+
   readonly natures = Object.values(ObjectiveNature);
   readonly natureLabels = OBJECTIVE_NATURE_LABELS;
 
@@ -117,7 +122,12 @@ export class ObjectiveFormComponent implements OnInit {
           deadline,
           createdAt: new Date()
         };
-        this.plannerService.addObjective(newObjective);
+        // RN-48: no puede superar la fecha límite de su meta.
+        const conflicts = this.plannerService.addObjective(newObjective);
+        if (conflicts.length > 0) {
+          this.dialog.alertDeadlineConflicts(conflicts);
+          return;
+        }
         this.router.navigate(['/goals', this.goalId]);
       }
     }

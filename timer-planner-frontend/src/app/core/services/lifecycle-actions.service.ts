@@ -88,7 +88,7 @@ export class LifecycleActionsService {
 
   private attempt(level: HierarchyLevel, id: string, deadline?: string): ReopenResult {
     switch (level) {
-      case 'goal': return this.planner.reopenGoal(id);
+      case 'goal': return this.planner.reopenGoal(id, deadline);
       case 'objective': return this.planner.reopenObjective(id, deadline);
       case 'activity': return this.planner.reopenActivity(id, deadline);
       case 'step': return this.planner.reopenStep(id, deadline);

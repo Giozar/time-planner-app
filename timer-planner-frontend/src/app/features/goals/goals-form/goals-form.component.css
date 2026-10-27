@@ -48,6 +48,12 @@ input.invalid {
   border-color: #e74c3c;
 }
 
+.hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: #7f8c8d;
+}
+
 .error-msg {
   display: block;
   margin-top: 0.4rem;

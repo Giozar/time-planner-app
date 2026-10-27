@@ -17,12 +17,13 @@ export enum GoalStatus {
 
 /**
  * Representa una META (o una IDEA si no tiene horizonte, RN-55).
- * La meta no tiene fecha límite: solo se clasifica por horizonte (RN-56).
+ * Con horizonte tiene fecha límite, tope de sus objetivos (RN-56).
  */
 export interface Goal {
   id: string;
   title: string;
   horizon: GoalHorizon | null; // null mientras sea IDEA
+  deadline?: string; // 'YYYY-MM-DD'; obligatorio con horizonte; la idea no tiene (RN-56)
   progress: number;
   status: GoalStatus;
   closure?: ItemClosure; // RN-77

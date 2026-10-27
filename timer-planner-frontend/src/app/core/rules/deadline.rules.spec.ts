@@ -1,7 +1,7 @@
 import { ActivityType } from '../models/activity.model';
-import { makeActivity, makeObjective, makePlan, makeSessions, makeStep } from '../../testing/builders';
+import { makeActivity, makeGoal, makeObjective, makePlan, makeSessions, makeStep } from '../../testing/builders';
 import {
-  DeadlineConflictKind, effectiveActivityDeadline, effectiveDeadline, validateDeadlines,
+  DeadlineConflictKind, effectiveActivityDeadline, effectiveDeadline, validateDeadlines, validateGoalDeadline,
 } from './deadline.rules';
 
 const objective = makeObjective({ deadline: '2026-12-31' });
@@ -13,6 +13,20 @@ describe('deadline.rules', () => {
       expect(effectiveDeadline({}, '2026-12-31')).toBe('2026-12-31');
       expect(effectiveActivityDeadline(makeActivity(), objective)).toBe('2026-12-31');
       expect(effectiveActivityDeadline(makeActivity({ deadline: '2026-11-15' }), objective)).toBe('2026-11-15');
+    });
+  });
+
+  describe('validateGoalDeadline (RN-48, RN-56)', () => {
+    it('rechaza los objetivos que superan el deadline de su meta; uno igual vale', () => {
+      const goal = makeGoal({ deadline: '2026-12-31' });
+      const late = makeObjective({ id: 'o2', title: 'Tarde', deadline: '2027-01-15' });
+      const [conflict, ...rest] = validateGoalDeadline(goal, [objective, late]);
+      expect(conflict).toEqual({ kind: DeadlineConflictKind.OBJECTIVE_DEADLINE, id: 'o2', title: 'Tarde', dates: ['2027-01-15'] });
+      expect(rest).toEqual([]);
+    });
+
+    it('una meta sin deadline no limita a sus objetivos', () => {
+      expect(validateGoalDeadline(makeGoal(), [makeObjective({ deadline: '2999-01-01' })])).toEqual([]);
     });
   });
 

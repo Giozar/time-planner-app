@@ -2,11 +2,11 @@
 
 ## Contexto
 
-Llevar el frontend al flujo acordado y ya escrito en `docs/analisis-reglas-de-negocio.md`: meta con fecha límite, estado, resultado y vencido en todos los niveles, sesiones con su tiempo realizado y su nota, registro diario en la agenda y métricas.
+Llevar el frontend al flujo acordado y ya escrito en `docs/analisis-reglas-de-negocio.md`: sesiones que se editan, agregan y borran, con su tiempo realizado y su nota; registro diario en la agenda y métricas.
 
 ## RN y CU cubiertas
 
-RN-14, RN-27, RN-41, RN-48, RN-49, RN-51, RN-55, RN-56, RN-58, RN-63, RN-65, RN-69, RN-72, RN-75, RN-76, RN-82 a RN-86; CU-02 a CU-04, CU-17 a CU-19, CU-28, CU-30 a CU-32.
+RN-27, RN-41, RN-51, RN-69, RN-72, RN-75, RN-76, RN-82 a RN-86; CU-17 a CU-19, CU-30 a CU-32.
 
 ## Conflictos con reglas existentes
 
@@ -14,18 +14,12 @@ Ninguno: las reglas ya describen el flujo acordado.
 
 ## Archivos a tocar
 
-- **Modelos y reglas:** `core/models` (`goal`, `session`, `daily-record`), `core/rules` (`deadline`, `session`, `progress` y una regla de métricas).
+- **Modelos y reglas:** `core/models` (`session`, `daily-record`), `core/rules` (`session`, `progress` y una regla de métricas).
 - **Servicio:** `core/services/planner.service.ts` y sus pruebas.
-- **Pantallas:** `features/goals`, `features/objectives`, `features/activities`, `features/daily`; se borra `features/history` y se crea `features/metrics`.
+- **Pantallas:** `features/activities`, `features/daily`; se borra `features/history` y se crea `features/metrics`.
 - **Compartido:** `core/i18n/labels.ts`, `shared/layout/main-layout` (menú), `app.routes.ts`.
 
 ## Pasos ordenados
-
-### Fase 2 — Meta con fecha límite, resultado y vencido
-1. `Goal.deadline` opcional; la cadena de topes empieza en la meta: `validateDeadlines` rechaza objetivos que la superen y `effectiveDeadlineOf('goal')` la devuelve, así la meta se cierra por fecha límite y se reabre con un deadline nuevo.
-2. Formulario de meta: fecha límite obligatoria cuando tiene horizonte, desde hoy; si la meta ya tenía objetivos, se validan (RN-49). Formulario de objetivo: su fecha no pasa la de la meta.
-3. Servicio: resultado y vencido por id para meta, objetivo, tarea y paso con `isComplete` e `isOverdue`.
-4. Listas y detalles muestran el resultado («Completa» o «Incompleta», con su género) y «Vencida» junto al estado.
 
 ### Fase 3 — Editar, agregar y borrar sesiones
 1. `ExecutionSession.manual`; reglas para editar la fecha y el tiempo previsto de una sesión (no hecha: de hoy al deadline; hecha: hasta hoy), agregar una suelta y borrar una dejando al menos una. `regenerateFutureSessions` conserva las agregadas.

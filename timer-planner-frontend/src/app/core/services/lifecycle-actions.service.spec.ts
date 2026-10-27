@@ -6,6 +6,7 @@ import { LifecycleActionsService } from './lifecycle-actions.service';
 import { InMemoryDataProvider } from '../../testing/in-memory-data.provider';
 import { makeActivity, makeGoal, makeObjective, makePlan, makeSessions } from '../../testing/builders';
 import { ActivityStatus } from '../models/activity.model';
+import { GoalStatus } from '../models/goal.model';
 import { ObjectiveStatus } from '../models/objective.model';
 
 const TODAY = '2026-10-22';
@@ -91,6 +92,17 @@ describe('LifecycleActionsService', () => {
 
     expect(await reopened).toBe(true);
     expect(objective2()).toMatchObject({ status: ObjectiveStatus.OPEN, deadline: '2026-11-30' });
+  });
+
+  it('reabrir una meta vencida también pide su fecha nueva (RN-58, RN-64)', async () => {
+    planner.addGoal(makeGoal({ id: 'g2', deadline: '2026-10-21' }));
+
+    const reopened = actions.reopen('goal', 'g2', 'Meta');
+    await answer(true); // confirmar
+    await answer(true, '2026-11-30');
+
+    expect(await reopened).toBe(true);
+    expect(planner.goals().find(g => g.id === 'g2')).toMatchObject({ status: GoalStatus.OPEN, deadline: '2026-11-30' });
   });
 
   it('cancelar la fecha nueva deja todo cerrado', async () => {

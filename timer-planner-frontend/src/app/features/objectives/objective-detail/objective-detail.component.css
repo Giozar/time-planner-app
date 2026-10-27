@@ -316,6 +316,12 @@ h4 {
     color: #e65100;
 }
 
+/* Resultado y vencido (RN-84, RN-85) */
+.result-tag {
+    font-size: 0.75rem;
+    color: #7f8c8d;
+}
+
 .objective-deadline {
     margin: 0 0 1rem;
     color: #7f8c8d;

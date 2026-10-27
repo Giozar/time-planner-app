@@ -27,7 +27,9 @@
 
     <div class="meta-info">
       <span>Horizonte: <strong>{{ currentGoal.horizon ? (currentGoal.horizon | label: horizonLabels) : 'Sin horizonte' }}</strong></span>
+      <span>Fecha límite: <strong>{{ currentGoal.deadline ? (currentGoal.deadline | date:'mediumDate') : 'Sin fecha' }}</strong></span>
       <span>Estado: <strong>{{ currentGoal.status | label: statusLabels }}</strong>@if (currentGoal.closure) { · {{ currentGoal.closure.type | label: closureLabels }} }</span>
+      <span>Resultado: <strong>{{ currentGoal | result: 'goal' }}</strong></span>
     </div>
 
     <div class="progress-container">
@@ -71,6 +73,7 @@
           <div class="tags">
             <span class="tag-level">{{ objective.nature | label: natureLabels }}</span>
             <span class="tag-type">{{ objective.status | label: objectiveStatusLabels }}@if (objective.closure) { · {{ objective.closure.type | label: closureLabels }} }</span>
+            <span class="tag-type">{{ objective | result: 'objective' }}</span>
             <span class="tag-type">Límite: {{ objective.deadline }}</span>
           </div>
 

@@ -1,5 +1,6 @@
 import { SessionStatus } from '../models/session.model';
 import { GoalHorizon, GoalStatus } from '../models/goal.model';
+import type { HierarchyLevel } from '../models/hierarchy.model';
 import { DeletableType } from '../models/deletion-impact.model';
 import { DeadlineConflictKind } from '../rules/deadline.rules';
 import { ObjectiveNature, ObjectiveStatus } from '../models/objective.model';
@@ -129,10 +130,22 @@ export const DELETABLE_TYPE_LABELS: Record<DeletableType, string> = {
 };
 
 export const DEADLINE_CONFLICT_LABELS: Record<DeadlineConflictKind, string> = {
+  [DeadlineConflictKind.OBJECTIVE_DEADLINE]: 'Deadline del objetivo',
   [DeadlineConflictKind.ACTIVITY_DEADLINE]: 'Deadline de la tarea',
   [DeadlineConflictKind.ACTIVITY_DATES]: 'Sesiones de la tarea',
   [DeadlineConflictKind.STEP_DEADLINE]: 'Deadline del paso',
   [DeadlineConflictKind.STEP_DATES]: 'Sesiones del paso',
+};
+
+/**
+ * Resultado (RN-84) y vencido (RN-85) en el género de cada nivel: meta y tarea en femenino; objetivo y paso en masculino.
+ * No son valores de un enum: se calculan con el avance y el deadline.
+ */
+export const RESULT_LABELS: Record<HierarchyLevel, { complete: string; incomplete: string; overdue: string }> = {
+  goal: { complete: 'Completa', incomplete: 'Incompleta', overdue: 'Vencida' },
+  objective: { complete: 'Completo', incomplete: 'Incompleto', overdue: 'Vencido' },
+  activity: { complete: 'Completa', incomplete: 'Incompleta', overdue: 'Vencida' },
+  step: { complete: 'Completo', incomplete: 'Incompleto', overdue: 'Vencido' },
 };
 
 /** Meses en español; el índice es `mes - 1`. */

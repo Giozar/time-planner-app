@@ -19,11 +19,12 @@ import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
 import { TaskTagsComponent } from '../../../shared/components/task-tags/task-tags.component';
 import { ProgressBarComponent } from '../../../shared/components/progress-bar/progress-bar.component';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
+import { ResultPipe } from '../../../shared/pipes/result.pipe';
 
 @Component({
   selector: 'app-objective-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe, TaskTagsComponent, ProgressBarComponent],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe, ResultPipe, TaskTagsComponent, ProgressBarComponent],
   templateUrl: './objective-detail.component.html',
   styleUrl: './objective-detail.component.css'
 })

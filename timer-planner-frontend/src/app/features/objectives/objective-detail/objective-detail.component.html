@@ -30,6 +30,7 @@
         </div>
         <span class="badge">{{ currentObj.nature | label: natureLabels }}</span>
         <span class="badge badge-status">{{ currentObj.status | label: objectiveStatusLabels }}@if (currentObj.closure) { · {{ currentObj.closure.type | label: closureLabels }} }</span>
+        <span class="badge badge-status">{{ currentObj | result: 'objective' }}</span>
         <h1>{{ currentObj.title }}</h1>
         <p class="objective-deadline">Fecha límite del objetivo: <strong>{{ currentObj.deadline | date:'mediumDate' }}</strong></p>
 
@@ -97,6 +98,7 @@
                             </span>
                             }
                             <span class="status {{ activity.status }}">{{ activity.status | label: statusLabels }}@if (activity.closure) { · {{ activity.closure.type | label: closureLabels }} }</span>
+                            <span class="result-tag">{{ activity | result: 'activity' }}</span>
                         </div>
 
                         <div class="meta-progress">
@@ -155,6 +157,7 @@
                                         @if (sub.status !== SubActivityStatus.OPEN) {
                                         <span class="status {{ sub.status }}">{{ sub.status | label: stepStatusLabels }}@if (sub.closure) { · {{ sub.closure.type | label: closureLabels }} }</span>
                                         }
+                                        <span class="result-tag">{{ sub | result: 'step' }}</span>
                                         <span class="mini-complexity {{ sub.complexity }}">{{ sub.complexity | label: complexityLabels
                                             }}</span>
                                         <span class="sub-progress-text">

@@ -13,11 +13,12 @@ import { hasOpenPause } from '../../../core/rules';
 import { ProductivityPipe } from '../../../shared/pipes/productivity.pipe';
 import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
+import { ResultPipe } from '../../../shared/pipes/result.pipe';
 
 @Component({
   selector: 'app-goals-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe, ResultPipe],
   templateUrl: './goals-list.component.html',
   styleUrl: './goals-list.component.css'
 })

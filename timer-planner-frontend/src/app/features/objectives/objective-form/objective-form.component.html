@@ -23,9 +23,10 @@
 
         <div class="form-group">
             <label for="deadline">Fecha límite (Deadline) <span class="req">*</span></label>
-            <input id="deadline" type="date" formControlName="deadline" [min]="minDate">
+            <input id="deadline" type="date" formControlName="deadline" [min]="minDate" [max]="goalDeadline || null">
             <p class="hint">{{ closed ? 'El objetivo está cerrado: su fecha límite ya no se edita.'
-                : 'Es el tope de todas las tareas y pasos de este objetivo.' }}</p>
+                : 'Es el tope de todas las tareas y pasos de este objetivo.' }}
+                @if (!closed && goalDeadline) { No puede pasar la de su meta: {{ goalDeadline | date:'mediumDate' }}. }</p>
         </div>
 
         <div class="actions">

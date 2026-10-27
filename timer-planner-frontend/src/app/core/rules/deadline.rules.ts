@@ -1,9 +1,12 @@
 import { Activity, SubActivity } from '../models/activity.model';
+import { Goal } from '../models/goal.model';
 import { Objective } from '../models/objective.model';
 import { ExecutionPlan } from '../models/activity.model';
 import { ExecutionSession } from '../models/session.model';
 
 export enum DeadlineConflictKind {
+  /** Deadline de un objetivo posterior al de su meta. */
+  OBJECTIVE_DEADLINE = 'OBJECTIVE_DEADLINE',
   /** Deadline propio de una tarea posterior al de su objetivo. */
   ACTIVITY_DEADLINE = 'ACTIVITY_DEADLINE',
   /** Sesiones de una tarea simple posteriores a su deadline efectivo. */
@@ -33,6 +36,21 @@ export function effectiveActivityDeadline(
   objective: Pick<Objective, 'deadline'>,
 ): string {
   return effectiveDeadline(activity, objective.deadline);
+}
+
+/**
+ * Primer tope de la cadena (RN-48, RN-56): ningún objetivo supera el deadline de su meta.
+ * Una meta sin deadline (una idea, o una meta que aún no lo tiene) no limita a sus objetivos.
+ */
+export function validateGoalDeadline(
+  goal: Pick<Goal, 'deadline'>,
+  objectives: readonly Objective[],
+): DeadlineConflict[] {
+  const limit = goal.deadline;
+  if (!limit) return [];
+  return objectives
+    .filter(o => o.deadline > limit)
+    .map(o => ({ kind: DeadlineConflictKind.OBJECTIVE_DEADLINE, id: o.id, title: o.title, dates: [o.deadline] }));
 }
 
 /**

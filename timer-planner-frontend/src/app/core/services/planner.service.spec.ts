@@ -840,6 +840,105 @@ describe('PlannerService', () => {
     });
   });
 
+  describe('fecha límite de la meta (RN-48, RN-49, RN-56, RN-58)', () => {
+    it('un objetivo no supera la fecha de su meta y no se guarda', () => {
+      service.addGoal(makeGoal({ deadline: '2026-12-31' }));
+      const [conflict] = service.addObjective(makeObjective({ deadline: '2027-01-15' }));
+
+      expect(conflict.kind).toBe(DeadlineConflictKind.OBJECTIVE_DEADLINE);
+      expect(service.objectives()).toEqual([]);
+      expect(service.addObjective(makeObjective({ deadline: '2026-12-31' }))).toEqual([]);
+    });
+
+    it('editar un objetivo también respeta la fecha de su meta', () => {
+      service.addGoal(makeGoal({ deadline: '2026-12-31' }));
+      service.addObjective(makeObjective({ deadline: '2026-12-01' }));
+
+      const conflicts = service.updateObjective({ ...service.objectives()[0], deadline: '2027-01-15' });
+      expect(conflicts.map(c => c.kind)).toEqual([DeadlineConflictKind.OBJECTIVE_DEADLINE]);
+      expect(service.objectives()[0].deadline).toBe('2026-12-01');
+    });
+
+    it('adelantar la meta valida sus objetivos; postergarla siempre se puede (RN-49, RN-60)', () => {
+      service.addGoal(makeGoal({ deadline: '2026-12-31' }));
+      service.addObjective(makeObjective({ deadline: '2026-12-20' }));
+      const goal = service.goals()[0];
+
+      expect(service.updateGoal({ ...goal, deadline: '2026-12-15' }).map(c => c.kind))
+        .toEqual([DeadlineConflictKind.OBJECTIVE_DEADLINE]);
+      expect(service.goals()[0].deadline).toBe('2026-12-31');
+      expect(service.updateGoal({ ...goal, deadline: '2027-06-30' })).toEqual([]);
+      expect(service.goals()[0].deadline).toBe('2027-06-30');
+    });
+
+    it('una meta sin fecha no limita a sus objetivos (RN-56)', () => {
+      service.addGoal(makeGoal());
+      expect(service.addObjective(makeObjective({ deadline: '2999-01-01' }))).toEqual([]);
+    });
+
+    it('la meta se cierra al día siguiente de su fecha y se reabre con una nueva (RN-58, RN-64)', () => {
+      service.addGoal(makeGoal({ deadline: '2026-10-21' }));
+      expect(service.goals()[0]).toMatchObject({
+        status: GoalStatus.CLOSED, closure: { type: ClosureType.DEADLINE, closedOn: TODAY },
+      });
+
+      expect(service.reopenGoal('g1')).toBe('needs_deadline');
+      expect(service.reopenGoal('g1', '2026-11-30')).toBe('ok');
+      expect(service.goals()[0]).toMatchObject({ status: GoalStatus.OPEN, deadline: '2026-11-30' });
+    });
+
+    it('un objetivo vencido no se reabre más allá de la fecha de su meta', () => {
+      service.addGoal(makeGoal({ deadline: '2026-12-31' }));
+      service.addObjective(makeObjective({ deadline: '2026-10-21' }));
+
+      expect(service.reopenObjective('o1', '2027-01-15')).toBe('invalid_deadline');
+      expect(service.reopenObjective('o1', '2026-12-15')).toBe('ok');
+    });
+
+    it('si la meta también venció, se reabre primero la meta', () => {
+      service.addGoal(makeGoal({ deadline: '2026-10-21' }));
+      service.addObjective(makeObjective({ deadline: '2026-10-20' }));
+      expect(service.reopenObjective('o1', '2026-11-30')).toBe('parent_expired');
+    });
+
+    it('una meta cerrada conserva su fecha al editarla (RN-80)', () => {
+      service.addGoal(makeGoal({ deadline: '2026-12-31' }));
+      service.closeGoal('g1');
+      service.updateGoal({ ...service.goals()[0], title: 'Otra', deadline: '2027-06-30' });
+
+      expect(service.goals()[0]).toMatchObject({ title: 'Otra', deadline: '2026-12-31' });
+    });
+  });
+
+  describe('vencido (RN-85)', () => {
+    beforeEach(() => {
+      service.addGoal(makeGoal());
+      service.addObjective(makeObjective({ deadline: '2026-10-21' }));
+    });
+
+    it('vence lo que pasó su fecha sin hacer nada; la meta sin fecha no', () => {
+      addActivity(simple('a1', ['2026-10-20']));
+      expect([...service.overdue()].sort()).toEqual(['a1', 'o1']);
+    });
+
+    it('si se hizo algo, queda cerrado e incompleto pero no vencido', () => {
+      addActivity(simple('a1', ['2026-10-20', '2026-10-21'], ['2026-10-20']));
+      expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.CLOSED, progress: 50 });
+      expect(service.overdue().size).toBe(0);
+    });
+
+    it('deja de estar vencido al reabrir con un deadline nuevo', () => {
+      addActivity(simple('a1', ['2026-10-20']));
+      service.reopenObjective('o1', '2026-11-30');
+      expect(service.overdue().size).toBe(0);
+    });
+
+    it('una meta con su fecha pasada y nada hecho está vencida', () => {
+      service.addGoal(makeGoal({ id: 'g2', deadline: '2026-10-21' }));
+      expect(service.overdue().has('g2')).toBe(true);
+    });
+  });
+
   describe('calendario (RN-66)', () => {
     beforeEach(() => {
       service.addGoal(makeGoal({ title: 'Salud' }));

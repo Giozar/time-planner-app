@@ -18,7 +18,7 @@
       style="cursor: pointer;">
 
       <div class="card-header">
-        <span class="horizonte">{{ goal.horizon ? (goal.horizon | label: horizonLabels) : 'Sin horizonte' }}</span>
+        <span class="horizonte">{{ goal.horizon ? (goal.horizon | label: horizonLabels) : 'Sin horizonte' }}@if (goal.deadline) { · {{ goal.deadline | date:'mediumDate' }} }</span>
         <div class="header-actions">
           @if (goal.status === GoalStatus.CLOSED) {
           <button class="btn-icon-neutral" (click)="onReopen($event, goal)" title="Reabrir Meta">
@@ -63,6 +63,7 @@
         <span class="status-indicator {{ goal.status }}">
           {{ goal.status | label: statusLabels }}@if (goal.closure) { · {{ goal.closure.type | label: closureLabels }} }
         </span>
+        <span class="result-indicator">{{ goal | result: 'goal' }}</span>
       </div>
 
     </article>

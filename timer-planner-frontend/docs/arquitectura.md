@@ -27,7 +27,7 @@ src/app/
 ├── shared/
 │   ├── components/    global-dialog, progress-bar, task-tags
 │   ├── layout/        main-layout
-│   └── pipes/         label.pipe.ts, consistency.pipe.ts, productivity.pipe.ts
+│   └── pipes/         label.pipe.ts, consistency.pipe.ts, productivity.pipe.ts, result.pipe.ts
 ├── testing/           builders.ts e in-memory-data.provider.ts (solo para pruebas)
 ├── app.config.ts      enlaza DataProvider con LocalStorageService
 └── app.routes.ts

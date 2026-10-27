@@ -16,11 +16,12 @@ import { Goal } from '../../../core/models/goal.model';
 import { ProductivityPipe } from '../../../shared/pipes/productivity.pipe';
 import { ConsistencyPipe } from '../../../shared/pipes/consistency.pipe';
 import { LabelPipe } from '../../../shared/pipes/label.pipe';
+import { ResultPipe } from '../../../shared/pipes/result.pipe';
 
 @Component({
   selector: 'app-goal-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe],
+  imports: [CommonModule, RouterLink, MatIconModule, LabelPipe, ConsistencyPipe, ProductivityPipe, ResultPipe],
   templateUrl: './goal-detail.component.html',
   styleUrl: './goal-detail.component.css',
 })

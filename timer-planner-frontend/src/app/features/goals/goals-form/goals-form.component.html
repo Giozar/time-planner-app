@@ -23,6 +23,15 @@
       </select>
     </div>
 
+    @if (hasHorizon) {
+    <div class="form-group">
+      <label for="deadline">Fecha límite</label>
+      <input id="deadline" type="date" formControlName="deadline" [min]="minDate">
+      <p class="hint">{{ closed ? 'La meta está cerrada: su fecha límite ya no se edita.'
+        : 'Es el tope de todos los objetivos de esta meta.' }}</p>
+    </div>
+    }
+
 
     <div class="actions">
       <button type="button" class="btn-cancel" (click)="cancel()">Cancelar</button>
