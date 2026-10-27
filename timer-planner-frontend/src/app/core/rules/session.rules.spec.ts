@@ -1,9 +1,9 @@
 import { ExecutionPlanType, WeekDay } from '../models/activity.model';
-import { SessionStatus } from '../models/session.model';
+import { SessionState, SessionStatus } from '../models/session.model';
 import { makeSessions } from '../../testing/builders';
 import {
-  actualMinutesOf, applySameTime, canPlaceSession, isValidPlannedMinutes, manualSession, moveSessionTo, plannedMinutesOf,
-  regenerateFutureSessions, sessionDateRange,
+  actualMinutesOf, applySameTime, canPlaceSession, isValidPlannedMinutes, manualSession, moveSessionTo, normalizeNote,
+  plannedMinutesOf, regenerateFutureSessions, sessionDateRange, sessionState,
 } from './session.rules';
 
 const TODAY = '2026-10-22'; // jueves
@@ -150,6 +150,31 @@ describe('plannedMinutesOf (RN-24)', () => {
   it('suma los minutos previstos de las sesiones', () => {
     expect(plannedMinutesOf(makeSessions('p', ['a', 'b'], [], 45))).toBe(90);
     expect(plannedMinutesOf([])).toBe(0);
+  });
+});
+
+describe('estado de la sesión (RN-69)', () => {
+  const [past, today, future] = makeSessions('p', ['2026-10-21', TODAY, '2026-10-26']);
+  const [done] = makeSessions('q', ['2026-10-26'], ['2026-10-26']);
+
+  it('cerrada si está hecha o su fecha ya pasó; si no, abierta', () => {
+    expect(sessionState(done, TODAY, false, false)).toBe(SessionState.CLOSED);
+    expect(sessionState(past, TODAY, false, false)).toBe(SessionState.CLOSED);
+    expect(sessionState(today, TODAY, false, false)).toBe(SessionState.OPEN);
+    expect(sessionState(future, TODAY, false, false)).toBe(SessionState.OPEN);
+  });
+
+  it('sigue a su ítem: cerrada si está cerrado, pausada si está en pausa', () => {
+    expect(sessionState(future, TODAY, true, false)).toBe(SessionState.CLOSED);
+    expect(sessionState(future, TODAY, false, true)).toBe(SessionState.PAUSED);
+    expect(sessionState(done, TODAY, false, true)).toBe(SessionState.CLOSED);
+  });
+});
+
+describe('normalizeNote', () => {
+  it('quita espacios sobrantes y no guarda una nota vacía', () => {
+    expect(normalizeNote('  bien  ')).toBe('bien');
+    expect(normalizeNote('   ')).toBeUndefined();
   });
 });
 

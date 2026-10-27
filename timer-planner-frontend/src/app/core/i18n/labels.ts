@@ -1,4 +1,4 @@
-import { SessionStatus } from '../models/session.model';
+import { SessionState, SessionStatus } from '../models/session.model';
 import { GoalHorizon, GoalStatus } from '../models/goal.model';
 import type { HierarchyLevel } from '../models/hierarchy.model';
 import { DeletableType } from '../models/deletion-impact.model';
@@ -117,6 +117,13 @@ export const SESSION_STATUS_LABELS: Record<SessionStatus, string> = {
   [SessionStatus.DONE]: 'Realizada',
 };
 
+/** Estado calculado de la sesión (RN-69), en femenino. */
+export const SESSION_STATE_LABELS: Record<SessionState, string> = {
+  [SessionState.OPEN]: 'Abierta',
+  [SessionState.PAUSED]: 'Pausada',
+  [SessionState.CLOSED]: 'Cerrada',
+};
+
 export const TASK_SOURCE_TYPE_LABELS: Record<TaskSourceType, string> = {
   [TaskSourceType.ACTIVITY]: 'Tarea',
   [TaskSourceType.SUBACTIVITY]: 'Paso',
@@ -137,16 +144,26 @@ export const DEADLINE_CONFLICT_LABELS: Record<DeadlineConflictKind, string> = {
   [DeadlineConflictKind.STEP_DATES]: 'Sesiones del paso',
 };
 
-/**
- * Resultado (RN-84) y vencido (RN-85) en el género de cada nivel: meta y tarea en femenino; objetivo y paso en masculino.
- * No son valores de un enum: se calculan con el avance y el deadline.
- */
-export const RESULT_LABELS: Record<HierarchyLevel, { complete: string; incomplete: string; overdue: string }> = {
-  goal: { complete: 'Completa', incomplete: 'Incompleta', overdue: 'Vencida' },
-  objective: { complete: 'Completo', incomplete: 'Incompleto', overdue: 'Vencido' },
-  activity: { complete: 'Completa', incomplete: 'Incompleta', overdue: 'Vencida' },
-  step: { complete: 'Completo', incomplete: 'Incompleto', overdue: 'Vencido' },
+/** Textos de resultado (RN-84) y vencido (RN-85); no son valores de un enum: se calculan con el avance y el deadline. */
+export interface ResultLabels {
+  complete: string;
+  incomplete: string;
+  overdue: string;
+}
+
+const FEMININE_RESULT: ResultLabels = { complete: 'Completa', incomplete: 'Incompleta', overdue: 'Vencida' };
+const MASCULINE_RESULT: ResultLabels = { complete: 'Completo', incomplete: 'Incompleto', overdue: 'Vencido' };
+
+/** En el género de cada nivel: meta y tarea en femenino; objetivo y paso en masculino. */
+export const RESULT_LABELS: Record<HierarchyLevel, ResultLabels> = {
+  goal: FEMININE_RESULT,
+  objective: MASCULINE_RESULT,
+  activity: FEMININE_RESULT,
+  step: MASCULINE_RESULT,
 };
+
+/** La sesión, en femenino (RN-69). */
+export const SESSION_RESULT_LABELS: ResultLabels = FEMININE_RESULT;
 
 /** Meses en español; el índice es `mes - 1`. */
 export const MONTH_LABELS: readonly string[] = [

@@ -7,7 +7,7 @@ import {
   Activity, ActivityStatus, ActivityType, ClosureType, ExecutionPlanType, SubActivity, SubActivityStatus, TaskSourceType,
   WeekDay,
 } from '../models/activity.model';
-import { ExecutionSession, SessionStatus } from '../models/session.model';
+import { ExecutionSession, SessionState, SessionStatus } from '../models/session.model';
 import { GoalStatus } from '../models/goal.model';
 import { ObjectiveStatus } from '../models/objective.model';
 import { DeletableType } from '../models/deletion-impact.model';
@@ -46,7 +46,8 @@ describe('PlannerService', () => {
   const addStep = (sub: SubActivity) => service.addSubActivity(sub, sessionsOfPlan[sub.executionPlan.id]);
 
   /** Marca o desmarca la sesión de ese plan en esa fecha (ids de `makeSessions`). */
-  const mark = (planId: string, date: string, minutes?: number) => service.toggleSession(`${planId}-${date}`, minutes);
+  const mark = (planId: string, date: string, minutes?: number, notes?: string) =>
+    service.toggleSession(`${planId}-${date}`, minutes, notes);
 
   beforeEach(() => {
     sessionsOfPlan = {};
@@ -701,6 +702,89 @@ describe('PlannerService', () => {
 
       expect(service.goals()[0].pauses).toEqual([{ from: '2026-10-01' }]);
       expect(service.activities()[0].status).toBe(ActivityStatus.PAUSED);
+    });
+  });
+
+  describe('tiempo realizado y nota de la sesión (RN-27, RN-69, RN-76, RN-80)', () => {
+    it('marcar guarda su tiempo realizado y su nota; desmarcar borra el tiempo y conserva la nota', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY]));
+      mark('p-a1', TODAY, 25);
+      service.toggleSession(`p-a1-${TODAY}`); // desmarcar
+      service.toggleSession(`p-a1-${TODAY}`, 20, '  costó arrancar ');
+
+      expect(service.sessionsOf('p-a1')[0]).toMatchObject({ actualMinutes: 20, notes: 'costó arrancar' });
+      mark('p-a1', TODAY);
+      expect(service.sessionsOf('p-a1')[0]).toMatchObject({ status: SessionStatus.PLANNED, notes: 'costó arrancar' });
+      expect(service.sessionsOf('p-a1')[0].actualMinutes).toBeUndefined();
+    });
+
+    it('de una sesión hecha se corrigen su tiempo realizado y su nota', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY], [TODAY], { executionPlan: makePlan('pa1', 60) }));
+      expect(service.editSession(`pa1-${TODAY}`, { actualMinutes: 30, notes: 'a medias' })).toBe(true);
+
+      expect(service.sessionsOf('pa1')[0]).toMatchObject({ actualMinutes: 30, notes: 'a medias' });
+      expect(service.activities()[0].progress).toBe(75);
+      expect(service.editSession(`pa1-${TODAY}`, { actualMinutes: 0 })).toBe(false);
+    });
+
+    it('de una no hecha no hay tiempo realizado ni nota que corregir', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY]));
+      expect(service.editSession(`p-a1-${TODAY}`, { actualMinutes: 30 })).toBe(false);
+      expect(service.editSession(`p-a1-${TODAY}`, { notes: 'x' })).toBe(false);
+    });
+
+    it('en lo cerrado solo se corrige lo hecho, no su fecha ni su tiempo previsto (RN-80)', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-20', '2026-10-30'], ['2026-10-20']));
+      service.closeActivity('a1');
+      const done = 'p-a1-2026-10-20';
+
+      expect(service.editSession(done, { actualMinutes: 45, notes: 'corregido' })).toBe(true);
+      expect(service.editSession(done, { date: '2026-10-19' })).toBe(false);
+      expect(service.editSession(done, { plannedMinutes: 45 })).toBe(false);
+      expect(service.sessionsOf('p-a1')[0]).toMatchObject({ scheduledDate: '2026-10-20', actualMinutes: 45, notes: 'corregido' });
+    });
+
+    it('la agenda muestra el estado, el avance, la nota y si la sesión está vencida', () => {
+      seedHierarchy();
+      addActivity(simple('a1', ['2026-10-20', TODAY], [], { executionPlan: makePlan('pa1', 60) }));
+      mark('pa1', TODAY, 30, 'bien');
+
+      expect(service.agendaTasks()).toMatchObject([
+        { state: SessionState.CLOSED, progress: 75, overdue: false, notes: 'bien', canEdit: true },
+      ]);
+      service.setSelectedDate('2026-10-20');
+      expect(service.agendaTasks()).toMatchObject([{ state: SessionState.CLOSED, progress: 0, overdue: true }]);
+    });
+  });
+
+  describe('registro diario (RN-41, RN-72, RN-75)', () => {
+    it('guarda las sesiones del día y se ve en la agenda de esa fecha', () => {
+      seedHierarchy();
+      addActivity(simple('a1', [TODAY, '2026-10-30']));
+      addActivity(simple('a2', [TODAY]));
+      expect(service.selectedRecord()).toBeNull();
+
+      const record = service.closeDay('buen día')!;
+      expect(record.sessionIds.sort()).toEqual([`p-a1-${TODAY}`, `p-a2-${TODAY}`]);
+      expect(service.selectedRecord()).toMatchObject({ id: record.id, notes: 'buen día' });
+
+      service.setSelectedDate('2026-10-30');
+      expect(service.selectedRecord()).toBeNull();
+    });
+
+    it('un registro guardado antes de tener sesiones las carga vacías', () => {
+      const old = {
+        id: 'r1', date: '2026-10-20', plannedSessions: 0, completedSessions: 0, adherencePercentage: null,
+        plannedMinutes: 0, actualMinutes: 0, closedAt: '2026-10-20T20:00:00.000Z',
+      };
+      provider.records = [old as never];
+
+      const reopened = TestBed.runInInjectionContext(() => new PlannerService());
+      expect(reopened.records()[0].sessionIds).toEqual([]);
     });
   });
 

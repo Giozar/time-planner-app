@@ -12,9 +12,6 @@ export const routes: Routes = [
 
       // CALENDARIO
       { path: 'calendar', loadComponent: () => import('./features/calendar/calendar-view/calendar-view.component').then(m => m.CalendarViewComponent) },
-      
-      // HISTORIAL
-      { path: 'history', loadComponent: () => import('./features/history/history-list/history-list.component').then(m => m.HistoryListComponent) },
 
       // RUTAS DE METAS (GOALS)
       { path: 'goals', loadComponent: () => import('./features/goals/goals-list/goals-list.component').then(m => m.GoalsListComponent) },

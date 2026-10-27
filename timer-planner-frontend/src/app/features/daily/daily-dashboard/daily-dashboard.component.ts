@@ -4,9 +4,10 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { PlannerService } from '../../../core/services/planner.service';
-import { NativeDialogService } from '../../../core/services/native-dialog.service';
+import { DialogField, NativeDialogService } from '../../../core/services/native-dialog.service';
 import { AgendaItem } from '../../../core/models/agenda-item.model';
-import { MIN_SESSION_MINUTES, addDays, sessionDateRange } from '../../../core/rules';
+import { MIN_SESSION_MINUTES, addDays, isComplete, sessionDateRange } from '../../../core/rules';
+import { SESSION_RESULT_LABELS, SESSION_STATE_LABELS } from '../../../core/i18n/labels';
 import { DateUtils } from '../../../core/utils/date.utils';
 
 @Component({
@@ -26,6 +27,8 @@ export class DailyDashboardComponent {
   metrics = this.plannerService.agendaMetrics;
   selectedDate = this.plannerService.selectedDate;
   readOnly = this.plannerService.isSelectedDateReadOnly;
+  /** Registro diario de la fecha, si ya se cerró (RN-75). */
+  record = this.plannerService.selectedRecord;
 
   readonly todayISO = DateUtils.getTodayISO();
   isToday = computed(() => this.selectedDate() === this.todayISO);
@@ -57,7 +60,15 @@ export class DailyDashboardComponent {
     if (value) this.goTo(value);
   }
 
-  /** En días pasados se pide el tiempo realizado, con el previsto por defecto (RN-27, RN-71). */
+  /** Estado, resultado y vencida de una sesión (RN-69): «Cerrada · Incompleta · Vencida». */
+  stateOf(task: AgendaItem): string {
+    const result = isComplete(task.progress) ? SESSION_RESULT_LABELS.complete : SESSION_RESULT_LABELS.incomplete;
+    const parts = [SESSION_STATE_LABELS[task.state], result];
+    if (task.overdue) parts.push(SESSION_RESULT_LABELS.overdue);
+    return parts.join(' · ');
+  }
+
+  /** Marcar pide el tiempo realizado, con el previsto por defecto, y una nota opcional; desmarcar no pregunta (RN-27, RN-71). */
   async toggleTask(task: AgendaItem, event: Event) {
     const checkbox = event.target as HTMLInputElement;
     // Las fechas futuras no se marcan (RN-27).
@@ -66,41 +77,54 @@ export class DailyDashboardComponent {
       return;
     }
 
-    if (task.isCompleted || this.isToday()) {
+    if (task.isCompleted) {
       this.plannerService.toggleSession(task.sessionId);
       return;
     }
 
-    const minutes = await this.dialog.promptMinutes(
-      'Registrar trabajo',
-      `¿Cuántos minutos trabajaste en "${task.title}" ese día?`,
-      task.estimatedDurationMin,
-    );
-    if (minutes === null) {
+    const values = await this.dialog.promptFields('Registrar sesión', `"${task.title}"`, [
+      { key: 'minutes', label: 'Tiempo realizado (min)', type: 'number', value: task.estimatedDurationMin, min: 1 },
+      { key: 'notes', label: 'Nota (opcional)', type: 'text', value: task.notes ?? '' },
+    ]);
+    if (!values) {
       checkbox.checked = false;
       return;
     }
-    this.plannerService.toggleSession(task.sessionId, minutes);
+    this.plannerService.toggleSession(task.sessionId, Number(values['minutes']), String(values['notes']));
   }
 
   /**
-   * Cambia la fecha o el tiempo previsto de solo esta sesión (CU-30, RN-82): una no hecha, de hoy al deadline del ítem;
-   * una hecha, hasta hoy.
+   * Edita solo esta sesión (CU-30). Si su tarea o paso sigue abierto: fecha y tiempo previsto (RN-82); una no hecha va
+   * de hoy al deadline del ítem y una hecha, hasta hoy. Si está hecha: también su tiempo realizado y su nota (RN-76),
+   * lo único que se corrige cuando su ítem está cerrado (RN-80).
    */
   async editTask(task: AgendaItem) {
-    const { min, max } = sessionDateRange(task.isCompleted, this.todayISO, task.deadline);
-    // Una sesión vencida puede quedarse en su día para cambiar solo su tiempo.
-    const current = this.selectedDate();
-    const dateMin = min === null ? undefined : current < min ? current : min;
-    const values = await this.dialog.promptFields('Editar sesión', `"${task.title}"`, [
-      { key: 'date', label: 'Fecha', type: 'date', value: current, min: dateMin, max },
-      { key: 'minutes', label: 'Tiempo previsto (min)', type: 'number', value: task.estimatedDurationMin, min: MIN_SESSION_MINUTES },
-    ]);
+    const fields: DialogField[] = [];
+    if (task.canEdit) {
+      const { min, max } = sessionDateRange(task.isCompleted, this.todayISO, task.deadline);
+      // Una sesión vencida puede quedarse en su día para cambiar solo su tiempo.
+      const current = this.selectedDate();
+      const dateMin = min === null ? undefined : current < min ? current : min;
+      fields.push(
+        { key: 'date', label: 'Fecha', type: 'date', value: current, min: dateMin, max },
+        { key: 'planned', label: 'Tiempo previsto (min)', type: 'number', value: task.estimatedDurationMin, min: MIN_SESSION_MINUTES },
+      );
+    }
+    if (task.isCompleted) {
+      fields.push(
+        { key: 'actual', label: 'Tiempo realizado (min)', type: 'number', value: task.executedMinutes, min: 1 },
+        { key: 'notes', label: 'Nota', type: 'text', value: task.notes ?? '' },
+      );
+    }
+    const values = await this.dialog.promptFields('Editar sesión', `"${task.title}"`, fields);
     if (!values) return;
 
-    const changes = { date: String(values['date']), plannedMinutes: Number(values['minutes']) };
+    const changes = {
+      ...(task.canEdit ? { date: String(values['date']), plannedMinutes: Number(values['planned']) } : {}),
+      ...(task.isCompleted ? { actualMinutes: Number(values['actual']), notes: String(values['notes']) } : {}),
+    };
     if (!this.plannerService.editSession(task.sessionId, changes)) {
-      this.dialog.alert('No se puede guardar', 'Revisa la fecha: no puede pasar la fecha límite y, si la sesión no está hecha, va de hoy en adelante.');
+      this.dialog.alert('No se puede guardar', 'La fecha no puede pasar la fecha límite y, si la sesión no está hecha, va de hoy en adelante.');
     }
   }
 

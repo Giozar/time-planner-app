@@ -21,8 +21,8 @@ export class DailySummaryComponent {
   selectedDate = this.plannerService.selectedDate;
   readOnly = this.plannerService.isSelectedDateReadOnly;
 
-  /** Notas del cierre existente de esa fecha, para no perderlas al volver a cerrar (RN-43). */
-  savedNotes = computed(() => this.plannerService.records().find(r => r.date === this.selectedDate())?.notes ?? '');
+  /** Nota del día del cierre existente de esa fecha, para no perderla al volver a cerrar (RN-43). */
+  savedNotes = computed(() => this.plannerService.selectedRecord()?.notes ?? '');
 
   displayDate = computed(() => {
     const [y, m, d] = this.selectedDate().split('-').map(Number);

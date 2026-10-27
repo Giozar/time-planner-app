@@ -148,6 +148,47 @@ h1 {
   border-radius: 4px;
 }
 
+/* Estado de la sesión y su nota (RN-69) */
+.task-state {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #95a5a6;
+}
+
+.task-note {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  white-space: pre-line;
+}
+
+/* Registro diario de la fecha (RN-72, RN-75) */
+.day-record {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.day-record h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: #2c3e50;
+}
+
+.day-record-stats,
+.day-record-note {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.day-record-note {
+  margin-top: 0.5rem;
+  white-space: pre-line;
+}
+
 .task-item.completed {
   background-color: #fafafa;
   border-color: #eee;

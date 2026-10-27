@@ -140,7 +140,7 @@ Un plan pertenece a una tarea simple o a un paso. Sus fechas viven en `Execution
 | `notes` | texto opcional | Nota de la sesión. |
 | `completedAt` | fecha/hora opcional | Solo cuando está `DONE`. |
 
-Una `PLANNED` de fecha pasada es **no realizada**; no hace falta almacenar un estado `MISSED`. El estado, el resultado y si está vencida se calculan (RN-69); no se almacenan.
+Una `PLANNED` de fecha pasada es **no realizada**; no hace falta almacenar un estado `MISSED`. El estado (`SessionState`), el resultado y si está vencida se calculan (RN-69); no se almacenan.
 
 ### 3.7 DailyRecord (Registro diario)
 
@@ -234,6 +234,9 @@ La **agenda** muestra las sesiones de la fecha elegida (hoy por defecto) que cum
 | `TaskSourceType` | `SUBACTIVITY` | Paso |
 | `SessionStatus` | `PLANNED` | Programada |
 | `SessionStatus` | `DONE` | Realizada |
+| `SessionState` | `OPEN` | Abierta |
+| `SessionState` | `PAUSED` | Pausada |
+| `SessionState` | `CLOSED` | Cerrada |
 
 > **Nota:** las etiquetas de UI se pueden ajustar sin cambiar los valores del dominio.
 

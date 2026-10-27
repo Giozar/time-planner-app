@@ -36,7 +36,7 @@
     </header>
 
     @if (readOnly()) {
-    <p class="readonly-note">Es una fecha futura: todavía no puedes marcar sesiones, pero sí editarlas.</p>
+    <p class="readonly-note">Es una fecha futura: sus sesiones todavía no se marcan, pero sí se editan.</p>
     }
 
     <section class="tasks-list">
@@ -56,28 +56,48 @@
                         @if (task.isCompleted) { {{ task.executedMinutes }} / }{{ task.estimatedDurationMin }} min
                     </span>
                 </div>
+                <span class="task-state">{{ stateOf(task) }}</span>
+                @if (task.notes) {
+                <p class="task-note">{{ task.notes }}</p>
+                }
             </div>
 
-            @if (task.canEdit) {
+            @if (task.canEdit || task.isCompleted) {
             <span class="session-actions">
                 <button type="button" class="step-btn" (click)="editTask(task)" title="Editar sesión"
                     aria-label="Editar sesión">
                     <mat-icon fontIcon="edit_calendar"></mat-icon>
                 </button>
+                @if (task.canEdit) {
                 <button type="button" class="step-btn" (click)="deleteTask(task)" title="Borrar sesión"
                     aria-label="Borrar sesión">
                     <mat-icon fontIcon="delete"></mat-icon>
                 </button>
+                }
             </span>
             }
 
         </div>
         } @empty {
         <div class="empty-day">
-            <p>{{ isToday() ? 'No tienes tareas programadas para hoy.' : 'No hay tareas programadas ese día.' }}</p>
+            <p>{{ isToday() ? 'No hay tareas programadas para hoy.' : 'No hay tareas programadas ese día.' }}</p>
         </div>
         }
     </section>
+
+    @if (record(); as r) {
+    <section class="day-record">
+        <h2>Registro del día</h2>
+        <p class="day-record-stats">
+            {{ r.completedSessions }} / {{ r.plannedSessions }} sesiones ·
+            Constancia: {{ r.adherencePercentage === null ? 'Sin datos' : r.adherencePercentage + ' %' }} ·
+            {{ r.actualMinutes }} / {{ r.plannedMinutes }} min
+        </p>
+        @if (r.notes) {
+        <p class="day-record-note">{{ r.notes }}</p>
+        }
+    </section>
+    }
 
     @if (!readOnly()) {
     <footer class="dashboard-footer">

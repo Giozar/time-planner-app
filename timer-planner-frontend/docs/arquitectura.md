@@ -22,7 +22,6 @@ src/app/
 │   ├── calendar/      calendar-view
 │   ├── daily/         daily-dashboard, daily-summary
 │   ├── goals/         goals-list, goals-form, goal-detail
-│   ├── history/       history-list
 │   └── objectives/    objective-form, objective-detail
 ├── shared/
 │   ├── components/    global-dialog, progress-bar, task-tags

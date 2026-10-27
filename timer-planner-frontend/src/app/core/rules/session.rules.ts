@@ -1,5 +1,5 @@
 import { ExecutionPlanType, WeekDay } from '../models/activity.model';
-import { ExecutionSession, SessionStatus } from '../models/session.model';
+import { ExecutionSession, SessionState, SessionStatus } from '../models/session.model';
 import { generateDatesFromPattern } from './calendar.rules';
 
 /** Tiempo previsto mínimo de una sesión, también al ajustarla una por una (RN-15). */
@@ -91,6 +91,20 @@ export function moveSessionTo(session: ExecutionSession, date: string): Executio
   if (session.manual) return { ...session, scheduledDate: date };
   const original = session.rescheduledFrom ?? session.scheduledDate;
   return { ...session, scheduledDate: date, rescheduledFrom: date === original ? undefined : original };
+}
+
+/**
+ * Estado de una sesión (RN-69), en este orden: cerrada si está hecha, si su fecha ya pasó o si su tarea simple o paso
+ * está cerrado; pausada si su ítem está en pausa efectiva (RN-57); si no, abierta.
+ */
+export function sessionState(session: ExecutionSession, today: string, itemClosed: boolean, itemPaused: boolean): SessionState {
+  if (session.status === SessionStatus.DONE || session.scheduledDate < today || itemClosed) return SessionState.CLOSED;
+  return itemPaused ? SessionState.PAUSED : SessionState.OPEN;
+}
+
+/** Nota guardada: sin espacios sobrantes; una nota vacía no se guarda. */
+export function normalizeNote(note: string): string | undefined {
+  return note.trim() || undefined;
 }
 
 /** Minutos previstos de un conjunto de sesiones (RN-24). */

@@ -43,8 +43,11 @@ import {
   isValidISODate,
   isValidPlannedMinutes,
   endPause,
+  normalizeNote,
   plannedMinutesOf,
   reopensWithParent,
+  sessionProgress,
+  sessionState,
   startPause,
   validateDeadlines,
   validateGoalDeadline,
@@ -115,7 +118,8 @@ export class PlannerService {
       this.activitiesSignal.set(data.activities);
       this.subActivitiesSignal.set(data.subActivities);
       this.sessionsSignal.set(data.sessions);
-      this.recordsSignal.set(data.records);
+      // Los registros cerrados antes de guardar sus sesiones no las tienen (RN-72).
+      this.recordsSignal.set(data.records.map(r => ({ ...r, sessionIds: r.sessionIds ?? [] })));
       // Lo guardado es el punto de partida: los cierres automáticos solo responden a cambios desde aquí (RN-77).
       this.snapshot = this.takeSnapshot();
       // Al abrir se aplican los cierres por fecha límite y el cierre automático de días (RN-58, RN-81).
@@ -222,8 +226,13 @@ export class PlannerService {
 
   public agendaMetrics = computed(() => this.metricsOf(this.agendaTasks()));
 
-  /** Sesiones de `date` de tareas simples y pasos visibles. */
+  /** Registro diario de la fecha de la agenda, si ya se cerró (RN-72, RN-75). */
+  public selectedRecord = computed<DailyRecord | null>(() =>
+    this.recordsSignal().find(r => r.date === this.selectedDateSignal()) ?? null);
+
+  /** Sesiones de `date` de tareas simples y pasos visibles, con su estado, su avance y si están vencidas (RN-69). */
   private agendaFor(date: string): AgendaItem[] {
+    const today = DateUtils.getTodayISO();
     const visible = this.visiblePlanIds();
     const owners = this.planOwners();
     const items: AgendaItem[] = [];
@@ -233,9 +242,11 @@ export class PlannerService {
       if (session.scheduledDate !== date || !owner || !visible.has(session.planId)) continue;
       if (isHiddenByClosure(session, this.closureOfOwner(owner))) continue;
 
+      const closed = isClosed(owner.step ?? owner.activity);
+      const progress = sessionProgress(session);
       items.push({
         sessionId: session.id,
-        canEdit: !isClosed(owner.step ?? owner.activity),
+        canEdit: !closed,
         deadline: this.deadlineOfOwner(owner) ?? date,
         id: owner.id,
         title: owner.title,
@@ -244,6 +255,10 @@ export class PlannerService {
         isCompleted: session.status === SessionStatus.DONE,
         estimatedDurationMin: session.plannedMinutes,
         executedMinutes: session.actualMinutes ?? 0,
+        notes: session.notes,
+        state: sessionState(session, today, closed, isEffectivelyPaused(this.pauseChainOf(owner))),
+        progress,
+        overdue: isOverdue(session.scheduledDate, progress, today),
       });
     }
 
@@ -680,13 +695,13 @@ export class PlannerService {
   // --- EJECUCIÓN ---
 
   /**
-   * Marca o desmarca una sesión de hoy o pasada (RN-27). Marcar guarda su tiempo realizado: `minutes` o, si falta,
-   * el previsto (RN-71); desmarcar la vuelve a `PLANNED` y borra su tiempo realizado.
-   * Se marca por sesión porque una sesión movida puede compartir día con otra del mismo ítem (RN-82).
+   * Marca o desmarca una sesión de hoy o pasada (RN-27). Marcar guarda su tiempo realizado, `minutes` o, si falta,
+   * el previsto (RN-71), y su nota si se indica; desmarcar la vuelve a `PLANNED` y borra su tiempo realizado,
+   * pero conserva la nota. Se marca por sesión porque una sesión movida puede compartir día con otra del mismo ítem (RN-82).
    * Las sesiones futuras, ocultas por un cierre (RN-79) o con minutos no válidos se ignoran.
    * Un día ya cerrado no se actualiza solo: se recalcula al volver a cerrarlo (RN-44).
    */
-  toggleSession(sessionId: string, minutes?: number) {
+  toggleSession(sessionId: string, minutes?: number, notes?: string) {
     const session = this.sessionsSignal().find(s => s.id === sessionId);
     const owner = session && this.planOwners().get(session.planId);
     if (!session || !owner || isFutureDate(session.scheduledDate, DateUtils.getTodayISO())) return;
@@ -700,35 +715,50 @@ export class PlannerService {
         status: SessionStatus.DONE,
         actualMinutes: minutes ?? session.plannedMinutes,
         completedAt: new Date().toISOString(),
+        ...(notes !== undefined ? { notes: normalizeNote(notes) } : {}),
       });
     }
     this.commit();
   }
 
   /**
-   * Cambia la fecha o el tiempo previsto de una sola sesión, aunque esté hecha o vencida, sin tocar el resto del plan (RN-82).
-   * La fecha no pasa el deadline efectivo de su ítem: una no hecha va de hoy en adelante; una hecha, hasta hoy.
-   * El tiempo previsto es de al menos 5 minutos (RN-15). Su tarea simple o paso no debe estar cerrado (RN-80).
-   * Devuelve si se guardó.
+   * Edita una sola sesión sin tocar el resto del plan (RN-82, RN-76). Devuelve si se guardó.
+   * - Fecha y tiempo previsto, aunque esté hecha o vencida: la fecha no pasa el deadline efectivo de su ítem;
+   *   una no hecha va de hoy en adelante y una hecha, hasta hoy. El tiempo previsto es de al menos 5 minutos (RN-15).
+   *   Su tarea simple o paso no debe estar cerrado (RN-80).
+   * - Tiempo realizado y nota: solo de una sesión hecha, también si su ítem está cerrado (RN-71, RN-76, RN-80).
    */
-  editSession(sessionId: string, changes: { date?: string; plannedMinutes?: number }): boolean {
+  editSession(
+    sessionId: string,
+    changes: { date?: string; plannedMinutes?: number; actualMinutes?: number; notes?: string },
+  ): boolean {
     const today = DateUtils.getTodayISO();
     const session = this.sessionsSignal().find(s => s.id === sessionId);
     const owner = session && this.planOwners().get(session.planId);
-    if (!session || !owner || isClosed(owner.step ?? owner.activity)) return false;
+    if (!session || !owner) return false;
 
-    const { date, plannedMinutes } = changes;
+    const { plannedMinutes, actualMinutes, notes } = changes;
+    const newDate = changes.date !== undefined && changes.date !== session.scheduledDate ? changes.date : undefined;
+    const done = session.status === SessionStatus.DONE;
+    const changesPlan = newDate !== undefined || (plannedMinutes !== undefined && plannedMinutes !== session.plannedMinutes);
+    if (changesPlan && isClosed(owner.step ?? owner.activity)) return false;
+    if (!done && (actualMinutes !== undefined || notes !== undefined)) return false;
     if (plannedMinutes !== undefined && !isValidPlannedMinutes(plannedMinutes)) return false;
-    if (date !== undefined && date !== session.scheduledDate) {
+    if (actualMinutes !== undefined && !this.isValidMinutes(actualMinutes)) return false;
+    if (newDate !== undefined) {
       const deadline = this.deadlineOfOwner(owner);
-      const done = session.status === SessionStatus.DONE;
-      if (!deadline || !isValidISODate(date) || !canPlaceSession(done, date, today, deadline)) return false;
+      if (!deadline || !isValidISODate(newDate) || !canPlaceSession(done, newDate, today, deadline)) return false;
     }
 
     this.sessionsSignal.update(all => all.map(s => {
       if (s.id !== sessionId) return s;
-      const moved = date !== undefined && date !== s.scheduledDate ? moveSessionTo(s, date) : s;
-      return plannedMinutes !== undefined ? { ...moved, plannedMinutes } : moved;
+      const moved = newDate !== undefined ? moveSessionTo(s, newDate) : s;
+      return {
+        ...moved,
+        ...(plannedMinutes !== undefined ? { plannedMinutes } : {}),
+        ...(actualMinutes !== undefined ? { actualMinutes } : {}),
+        ...(notes !== undefined ? { notes: normalizeNote(notes) } : {}),
+      };
     }));
     this.commit();
     return true;
@@ -769,11 +799,14 @@ export class PlannerService {
     return record;
   }
 
+  /** Registro de la fecha con las sesiones visibles de su agenda y su resumen (RN-41, RN-42, RN-72). */
   private buildRecord(date: string, notes: string, id: string = crypto.randomUUID()): DailyRecord {
-    const metrics = this.metricsOf(this.agendaFor(date));
+    const tasks = this.agendaFor(date);
+    const metrics = this.metricsOf(tasks);
     return {
       id,
       date,
+      sessionIds: tasks.map(t => t.sessionId),
       plannedSessions: metrics.total,
       completedSessions: metrics.completed,
       adherencePercentage: metrics.total === 0 ? null : metrics.percentage,
