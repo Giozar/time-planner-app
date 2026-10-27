@@ -27,7 +27,7 @@ Lo que no aparece en la tabla está implementado y vive en las reglas y en [time
 
 ## Propuestas en discusión
 
-P-01 a P-04 están acordadas: falta escribirlas en el documento de reglas y planificarlas. P-05 sigue en discusión.
+P-01 a P-04 están acordadas: falta escribirlas en el documento de reglas y planificarlas. P-05 sigue en discusión. P-06 está acordada salvo sus supuestos por confirmar.
 
 | ID | Qué se quiere | Reglas que toca |
 |----|---------------|-----------------|
@@ -36,6 +36,7 @@ P-01 a P-04 están acordadas: falta escribirlas en el documento de reglas y plan
 | P-03 | **Completada / Sin completar.** Un dato aparte del estado, calculado del avance al 100 %. Se muestra junto al estado («Cerrada · Sin completar») y servirá para filtrar. | RN-31, RN-67, RN-68 |
 | P-04 | **Aviso de borrado simple.** El aviso solo dice qué se elimina en cascada («2 tareas, 3 pasos») y pide escribir el título; ya no cuenta los elementos cerrados. | RN-62 |
 | P-05 | **Ideas en los cuatro niveles.** Además de la meta, un objetivo, una tarea o un paso pueden ser una idea, sin fechas ni deadline. Pausar un padre pausa a sus hijos, como hoy. | RN-55, RN-57, RN-77, D-05 |
+| P-06 | **Flujo principal simplificado** (`docs/ideas-flujo-principal.md`). Acordado: la meta tiene fecha límite y la cascada llega hasta la sesión; meta, objetivo, tarea, paso y sesión tienen estado, resultado (completo o incompleto) y vencido; la sesión guarda su tiempo realizado y sus notas; constancia = sesiones realizadas ÷ todas las sesiones; productividad = tiempo realizado ÷ tiempo definido; avance = promedio de las dos, con la productividad topada en 100 %, y solo es completo al 100 %; vencido = pasó su fecha con 0 %; se quita el tiempo sin sesión; el registro diario guarda sus sesiones y la nota del día; el historial pasa a la agenda; métricas por nivel. Incluye P-03 y reemplaza P-02. **Supuestos por confirmar:** (1) la meta idea no tiene fecha; una meta de plazo sin fecha la pide al editarla; (2) estado, resultado y vencido se calculan, no se guardan; (3) la sesión hecha queda cerrada; la de fecha pasada sin hacer, cerrada y vencida; (4) al marcar una sesión se piden su tiempo realizado (el previsto por defecto) y su nota; (5) una sesión se puede editar (fecha y tiempo) aunque esté hecha, sin pasar la fecha límite de su padre, y se puede agregar o borrar una sola; (6) cierres automáticos, reabrir y pausa siguen como hoy, pero el cierre por sesiones completas pasa a ser al quedar completo; (7) en la agenda de cada fecha se ve su registro diario y se quita la pantalla Historial; (8) métricas: por nivel, cuántos completos, incompletos, cerrados y vencidos, más constancia y productividad. | RN-14, RN-24, RN-26, RN-27, RN-30 a RN-35, RN-41 a RN-44, RN-48, RN-56, RN-58, RN-64, RN-65, RN-67 a RN-77, RN-79, RN-81, RN-82, CU-02, CU-04, CU-17 a CU-19, CU-21, CU-27, CU-28, CU-30, secciones 3.1, 3.6 a 3.8, P-02, P-03 |
 
 ## Decisiones abiertas
 
