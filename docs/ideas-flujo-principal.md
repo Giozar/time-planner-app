@@ -58,6 +58,21 @@ flowchart LR
     R --> S["Sesión<br/>fecha en que se realiza<br/>+ tiempo"]
 ```
 
+## 4.1 Otras propiedades
+
+Como las tenemos hoy, solo añadidas.
+
+| Nivel | Propiedades |
+|-------|-------------|
+| Meta | título, horizonte (corto, mediano o largo plazo) |
+| Objetivo | título, naturaleza (personal, profesional, salud, finanzas, aprendizaje, hábito, bienestar u otro) |
+| Tarea | título, tipo (simple o compuesta), prioridad (alta, media, baja), criticidad (vital, esencial recurrente, flexible), complejidad (baja, media, alta) |
+| Tarea simple | además: plan de ejecución y recurrencia (única, patrón semanal o fechas específicas), que se determina sola según el plan |
+| Tarea compuesta | sin plan ni recurrencia; los llevan sus pasos |
+| Paso | título, complejidad, plan de ejecución (no tiene recurrencia) |
+
+El **plan de ejecución** es un patrón semanal (con sus días) o fechas específicas, más la duración de cada sesión.
+
 ## 5. Tarea simple o compuesta
 
 La compuesta solo lleva su fecha límite; el patrón y el tiempo los llevan sus pasos.
