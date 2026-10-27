@@ -14,7 +14,7 @@ export const makePlan = (id = 'p1', durationPerExecutionMin = 30): ExecutionPlan
   durationPerExecutionMin,
 });
 
-/** Sesiones de un plan: una por fecha, `PLANNED` salvo las de `done`. */
+/** Sesiones de un plan: una por fecha, `PLANNED` salvo las de `done`, que se hicieron con todo su tiempo. */
 export const makeSessions = (planId: string, dates: string[], done: string[] = [], plannedMinutes = 30): ExecutionSession[] =>
   dates.map(scheduledDate => ({
     id: `${planId}-${scheduledDate}`,
@@ -22,7 +22,9 @@ export const makeSessions = (planId: string, dates: string[], done: string[] = [
     scheduledDate,
     plannedMinutes,
     status: done.includes(scheduledDate) ? SessionStatus.DONE : SessionStatus.PLANNED,
-    ...(done.includes(scheduledDate) ? { completedAt: `${scheduledDate}T12:00:00.000Z` } : {}),
+    ...(done.includes(scheduledDate)
+      ? { actualMinutes: plannedMinutes, completedAt: `${scheduledDate}T12:00:00.000Z` }
+      : {}),
   }));
 
 export const makeGoal = (overrides: Partial<Goal> = {}): Goal => ({

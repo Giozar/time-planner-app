@@ -68,7 +68,7 @@ export const SUBACTIVITY_STATUS_LABELS: Record<SubActivityStatus, string> = {
 export const CLOSURE_TYPE_LABELS: Record<ClosureType, string> = {
   [ClosureType.MANUAL]: 'a mano',
   [ClosureType.DEADLINE]: 'por fecha límite',
-  [ClosureType.SESSIONS_DONE]: 'por sesiones completas',
+  [ClosureType.COMPLETED]: 'al completarse',
   [ClosureType.CHILDREN_CLOSED]: 'por cierre de sus hijos',
 };
 

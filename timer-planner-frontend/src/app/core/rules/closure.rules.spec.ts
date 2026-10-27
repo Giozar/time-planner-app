@@ -2,8 +2,8 @@ import { ActivityStatus, ClosureType } from '../models/activity.model';
 import { GoalStatus } from '../models/goal.model';
 import { makeSessions } from '../../testing/builders';
 import {
-  deadlineClosure, deriveStatus, hasOpenPause, isClosed, isEffectivelyPaused, isHiddenByClosure,
-  reopensWithParent, sessionsDoneClosure,
+  completedClosure, deadlineClosure, deriveStatus, hasOpenPause, isClosed, isEffectivelyPaused, isHiddenByClosure,
+  reopensWithParent,
 } from './closure.rules';
 
 const TODAY = '2026-10-22';
@@ -58,26 +58,26 @@ describe('closure.rules', () => {
     });
   });
 
-  describe('sessionsDoneClosure (RN-77)', () => {
-    it('llegar a 100 % cierra por sesiones completas', () => {
-      expect(sessionsDoneClosure(undefined, 75, 100, TODAY)).toEqual({ type: ClosureType.SESSIONS_DONE, closedOn: TODAY });
+  describe('completedClosure (RN-77)', () => {
+    it('llegar a 100 % lo cierra al completarse', () => {
+      expect(completedClosure(undefined, 75, 100, TODAY)).toEqual({ type: ClosureType.COMPLETED, closedOn: TODAY });
     });
 
     it('no vuelve a cerrar lo que ya estaba al 100 % (reabierto a mano)', () => {
-      expect(sessionsDoneClosure(undefined, 100, 100, TODAY)).toBeUndefined();
+      expect(completedClosure(undefined, 100, 100, TODAY)).toBeUndefined();
     });
 
-    it('bajar de 100 % deshace solo el cierre por sesiones completas', () => {
-      const done = { type: ClosureType.SESSIONS_DONE, closedOn: '2026-10-20' };
-      expect(sessionsDoneClosure(done, 100, 75, TODAY)).toBeUndefined();
-      expect(sessionsDoneClosure(manual, 100, 75, TODAY)).toBe(manual);
+    it('bajar de 100 % deshace solo el cierre al completarse', () => {
+      const done = { type: ClosureType.COMPLETED, closedOn: '2026-10-20' };
+      expect(completedClosure(done, 100, 75, TODAY)).toBeUndefined();
+      expect(completedClosure(manual, 100, 75, TODAY)).toBe(manual);
       const deadline = { type: ClosureType.DEADLINE, closedOn: '2026-10-20' };
-      expect(sessionsDoneClosure(deadline, 100, 75, TODAY)).toBe(deadline);
+      expect(completedClosure(deadline, 100, 75, TODAY)).toBe(deadline);
     });
   });
 
   describe('reopensWithParent (RN-64)', () => {
-    it('se reabre si sigue dentro de su deadline y tiene sesiones pendientes', () => {
+    it('se reabre si sigue dentro de su deadline y está incompleto', () => {
       expect(reopensWithParent(TODAY, 50, TODAY)).toBe(true);
       expect(reopensWithParent('2026-10-21', 50, TODAY)).toBe(false);
       expect(reopensWithParent('2026-12-01', 100, TODAY)).toBe(false);

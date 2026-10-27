@@ -45,6 +45,9 @@ describe('PlannerService', () => {
     service.addActivity(activity, activity.executionPlan ? sessionsOfPlan[activity.executionPlan.id] : []);
   const addStep = (sub: SubActivity) => service.addSubActivity(sub, sessionsOfPlan[sub.executionPlan.id]);
 
+  /** Marca o desmarca la sesión de ese plan en esa fecha (ids de `makeSessions`). */
+  const mark = (planId: string, date: string, minutes?: number) => service.toggleSession(`${planId}-${date}`, minutes);
+
   beforeEach(() => {
     sessionsOfPlan = {};
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -60,46 +63,47 @@ describe('PlannerService', () => {
   const doneDates = (planId: string) =>
     service.sessionsOf(planId).filter(s => s.status === SessionStatus.DONE).map(s => s.scheduledDate);
 
-  describe('progreso y estados en cascada (RN-30 a RN-36)', () => {
+  describe('avance y estados en cascada (RN-30 a RN-36)', () => {
     it('sube de tarea a objetivo y meta tras marcar la sesión de hoy', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY]));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
 
       expect(service.activities()[0].progress).toBe(100);
       expect(service.objectives()[0].progress).toBe(100);
       expect(service.goals()[0].progress).toBe(100);
     });
 
-    it('desmarcar baja el progreso de toda la cadena', () => {
+    it('desmarcar baja el avance de toda la cadena', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY]));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
+      mark('p-a1', TODAY);
 
       expect(service.activities()[0]).toMatchObject({ progress: 0, status: ActivityStatus.OPEN });
       expect(service.goals()[0].progress).toBe(0);
     });
 
-    it('el objetivo suma las sesiones de sus tareas, no promedia (RN-33, RN-35)', () => {
+    it('el objetivo suma las sesiones y los minutos de sus tareas, no promedia (RN-33, RN-35)', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY]));
       addActivity(simple('a2', ['2026-10-27', '2026-10-28', '2026-10-29']));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
 
       expect(service.objectives()[0].progress).toBe(25);
       expect(service.goals()[0].progress).toBe(25);
     });
 
-    it('la compuesta suma las sesiones de sus pasos y su tiempo total (RN-32, RN-24)', () => {
+    it('la compuesta suma las sesiones y los minutos de sus pasos y su tiempo total (RN-32, RN-24)', () => {
       seedHierarchy();
       addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
       addStep(step({ id: 's1', activityId: 'k' }, [TODAY], [], 30));
       addStep(step({ id: 's2', activityId: 'k' }, ['2026-10-30', '2026-10-31'], [], 45));
-      service.toggleTaskExecution('s1', TaskSourceType.SUBACTIVITY);
+      mark('p-s1', TODAY);
 
       const composite = service.activities()[0];
-      expect(composite.progress).toBe(33);
+      // Constancia 1 de 3 y productividad 30 de 120 minutos: (33,3 + 25) ÷ 2
+      expect(composite.progress).toBe(29);
       expect(composite.status).toBe(ActivityStatus.OPEN);
       expect(composite.totalTimeRequiredMin).toBe(30 + 2 * 45);
       expect(service.subActivities()[0].progress).toBe(100);
@@ -159,16 +163,15 @@ describe('PlannerService', () => {
       expect(service.agendaTasks()).toEqual([]);
     });
 
-    it('la sesión oculta no se marca ni cuenta para la constancia', () => {
+    it('la sesión oculta no se marca, pero sigue contando para la constancia (RN-70, RN-79)', () => {
       seedHierarchy();
       addActivity(simple('a1', MONDAYS, MONDAYS.slice(0, 3)));
       service.closeActivity('a1');
       vi.setSystemTime(new Date('2026-10-27T12:00:00'));
 
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 30, '2026-10-26');
+      mark('p-a1', '2026-10-26', 30);
       expect(doneDates('p-a1')).toEqual(MONDAYS.slice(0, 3));
-      expect(service.workLogs()).toEqual([]);
-      expect(service.consistency().get('a1')).toBe(100);
+      expect(service.consistency().get('a1')).toBe(75);
     });
 
     it('cerrar una compuesta la cierra con sus pasos abiertos, sin cambiar su avance', () => {
@@ -252,7 +255,7 @@ describe('PlannerService', () => {
 
     it('corregir un olvido recalcula el avance sin reabrir', () => {
       addActivity(simple('a1', ['2026-10-20', '2026-10-21'], ['2026-10-20']));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 40, '2026-10-21');
+      mark('p-a1', '2026-10-21', 40);
 
       expect(service.activities()[0]).toMatchObject({ progress: 100, status: ActivityStatus.CLOSED });
       expect(service.objectives()[0].progress).toBe(100);
@@ -328,19 +331,17 @@ describe('PlannerService', () => {
   });
 
   describe('cierre automático de días (RN-81)', () => {
-    it('al abrir, cierra sin notas los días pasados con sesiones o tiempo y sin cierre', () => {
+    it('al abrir, cierra sin nota los días pasados con sesiones y sin cierre', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-19', '2026-10-20', TODAY], ['2026-10-20']));
-      service.logWork('a1', TaskSourceType.ACTIVITY, 15, '2026-10-15');
       service.closeDay('mías', '2026-10-19');
 
       const reopened = TestBed.runInInjectionContext(() => new PlannerService());
       const byDate = new Map(reopened.records().map(r => [r.date, r]));
 
-      expect([...byDate.keys()].sort()).toEqual(['2026-10-15', '2026-10-19', '2026-10-20']);
+      expect([...byDate.keys()].sort()).toEqual(['2026-10-19', '2026-10-20']);
       expect(byDate.get('2026-10-19')!.notes).toBe('mías');
-      expect(byDate.get('2026-10-20')).toMatchObject({ notes: '', completedSessions: 1, plannedSessions: 1 });
-      expect(byDate.get('2026-10-15')).toMatchObject({ plannedSessions: 0, actualMinutes: 15 });
+      expect(byDate.get('2026-10-20')).toMatchObject({ notes: '', completedSessions: 1, plannedSessions: 1, actualMinutes: 30 });
     });
   });
 
@@ -357,11 +358,11 @@ describe('PlannerService', () => {
       expect(service.agendaTasks().find(t => t.id === 's1')?.parentId).toBe('k');
     });
 
-    it('las métricas incluyen el tiempo planeado y ejecutado', () => {
+    it('las métricas incluyen el tiempo previsto y el realizado', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY], [], { executionPlan: makePlan('pa1', 60) }));
       addActivity(simple('a2', [TODAY], [], { executionPlan: makePlan('pa2', 30) }));
-      service.toggleTaskExecution('a2', TaskSourceType.ACTIVITY);
+      mark('pa2', TODAY);
 
       expect(service.agendaMetrics()).toMatchObject({
         total: 2, completed: 1, percentage: 50, plannedTimeMin: 90, executedTimeMin: 30,
@@ -382,7 +383,7 @@ describe('PlannerService', () => {
     it('oculta tareas pausadas y reanudar las abre (RN-59)', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY, '2026-10-30']));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
       service.pauseActivity('a1');
       expect(service.activities()[0].status).toBe(ActivityStatus.PAUSED);
       expect(service.agendaTasks()).toHaveLength(0);
@@ -412,10 +413,10 @@ describe('PlannerService', () => {
       expect(service.goals()[0].status).toBe(GoalStatus.OPEN);
     });
 
-    it('marcar solo afecta a hoy (RN-27)', () => {
+    it('marcar solo afecta a esa sesión (RN-27)', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY, '2026-10-30']));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
       expect(doneDates('p-a1')).toEqual([TODAY]);
     });
   });
@@ -423,14 +424,14 @@ describe('PlannerService', () => {
   describe('agenda de días pasados (RN-27, RN-44, RN-75)', () => {
     const PAST = '2026-10-20';
 
-    it('marca una sesión pasada con sus minutos reales sin tocar la de hoy', () => {
+    it('marca una sesión pasada con su tiempo realizado sin tocar la de hoy', () => {
       seedHierarchy();
       addActivity(simple('a1', [PAST, TODAY]));
       service.setSelectedDate(PAST);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 45);
+      mark('p-a1', PAST, 45);
 
       expect(doneDates('p-a1')).toEqual([PAST]);
-      expect(service.workLogs()).toMatchObject([{ sourceId: 'a1', date: PAST, minutes: 45 }]);
+      expect(service.sessionsOf('p-a1')[0].actualMinutes).toBe(45);
       expect(service.agendaMetrics().executedTimeMin).toBe(45);
     });
 
@@ -438,10 +439,10 @@ describe('PlannerService', () => {
       seedHierarchy();
       addActivity(simple('a1', [PAST]));
       service.setSelectedDate(PAST);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', PAST);
       expect(service.agendaTasks()[0].executedMinutes).toBe(30);
 
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', PAST);
       expect(doneDates('p-a1')).toEqual([]);
       expect(service.agendaTasks()[0].executedMinutes).toBe(0);
     });
@@ -451,10 +452,9 @@ describe('PlannerService', () => {
       addActivity(simple('a1', ['2026-10-30', PAST]));
       service.setSelectedDate('2026-10-30');
       expect(service.isSelectedDateReadOnly()).toBe(true);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
-      service.setSelectedDate(PAST);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 0);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 1.5);
+      mark('p-a1', '2026-10-30');
+      mark('p-a1', PAST, 0);
+      mark('p-a1', PAST, 1.5);
 
       expect(doneDates('p-a1')).toEqual([]);
     });
@@ -486,7 +486,7 @@ describe('PlannerService', () => {
       addActivity(simple('a1', [PAST]));
       const closed = service.closeDay('mis notas', PAST)!;
       service.setSelectedDate(PAST);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 50);
+      mark('p-a1', PAST, 50);
       expect(service.records()[0]).toMatchObject({ completedSessions: 0, actualMinutes: 0 });
 
       service.closeDay('mis notas', PAST);
@@ -500,88 +500,56 @@ describe('PlannerService', () => {
       seedHierarchy();
       addActivity(simple('a1', [PAST]));
       service.setSelectedDate(PAST);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', PAST);
       expect(service.records()).toHaveLength(0);
     });
   });
 
-  describe('sesiones y tiempo real (RN-27, RN-68, RN-71, RN-74, RN-76)', () => {
-    it('marcar crea un bloque vinculado con los minutos previstos y fija completedAt', () => {
+  describe('sesiones y tiempo realizado (RN-27, RN-30, RN-71, RN-74)', () => {
+    it('marcar guarda el tiempo previsto como tiempo realizado y fija completedAt', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY], [], { executionPlan: makePlan('pa1', 60) }));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('pa1', TODAY);
 
-      const [session] = service.sessionsOf('pa1');
-      expect(session.status).toBe(SessionStatus.DONE);
-      expect(session.completedAt).toBeDefined();
-      expect(service.workLogs()).toMatchObject([{ sourceId: 'a1', date: TODAY, minutes: 60, sessionId: session.id }]);
+      expect(service.sessionsOf('pa1')[0]).toMatchObject({ status: SessionStatus.DONE, actualMinutes: 60 });
+      expect(service.sessionsOf('pa1')[0].completedAt).toBeDefined();
     });
 
-    it('desmarcar vuelve a PLANNED y elimina los minutos vinculados', () => {
+    it('desmarcar vuelve a PLANNED y borra el tiempo realizado', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY]));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
+      mark('p-a1', TODAY);
 
-      expect(service.sessionsOf('p-a1')[0].status).toBe(SessionStatus.PLANNED);
-      expect(service.sessionsOf('p-a1')[0].completedAt).toBeUndefined();
-      expect(service.workLogs()).toEqual([]);
+      const [session] = service.sessionsOf('p-a1');
+      expect(session.status).toBe(SessionStatus.PLANNED);
+      expect(session.completedAt).toBeUndefined();
+      expect(session.actualMinutes).toBeUndefined();
     });
 
-    it('marcar una fecha sin sesión no hace nada', () => {
+    it('marcar una sesión que no existe no hace nada', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY]));
-      service.setSelectedDate('2026-10-20');
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 30);
-      expect(service.workLogs()).toEqual([]);
+      service.toggleSession('no-existe', 30);
+      expect(doneDates('p-a1')).toEqual([]);
     });
 
-    it('el tiempo sin sesión no marca sesiones ni cambia el avance (RN-68)', () => {
+    it('hecha con menos tiempo queda incompleta y no se cierra sola (RN-30, RN-84)', () => {
       seedHierarchy();
-      addActivity(simple('a1', [TODAY]));
-      expect(service.logWork('a1', TaskSourceType.ACTIVITY, 40)).toBe(true);
+      addActivity(simple('a1', [TODAY], [], { executionPlan: makePlan('pa1', 60) }));
+      mark('pa1', TODAY, 30);
 
-      expect(service.sessionsOf('p-a1')[0].status).toBe(SessionStatus.PLANNED);
-      expect(service.activities()[0].progress).toBe(0);
-      expect(service.agendaMetrics().executedTimeMin).toBe(40);
+      expect(service.activities()[0]).toMatchObject({ progress: 75, status: ActivityStatus.OPEN });
+      expect(service.activities()[0].closure).toBeUndefined();
     });
 
-    it('rechaza tiempo en fechas futuras, minutos no válidos o ítems inexistentes', () => {
+    it('con tiempo de más no queda completa si falta una sesión (RN-30)', () => {
       seedHierarchy();
-      addActivity(simple('a1', [TODAY]));
-      expect(service.logWork('a1', TaskSourceType.ACTIVITY, 30, '2026-10-30')).toBe(false);
-      expect(service.logWork('a1', TaskSourceType.ACTIVITY, 0)).toBe(false);
-      expect(service.logWork('nada', TaskSourceType.ACTIVITY, 30)).toBe(false);
-      expect(service.workLogs()).toEqual([]);
-    });
+      const dates = ['2026-10-19', '2026-10-20', '2026-10-21', TODAY];
+      addActivity(simple('a1', dates, [], { executionPlan: makePlan('pa1', 60) }));
+      dates.slice(0, 3).forEach(date => mark('pa1', date, 100));
 
-    it('se pueden corregir los minutos de un bloque (RN-76)', () => {
-      seedHierarchy();
-      addActivity(simple('a1', [TODAY]));
-      service.logWork('a1', TaskSourceType.ACTIVITY, 40);
-      const id = service.workLogs()[0].id;
-
-      expect(service.updateWorkLog(id, 55)).toBe(true);
-      expect(service.updateWorkLog(id, -1)).toBe(false);
-      expect(service.workLogs()[0].minutes).toBe(55);
-    });
-
-    it('borrar el último bloque de una sesión DONE la devuelve a PLANNED (RN-76)', () => {
-      seedHierarchy();
-      addActivity(simple('a1', [TODAY]));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
-      service.deleteWorkLog(service.workLogs()[0].id);
-
-      expect(service.sessionsOf('p-a1')[0].status).toBe(SessionStatus.PLANNED);
-      expect(service.activities()[0].progress).toBe(0);
-    });
-
-    it('borrar un bloque sin sesión no toca las sesiones', () => {
-      seedHierarchy();
-      addActivity(simple('a1', [TODAY], [TODAY]));
-      service.logWork('a1', TaskSourceType.ACTIVITY, 20);
-      service.deleteWorkLog(service.workLogs()[0].id);
-      expect(service.sessionsOf('p-a1')[0].status).toBe(SessionStatus.DONE);
+      expect(service.activities()[0]).toMatchObject({ progress: 88, status: ActivityStatus.OPEN });
     });
 
     it('editar el plan reemplaza las sesiones indicadas y recalcula el avance (RN-51)', () => {
@@ -596,68 +564,64 @@ describe('PlannerService', () => {
       expect(service.activities()[0].progress).toBe(33);
     });
 
-    it('borrar una tarea elimina sus sesiones y su tiempo, no los cierres (RN-74)', () => {
+    it('borrar una tarea elimina sus sesiones, no los cierres de día (RN-74)', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY]));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
       service.closeDay('x');
       service.deleteActivity('a1');
 
       expect(service.sessions()).toEqual([]);
-      expect(service.workLogs()).toEqual([]);
       expect(service.records()).toHaveLength(1);
     });
 
-    it('borrar una compuesta elimina las sesiones y el tiempo de sus pasos', () => {
+    it('borrar una compuesta elimina las sesiones de sus pasos', () => {
       seedHierarchy();
       addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
       addStep(step({ id: 's1', activityId: 'k' }, [TODAY]));
-      service.toggleTaskExecution('s1', TaskSourceType.SUBACTIVITY);
+      mark('p-s1', TODAY);
       service.deleteActivity('k');
 
       expect(service.sessions()).toEqual([]);
-      expect(service.workLogs()).toEqual([]);
     });
 
-    it('simple → compuesta con tiempo registrado pide confirmación y lo descarta (RN-40)', () => {
+    it('simple → compuesta con sesiones hechas pide confirmación y las descarta (RN-40)', () => {
       seedHierarchy();
-      addActivity(simple('a1', [TODAY]));
-      service.logWork('a1', TaskSourceType.ACTIVITY, 30);
+      addActivity(simple('a1', [TODAY], [TODAY]));
 
-      expect(service.typeChangeImpact('a1', ActivityType.COMPOSITE)).toMatchObject({ workLogsToLose: 1, needsConfirmation: true });
+      expect(service.typeChangeImpact('a1', ActivityType.COMPOSITE)).toMatchObject({
+        sessionsToLose: 1, completedSessionsToLose: 1, needsConfirmation: true,
+      });
       service.updateActivity(makeActivity({ id: 'a1', type: ActivityType.COMPOSITE }));
       expect(service.sessions()).toEqual([]);
-      expect(service.workLogs()).toEqual([]);
     });
 
-    it('el ejemplo de las reglas: 25 % de avance, 50 % de constancia y 90 minutos', () => {
+    it('el ejemplo de las reglas: 25 % de constancia, 38 % de productividad y 31 % de avance', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02'], [], { executionPlan: makePlan('pa1', 60) }));
-      service.setSelectedDate('2026-10-19');
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 90);
+      mark('pa1', '2026-10-19', 90);
 
-      const sessions = service.sessionsOf('pa1');
-      const due = sessions.filter(s => s.scheduledDate <= TODAY);
-      const consistency = Math.round(due.filter(s => s.status === SessionStatus.DONE).length / due.length * 100);
-      expect(service.activities()[0].progress).toBe(25);
-      expect(consistency).toBe(50);
-      expect(service.workLogs().reduce((sum, l) => sum + l.minutes, 0)).toBe(90);
+      expect(service.consistency().get('a1')).toBe(25);
+      expect(service.productivity().get('a1')).toEqual({ actualMinutes: 90, plannedMinutes: 240, percentage: 38 });
+      expect(service.activities()[0].progress).toBe(31);
     });
   });
 
-  describe('constancia y pausas (RN-57, RN-59, RN-70)', () => {
-    it('calcula la constancia por tarea, objetivo y meta con las sesiones exigibles', () => {
+  describe('constancia (RN-57, RN-70)', () => {
+    it('calcula la constancia por tarea, objetivo y meta con todas las sesiones', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-12', '2026-10-19', '2026-10-26'], ['2026-10-19']));
-      expect(service.consistency().get('a1')).toBe(50);
-      expect(service.consistency().get('o1')).toBe(50);
-      expect(service.consistency().get('g1')).toBe(50);
+      expect(service.consistency().get('a1')).toBe(33);
+      expect(service.consistency().get('o1')).toBe(33);
+      expect(service.consistency().get('g1')).toBe(33);
     });
 
-    it('una tarea sin sesiones exigibles no tiene datos', () => {
+    it('cuenta también las sesiones futuras; sin sesiones no hay datos', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-30']));
-      expect(service.consistency().get('a1')).toBeNull();
+      addActivity(makeActivity({ id: 'k', type: ActivityType.COMPOSITE }));
+      expect(service.consistency().get('a1')).toBe(0);
+      expect(service.consistency().get('k')).toBeNull();
     });
 
     it('la compuesta usa las sesiones de todos sus pasos', () => {
@@ -670,7 +634,7 @@ describe('PlannerService', () => {
       expect(service.consistency().get('k')).toBe(25);
     });
 
-    it('pausar registra el periodo y las sesiones pausadas no cuentan; reanudar lo cierra', () => {
+    it('pausar registra el periodo y reanudar lo cierra; las fechas en pausa siguen contando', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-10', '2026-10-21', '2026-10-22']));
       vi.setSystemTime(new Date('2026-10-20T12:00:00'));
@@ -679,11 +643,10 @@ describe('PlannerService', () => {
       service.resumeActivity('a1');
 
       expect(service.activities()[0].pauses).toEqual([{ from: '2026-10-20', to: '2026-10-21' }]);
-      // 10-10 sin pausa y no realizada; 10-21 pausada; hoy sin cerrar → 0 de 1
       expect(service.consistency().get('a1')).toBe(0);
     });
 
-    it('pausar una meta cubre a todas sus tareas', () => {
+    it('pausar una meta pausa a todas sus tareas', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-10']));
       vi.setSystemTime(new Date('2026-10-01T12:00:00'));
@@ -691,47 +654,15 @@ describe('PlannerService', () => {
       vi.setSystemTime(new Date(`${TODAY}T12:00:00`));
 
       expect(service.goals()[0].pauses).toEqual([{ from: '2026-10-01' }]);
-      expect(service.consistency().get('a1')).toBeNull();
-    });
-
-    it('cerrar el día hace que la sesión de hoy cuente como no realizada', () => {
-      seedHierarchy();
-      addActivity(simple('a1', [TODAY]));
-      expect(service.consistency().get('a1')).toBeNull();
-      service.closeDay('x');
-      expect(service.consistency().get('a1')).toBe(0);
-    });
-  });
-
-  describe('tiempo del día (CU-27, RN-71, RN-76)', () => {
-    it('lista los bloques de la fecha con el nombre del ítem', () => {
-      seedHierarchy();
-      addActivity(makeActivity({ id: 'k', title: 'Compuesta', type: ActivityType.COMPOSITE }));
-      addStep(step({ id: 's1', activityId: 'k', title: 'Paso' }));
-      service.logWork('s1', TaskSourceType.SUBACTIVITY, 25);
-
-      expect(service.dayWorkLogs().map(e => [e.label, e.log.minutes])).toEqual([['Compuesta › Paso', 25]]);
-      service.setSelectedDate('2026-10-20');
-      expect(service.dayWorkLogs()).toEqual([]);
-    });
-
-    it('permite registrar tiempo en tareas pausadas, de metas pausadas, al 100 % y cerradas (RN-71, RN-80)', () => {
-      seedHierarchy();
-      addActivity(simple('a1', [TODAY], [TODAY], { pauses: [{ from: TODAY }] }));
-      service.pauseGoal('g1');
       expect(service.activities()[0].status).toBe(ActivityStatus.PAUSED);
-      expect(service.logWork('a1', TaskSourceType.ACTIVITY, 15)).toBe(true);
-
-      service.closeActivity('a1');
-      expect(service.logWork('a1', TaskSourceType.ACTIVITY, 10)).toBe(true);
     });
   });
 
   describe('cierre del día (RN-41 a RN-44)', () => {
-    it('crea el registro con las métricas y el tiempo real ejecutado', () => {
+    it('crea el registro con las métricas y el tiempo realizado', () => {
       seedHierarchy();
       addActivity(simple('a1', [TODAY], [], { executionPlan: makePlan('pa1', 60) }));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('pa1', TODAY);
       const record = service.closeDay('buen día')!;
 
       expect(record).toMatchObject({
@@ -741,13 +672,12 @@ describe('PlannerService', () => {
       expect(record.closedAt).toEqual(expect.any(String));
     });
 
-    it('la constancia es null si el día no tuvo sesiones y cuenta el tiempo sin sesión (RN-72)', () => {
+    it('la constancia del día es null si no tuvo sesiones (RN-72)', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-12']));
-      service.logWork('a1', TaskSourceType.ACTIVITY, 25, TODAY);
 
       expect(service.closeDay('')).toMatchObject({
-        plannedSessions: 0, adherencePercentage: null, plannedMinutes: 0, actualMinutes: 25,
+        plannedSessions: 0, adherencePercentage: null, plannedMinutes: 0, actualMinutes: 0,
       });
     });
 
@@ -973,6 +903,7 @@ describe('PlannerService', () => {
       expect(service.calendarEntries().get('2026-11-02')).toBeUndefined();
     });
   });
+
   describe('cierres automáticos por evento (RN-77, RN-78)', () => {
     const PAST = '2026-10-20';
 
@@ -982,16 +913,16 @@ describe('PlannerService', () => {
       addActivity(simple('a1', [PAST, TODAY]));
     }
     const completeAll = () => {
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 30, PAST);
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', PAST, 30);
+      mark('p-a1', TODAY);
     };
 
-    it('hacer todas sus sesiones la cierra por sesiones completas y cierra a sus padres', () => {
+    it('hacer todas sus sesiones con todo su tiempo la cierra al completarse y cierra a sus padres', () => {
       seedTwoSessions();
       completeAll();
 
       expect(service.activities()[0]).toMatchObject({
-        status: ActivityStatus.CLOSED, progress: 100, closure: { type: ClosureType.SESSIONS_DONE, closedOn: TODAY },
+        status: ActivityStatus.CLOSED, progress: 100, closure: { type: ClosureType.COMPLETED, closedOn: TODAY },
       });
       expect(service.objectives()[0]).toMatchObject({ status: ObjectiveStatus.CLOSED, closure: { type: ClosureType.CHILDREN_CLOSED } });
       expect(service.goals()[0]).toMatchObject({ status: GoalStatus.CLOSED, closure: { type: ClosureType.CHILDREN_CLOSED } });
@@ -1000,7 +931,7 @@ describe('PlannerService', () => {
     it('desmarcar una sesión deshace ese cierre y el de sus padres', () => {
       seedTwoSessions();
       completeAll();
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
 
       expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.OPEN, progress: 50 });
       expect(service.activities()[0].closure).toBeUndefined();
@@ -1012,7 +943,7 @@ describe('PlannerService', () => {
       seedTwoSessions();
       completeAll();
       expect(service.reopenActivity('a1')).toBe('ok');
-      service.logWork('a1', TaskSourceType.ACTIVITY, 10);
+      service.updateGoal(service.goals()[0]);
 
       expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.OPEN, progress: 100 });
       expect(service.goals()[0].status).toBe(GoalStatus.OPEN);
@@ -1023,7 +954,7 @@ describe('PlannerService', () => {
       addActivity(simple('a2', ['2026-10-30']));
       completeAll();
       service.closeObjective('o1');
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY);
+      mark('p-a1', TODAY);
 
       expect(service.activities()[0]).toMatchObject({ status: ActivityStatus.CLOSED, progress: 50 });
     });
@@ -1077,7 +1008,7 @@ describe('PlannerService', () => {
       expect(service.closeGoal('g2')).toBe(false);
     });
 
-    it('reabrir un objetivo reabre sus tareas con sesiones pendientes y no las que ya están al 100 %', () => {
+    it('reabrir un objetivo reabre sus tareas incompletas y no las que ya están completas', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-30']));
       addActivity(simple('a2', ['2026-10-20'], ['2026-10-20']));
@@ -1194,47 +1125,41 @@ describe('PlannerService', () => {
       expect(service.goals()[1].status).toBe(GoalStatus.IDEA);
     });
 
-    it('la constancia no cuenta las fechas en que un padre estaba pausado', () => {
+    it('la constancia cuenta también las fechas en que un padre estaba pausado (RN-70)', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-12', '2026-10-23'], ['2026-10-12']));
       service.pauseObjective('o1'); // desde hoy, 22
       vi.setSystemTime(new Date('2026-10-25T12:00:00'));
-      expect(service.consistency().get('a1')).toBe(100); // el 23 cae en la pausa abierta
-
-      service.resumeObjective('o1'); // termina el 24: el 23 sigue dentro del periodo
-      expect(service.consistency().get('a1')).toBe(100);
+      expect(service.consistency().get('a1')).toBe(50);
     });
   });
 
   describe('productividad (RN-73)', () => {
-    it('minutos reales sobre previstos de todo el plan, también el trabajo sin sesión', () => {
+    it('tiempo realizado sobre el previsto de todas las sesiones', () => {
       seedHierarchy();
       const plan = makePlan('pa1', 60);
       addActivity(simple('a1', ['2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02'], [], { executionPlan: plan }));
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 45, '2026-10-12');
-      service.toggleTaskExecution('a1', TaskSourceType.ACTIVITY, 45, '2026-10-19');
+      mark('pa1', '2026-10-12', 45);
+      mark('pa1', '2026-10-19', 45);
 
       expect(service.productivity().get('a1')).toEqual({ actualMinutes: 90, plannedMinutes: 240, percentage: 38 });
-
-      service.logWork('a1', TaskSourceType.ACTIVITY, 30, TODAY);
-      expect(service.productivity().get('a1')?.actualMinutes).toBe(120);
     });
 
     it('los padres suman minutos sin promediar y puede pasar de 100 %', () => {
       seedHierarchy();
       addActivity(simple('a1', ['2026-10-12'], [], { executionPlan: makePlan('pa1', 60) }));
       addActivity(simple('a2', ['2026-10-30'], [], { executionPlan: makePlan('pa2', 60) }));
-      service.logWork('a1', TaskSourceType.ACTIVITY, 90, '2026-10-12');
+      mark('pa1', '2026-10-12', 90);
 
       expect(service.productivity().get('o1')).toEqual({ actualMinutes: 90, plannedMinutes: 120, percentage: 75 });
       expect(service.productivity().get('g1')?.percentage).toBe(75);
       expect(service.productivity().get('a1')?.percentage).toBe(150);
     });
 
-    it('no cambia al cerrar y es null sin minutos previstos', () => {
+    it('no cambia al cerrar y es null sin tiempo previsto', () => {
       seedHierarchy();
-      addActivity(simple('a1', ['2026-10-30'], [], { executionPlan: makePlan('pa1', 60) }));
-      service.logWork('a1', TaskSourceType.ACTIVITY, 30);
+      addActivity(simple('a1', [TODAY], [], { executionPlan: makePlan('pa1', 60) }));
+      mark('pa1', TODAY, 30);
       service.closeActivity('a1');
       expect(service.productivity().get('a1')?.percentage).toBe(50);
 

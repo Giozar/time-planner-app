@@ -11,7 +11,7 @@ Las rutas escritas como texto empiezan en la raíz del monorepo (`time-planner-a
 | [funcionalidad.md](funcionalidad.md) | Mapa de features: qué casos de uso y reglas de negocio aplican a cada carpeta. |
 | [arquitectura.md](arquitectura.md) | Cómo está organizado el código, qué responsabilidad tiene cada capa y cómo puede evolucionar. |
 | [buenas-practicas.md](buenas-practicas.md) | SOLID y Clean Code aplicados de forma ligera, convención de nombres y pruebas. |
-| `timer-planner-frontend/docs/planes/` | Planes de trabajo **por hacer** (hoy ninguno; la carpeta se crea al necesitarla). Un plan terminado se borra: su historia está en git. |
+| [planes/](planes/) | Planes de trabajo **por hacer**: [01-flujo-principal.md](planes/01-flujo-principal.md). Un plan terminado se borra: su historia está en git. |
 
 ## Cómo se relaciona con el resto del repositorio
 

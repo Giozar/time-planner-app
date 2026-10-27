@@ -26,6 +26,6 @@ export interface Goal {
   progress: number;
   status: GoalStatus;
   closure?: ItemClosure; // RN-77
-  pauses?: PausePeriod[]; // historial de pausas (RN-57, RN-70)
+  pauses?: PausePeriod[]; // historial de pausas (RN-57)
   createdAt: Date;
 }

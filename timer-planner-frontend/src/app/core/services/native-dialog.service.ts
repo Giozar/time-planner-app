@@ -48,7 +48,7 @@ export class NativeDialogService {
     });
   }
 
-  /** Pide un número entero positivo (minutos reales, RN-71). Devuelve `null` si se cancela. */
+  /** Pide un número entero positivo (tiempo realizado, RN-71). Devuelve `null` si se cancela. */
   promptMinutes(title: string, message: string, defaultMinutes: number): Promise<number | null> {
     return new Promise((resolve) => {
       this.dialogState.set({

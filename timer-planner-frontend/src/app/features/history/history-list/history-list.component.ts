@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PlannerService } from '../../../core/services/planner.service';
 
-/** Resúmenes de los días cerrados, del más reciente al más antiguo (CU-21, RN-43). */
+/** Resúmenes de los días cerrados, del más reciente al más antiguo (RN-43). */
 @Component({
   selector: 'app-history-list',
   standalone: true,

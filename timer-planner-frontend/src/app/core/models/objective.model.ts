@@ -31,6 +31,6 @@ export interface Objective {
   status: ObjectiveStatus;
   deadline: string; // 'YYYY-MM-DD'; obligatorio, tope de sus tareas y pasos (RN-65)
   closure?: ItemClosure; // RN-77
-  pauses?: PausePeriod[]; // historial de pausas (RN-57, RN-70)
+  pauses?: PausePeriod[]; // historial de pausas (RN-57)
   createdAt: Date;
 }

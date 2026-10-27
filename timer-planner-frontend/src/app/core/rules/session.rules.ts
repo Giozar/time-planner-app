@@ -66,3 +66,8 @@ export function moveSessionTo(session: ExecutionSession, date: string): Executio
 export function plannedMinutesOf(sessions: readonly ExecutionSession[]): number {
   return sessions.reduce((sum, s) => sum + s.plannedMinutes, 0);
 }
+
+/** Tiempo realizado de un conjunto de sesiones (RN-71). */
+export function actualMinutesOf(sessions: readonly ExecutionSession[]): number {
+  return sessions.reduce((sum, s) => sum + (s.actualMinutes ?? 0), 0);
+}

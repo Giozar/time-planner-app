@@ -256,7 +256,7 @@ export class ActivityFormComponent implements OnInit {
       if (impact.needsConfirmation) {
         const message = newType === ActivityType.SIMPLE
           ? `Esta tarea tiene ${impact.stepsToDelete} paso(s).\nAl convertirla en simple, estos pasos se eliminarán.\n\n¿Confirmas que deseas continuar?`
-          : `Esta tarea tiene ${impact.sessionsToLose} sesión(es) programada(s), ${impact.completedSessionsToLose} completada(s), y ${impact.workLogsToLose} registro(s) de tiempo.\nAl convertirla en compuesta, el plan, las ejecuciones y el tiempo registrado se perderán.\n\n¿Confirmas que deseas continuar?`;
+          : `Esta tarea tiene ${impact.sessionsToLose} sesión(es) programada(s), ${impact.completedSessionsToLose} realizada(s).\nAl convertirla en compuesta, el plan y sus sesiones, con su tiempo realizado, se perderán.\n\n¿Confirmas que deseas continuar?`;
 
         const confirmed = await this.dialog.confirm('Cambio de Tipo Detectado', message, {
           confirmText: 'Convertir',

@@ -22,7 +22,7 @@ export enum SubActivityStatus {
 export enum ClosureType {
   MANUAL = 'MANUAL', // a mano, también por la cascada de un padre cerrado a mano (RN-78)
   DEADLINE = 'DEADLINE', // al día siguiente de su deadline efectivo (RN-58)
-  SESSIONS_DONE = 'SESSIONS_DONE', // al hacer todas sus sesiones; se deshace si el avance baja
+  COMPLETED = 'COMPLETED', // al quedar completa (avance 100 %); se deshace si el avance baja
   CHILDREN_CLOSED = 'CHILDREN_CLOSED', // al cerrarse o borrarse su último hijo abierto
 }
 
@@ -118,7 +118,7 @@ export interface Activity {
   progress: number;
   status: ActivityStatus;
   closure?: ItemClosure; // RN-77
-  pauses?: PausePeriod[]; // historial de pausas (RN-57, RN-70)
+  pauses?: PausePeriod[]; // historial de pausas (RN-57)
 }
 
 /**
@@ -136,5 +136,5 @@ export interface SubActivity {
   executionPlan: ExecutionPlan;
   progress: number;
   closure?: ItemClosure; // RN-77
-  pauses?: PausePeriod[]; // historial de pausas (RN-57, RN-70)
+  pauses?: PausePeriod[]; // historial de pausas (RN-57)
 }

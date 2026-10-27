@@ -77,39 +77,10 @@
         }
     </section>
 
-    <section class="work-section">
-        <h2>Tiempo trabajado</h2>
-        @for (entry of workLogs(); track entry.log.id) {
-        <div class="work-item">
-            <span class="work-label">{{ entry.label }}</span>
-            <span class="task-time">{{ entry.log.minutes }} min{{ entry.log.sessionId ? '' : ' · sin sesión' }}</span>
-            <button type="button" class="nav-btn" (click)="editLog(entry)" aria-label="Corregir tiempo">✎</button>
-            <button type="button" class="nav-btn" (click)="deleteLog(entry)" aria-label="Borrar tiempo">🗑</button>
-        </div>
-        } @empty {
-        <p class="readonly-note">No hay tiempo registrado.</p>
-        }
-
-        @if (!readOnly()) {
-        <div class="work-form">
-            <select #itemSelect aria-label="Tarea o paso">
-                <option value="">Tarea o paso…</option>
-                @for (item of items(); track item.id) {
-                <option [value]="item.id">{{ item.label }}</option>
-                }
-            </select>
-            <input #minutesInput type="number" min="1" step="1" placeholder="Minutos" aria-label="Minutos">
-            <button type="button" class="nav-today" (click)="logWork(itemSelect.value, minutesInput.value, minutesInput)">
-                Registrar tiempo
-            </button>
-        </div>
-        }
-    </section>
-
     @if (!readOnly()) {
     <footer class="dashboard-footer">
         <a routerLink="/daily/summary" [queryParams]="isToday() ? {} : { date: selectedDate() }" class="btn-end-day">
-            {{ isToday() ? 'Finalizar Día' : 'Cerrar este día' }}
+            {{ isToday() ? 'Cerrar día' : 'Cerrar este día' }}
         </a>
     </footer>
     }

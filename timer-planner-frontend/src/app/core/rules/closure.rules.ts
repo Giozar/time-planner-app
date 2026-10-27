@@ -44,24 +44,24 @@ export function deadlineClosure(closure: ItemClosure | undefined, deadline: stri
 }
 
 /**
- * Cierre por sesiones completas tras un cambio de avance (RN-77). Solo se evalúa en el evento que lo causa:
- * pasar de menos de 100 % a 100 % cierra lo abierto; bajar de 100 % deshace un cierre por sesiones completas.
+ * Cierre al completarse tras un cambio de avance (RN-77). Solo se evalúa en el evento que lo causa:
+ * pasar de menos de 100 % a 100 % cierra lo abierto; bajar de 100 % deshace un cierre al completarse.
  * Los cierres a mano, por fecha límite y por hijos cerrados no cambian.
  */
-export function sessionsDoneClosure(
+export function completedClosure(
   closure: ItemClosure | undefined,
   previousProgress: number,
   progress: number,
   today: string,
 ): ItemClosure | undefined {
-  if (!closure && previousProgress < 100 && progress >= 100) return { type: ClosureType.SESSIONS_DONE, closedOn: today };
-  if (closure?.type === ClosureType.SESSIONS_DONE && progress < 100) return undefined;
+  if (!closure && previousProgress < 100 && progress >= 100) return { type: ClosureType.COMPLETED, closedOn: today };
+  if (closure?.type === ClosureType.COMPLETED && progress < 100) return undefined;
   return closure;
 }
 
 /**
  * Un descendiente cerrado se reabre con su padre si su deadline efectivo no ha pasado
- * y le quedan sesiones pendientes (avance menor a 100 %) (RN-64).
+ * y sigue incompleto (avance menor a 100 %) (RN-64, RN-84).
  */
 export function reopensWithParent(effectiveDeadline: string, progress: number, today: string): boolean {
   return effectiveDeadline >= today && progress < 100;
@@ -69,7 +69,7 @@ export function reopensWithParent(effectiveDeadline: string, progress: number, t
 
 /**
  * Sesión oculta por el cierre de su ítem (RN-79): no realizada y desde el día del cierre, incluido.
- * No aparece en agenda ni calendario, no se marca y no cuenta para la constancia ni para el cierre del día.
+ * No aparece en agenda ni calendario, no se marca y no cuenta para el cierre del día; sí para las medidas.
  */
 export function isHiddenByClosure(session: ExecutionSession, closure: ItemClosure | undefined): boolean {
   return !!closure && session.status !== SessionStatus.DONE && session.scheduledDate >= closure.closedOn;

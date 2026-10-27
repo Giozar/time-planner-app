@@ -1,7 +1,7 @@
 import { ExecutionPlanType, WeekDay } from '../models/activity.model';
 import { SessionStatus } from '../models/session.model';
 import { makeSessions } from '../../testing/builders';
-import { canMoveSession, moveSessionTo, plannedMinutesOf, regenerateFutureSessions } from './session.rules';
+import { actualMinutesOf, canMoveSession, moveSessionTo, plannedMinutesOf, regenerateFutureSessions } from './session.rules';
 
 const TODAY = '2026-10-22'; // jueves
 const dates = (sessions: { scheduledDate: string }[]) => sessions.map(s => s.scheduledDate);
@@ -119,5 +119,24 @@ describe('plannedMinutesOf (RN-24)', () => {
   it('suma los minutos previstos de las sesiones', () => {
     expect(plannedMinutesOf(makeSessions('p', ['a', 'b'], [], 45))).toBe(90);
     expect(plannedMinutesOf([])).toBe(0);
+  });
+});
+
+describe('actualMinutesOf (RN-71)', () => {
+  it('suma el tiempo realizado de las sesiones hechas', () => {
+    expect(actualMinutesOf(makeSessions('p', ['a', 'b', 'c'], ['a', 'b'], 45))).toBe(90);
+    expect(actualMinutesOf([])).toBe(0);
+  });
+});
+
+describe('al editar el plan se conserva el tiempo realizado (RN-51)', () => {
+  it('la sesión hecha mantiene sus minutos', () => {
+    const [done] = makeSessions('p', ['2026-10-10'], ['2026-10-10'], 30);
+    const sessions = regenerateFutureSessions(
+      [{ ...done, actualMinutes: 50 }],
+      { type: ExecutionPlanType.SPECIFIC_DATES, dates: ['2026-10-24'], durationPerExecutionMin: 30 },
+      TODAY, '2026-12-31', 'p'
+    );
+    expect(sessions[0]).toMatchObject({ id: done.id, actualMinutes: 50 });
   });
 });
