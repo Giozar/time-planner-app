@@ -1,6 +1,6 @@
 # Ideas: flujo principal
 
-Borrador de ideas, sin detalle de propiedades. Todo es general y puede cambiar.
+Guía visual del flujo principal, solo de consulta. Las reglas que valen están en [docs/analisis-reglas-de-negocio.md](analisis-reglas-de-negocio.md).
 
 ## 1. Jerarquía
 
@@ -137,7 +137,7 @@ flowchart TD
 
 El calendario solo muestra las fechas de las sesiones de cada tarea simple o paso. No guarda nada propio.
 
-La **sesión** es su propio modelo, hija de una tarea simple o de un paso. Tiene su identificador, **fecha**, **tiempo** (ej. 45 min), **tiempo realizado** (se llena al cerrar el día) y **notas**. Comparte con los demás niveles estado, resultado, vencido y productividad. No tiene constancia, porque no tiene sentido en una sola sesión. Se crean al elegir en el calendario (fechas específicas o patrón semanal), sin pasar de la fecha límite:
+La **sesión** es su propio modelo, hija de una tarea simple o de un paso. Tiene su identificador, **fecha**, **tiempo** (ej. 45 min), **tiempo realizado** (se llena al marcarla) y **notas**. Comparte con los demás niveles estado, resultado, vencido y productividad. No tiene constancia, porque no tiene sentido en una sola sesión. Se crean al elegir en el calendario (fechas específicas o patrón semanal), sin pasar de la fecha límite:
 
 ```mermaid
 flowchart LR
@@ -219,9 +219,9 @@ flowchart LR
     C["Calendario"] -->|"eliges una fecha"| D["Registro diario<br/>de esa fecha"]
 ```
 
-Al cerrar el día: se marca cada sesión como completa o incompleta con un check, se pone el tiempo trabajado, se escribe una nota por sesión y una nota del día, y se guarda.
+Al marcar cada sesión con su check se ponen su tiempo realizado y su nota. Al cerrar el día se escribe la nota del día y se guarda el registro.
 
-## 11. Métricas (borrador)
+## 11. Métricas
 
 Con los datos de las secciones anteriores se puede evaluar cómo voy. Para cada nivel (metas, objetivos, tareas, pasos y sesiones) se cuenta cuántos hay en cada caso, más sus medidas:
 
@@ -235,8 +235,6 @@ flowchart LR
 ```
 
 Ejemplo: de mis 5 metas, 2 completas, 3 incompletas, 4 cerradas y 1 vencida.
-
-Todavía se está puliendo.
 
 ## 12. Todo junto
 
@@ -253,8 +251,3 @@ flowchart TD
     P2 --> S3["Sesiones"]
     S1 & S2 & S3 --> R["Registro diario"]
 ```
-
-## Por definir
-
-- Cómo serán los objetivos de una meta tipo idea.
-- Si la meta tipo idea también tiene fecha límite.

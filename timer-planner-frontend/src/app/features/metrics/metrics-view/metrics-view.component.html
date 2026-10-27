@@ -1,0 +1,39 @@
+<div class="metrics-container">
+  <header>
+    <h1>Métricas</h1>
+    <p class="subtitle">Cómo van las metas, los objetivos, las tareas, los pasos y las sesiones.</p>
+  </header>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Nivel</th>
+          <th scope="col">Total</th>
+          <th scope="col">Completos</th>
+          <th scope="col">Incompletos</th>
+          <th scope="col">Cerrados</th>
+          <th scope="col">Vencidos</th>
+          <th scope="col">Constancia</th>
+          <th scope="col">Productividad</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.level) {
+        <tr>
+          <th scope="row">{{ row.label }}</th>
+          <td>{{ row.total }}</td>
+          <td>{{ row.complete }}</td>
+          <td>{{ row.incomplete }}</td>
+          <td>{{ row.closed }}</td>
+          <td>{{ row.overdue }}</td>
+          <td>{{ row.level === 'session' ? '—' : percent(row.consistency) }}</td>
+          <td>{{ percent(row.productivity) }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <p class="hint">Constancia y productividad son el promedio de los elementos de cada nivel que tienen dato. Las sesiones no tienen constancia.</p>
+</div>

@@ -1,6 +1,7 @@
 import { SessionState, SessionStatus } from '../models/session.model';
 import { GoalHorizon, GoalStatus } from '../models/goal.model';
 import type { HierarchyLevel } from '../models/hierarchy.model';
+import type { MetricsLevel } from '../models/metrics.model';
 import { DeletableType } from '../models/deletion-impact.model';
 import { DeadlineConflictKind } from '../rules/deadline.rules';
 import { ObjectiveNature, ObjectiveStatus } from '../models/objective.model';
@@ -164,6 +165,15 @@ export const RESULT_LABELS: Record<HierarchyLevel, ResultLabels> = {
 
 /** La sesión, en femenino (RN-69). */
 export const SESSION_RESULT_LABELS: ResultLabels = FEMININE_RESULT;
+
+/** Nombre de cada nivel en las métricas (RN-86). */
+export const METRICS_LEVEL_LABELS: Record<MetricsLevel, string> = {
+  goal: 'Metas',
+  objective: 'Objetivos',
+  activity: 'Tareas',
+  step: 'Pasos',
+  session: 'Sesiones',
+};
 
 /** Meses en español; el índice es `mes - 1`. */
 export const MONTH_LABELS: readonly string[] = [

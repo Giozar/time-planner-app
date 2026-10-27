@@ -13,6 +13,9 @@ export const routes: Routes = [
       // CALENDARIO
       { path: 'calendar', loadComponent: () => import('./features/calendar/calendar-view/calendar-view.component').then(m => m.CalendarViewComponent) },
 
+      // MÉTRICAS
+      { path: 'metrics', loadComponent: () => import('./features/metrics/metrics-view/metrics-view.component').then(m => m.MetricsViewComponent) },
+
       // RUTAS DE METAS (GOALS)
       { path: 'goals', loadComponent: () => import('./features/goals/goals-list/goals-list.component').then(m => m.GoalsListComponent) },
       { path: 'goals/new', loadComponent: () => import('./features/goals/goals-form/goals-form.component').then(m => m.GoalsFormComponent) },

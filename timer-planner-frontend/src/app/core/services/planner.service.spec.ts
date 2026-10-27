@@ -788,6 +788,31 @@ describe('PlannerService', () => {
     });
   });
 
+  describe('métricas (RN-86)', () => {
+    it('cuenta y promedia cada nivel con todos sus elementos', () => {
+      service.addGoal(makeGoal());
+      service.addObjective(makeObjective({ deadline: '2026-10-21' }));
+      addActivity(simple('a1', ['2026-10-20'], ['2026-10-20']));
+      addActivity(simple('a2', ['2026-10-21']));
+      const { goal, objective, activity, session } = service.metrics();
+
+      expect(activity).toMatchObject({
+        total: 2, complete: 1, incomplete: 1, closed: 2, overdue: 1, consistency: 50, productivity: 50,
+      });
+      expect(objective).toMatchObject({ total: 1, complete: 0, closed: 1, overdue: 0, consistency: 50 });
+      expect(goal).toMatchObject({ total: 1, complete: 0, incomplete: 1, overdue: 0, consistency: 50 });
+      expect(session).toMatchObject({
+        total: 2, complete: 1, incomplete: 1, closed: 2, overdue: 1, consistency: null, productivity: 50,
+      });
+    });
+
+    it('sin elementos, todo está en cero y sin datos', () => {
+      expect(service.metrics().step).toEqual({
+        total: 0, complete: 0, incomplete: 0, closed: 0, overdue: 0, consistency: null, productivity: null,
+      });
+    });
+  });
+
   describe('cierre del día (RN-41 a RN-44)', () => {
     it('crea el registro con las métricas y el tiempo realizado', () => {
       seedHierarchy();

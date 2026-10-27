@@ -15,7 +15,8 @@ import {
 } from '../models/activity.model';
 import type { HierarchyLevel, ReopenResult } from '../models/hierarchy.model';
 import { DailyRecord } from '../models/daily-record.model';
-import { ExecutionSession, SessionStatus } from '../models/session.model';
+import { ExecutionSession, SessionState, SessionStatus } from '../models/session.model';
+import { LevelMetrics, MetricsLevel } from '../models/metrics.model';
 import { AgendaItem } from '../models/agenda-item.model';
 import { CalendarEntry } from '../models/calendar-entry.model';
 import { DeletableType, DeletionImpact, TypeChangeImpact } from '../models/deletion-impact.model';
@@ -30,8 +31,10 @@ import {
   effectiveActivityDeadline,
   effectiveDeadline,
   computeConsistency,
+  computeLevelMetrics,
   computeProductivity,
   computeProgress,
+  MetricInput,
   deriveRecurrence,
   deriveStatus,
   hasOpenPause,
@@ -389,6 +392,48 @@ export class PlannerService {
     return new Set(items
       .filter(item => isOverdue(this.effectiveDeadlineOf(item.level, item.id), item.progress, today))
       .map(item => item.id));
+  });
+
+  /**
+   * Métricas de cada nivel (RN-86): metas, objetivos, tareas, pasos y sesiones, con todos sus elementos.
+   * La sesión no tiene constancia y su productividad es su tiempo realizado sobre el previsto (RN-73).
+   */
+  public metrics = computed<Record<MetricsLevel, LevelMetrics>>(() => {
+    const today = DateUtils.getTodayISO();
+    const overdue = this.overdue();
+    const consistency = this.consistency();
+    const productivity = this.productivity();
+    const ofItem = (item: { id: string; progress: number; status: string }): MetricInput => ({
+      progress: item.progress,
+      closed: isClosed(item),
+      overdue: overdue.has(item.id),
+      consistency: consistency.get(item.id) ?? null,
+      productivity: productivity.get(item.id)?.percentage ?? null,
+    });
+
+    const owners = this.planOwners();
+    const sessions = this.sessionsSignal().flatMap((session): MetricInput[] => {
+      const owner = owners.get(session.planId);
+      if (!owner) return [];
+      const progress = sessionProgress(session);
+      const itemClosed = isClosed(owner.step ?? owner.activity);
+      const state = sessionState(session, today, itemClosed, isEffectivelyPaused(this.pauseChainOf(owner)));
+      return [{
+        progress,
+        closed: state === SessionState.CLOSED,
+        overdue: isOverdue(session.scheduledDate, progress, today),
+        consistency: null,
+        productivity: computeProductivity(session.actualMinutes ?? 0, session.plannedMinutes),
+      }];
+    });
+
+    return {
+      goal: computeLevelMetrics(this.goalsSignal().map(ofItem)),
+      objective: computeLevelMetrics(this.objectivesSignal().map(ofItem)),
+      activity: computeLevelMetrics(this.activitiesSignal().map(ofItem)),
+      step: computeLevelMetrics(this.subActivitiesSignal().map(ofItem)),
+      session: computeLevelMetrics(sessions),
+    };
   });
 
   // --- METAS ---

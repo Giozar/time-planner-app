@@ -12,9 +12,9 @@ Contenido de `timer-planner-frontend/src/app`:
 src/app/
 ├── core/
 │   ├── i18n/          labels.ts (etiquetas en español por enum)
-│   ├── models/        activity (incluye ItemClosure), goal, objective, hierarchy (tipos HierarchyLevel y ReopenResult), pause, session (ExecutionSession), daily-record, agenda-item, deletion-impact, calendar-entry (enums en inglés)
+│   ├── models/        activity (incluye ItemClosure), goal, objective, hierarchy (tipos HierarchyLevel y ReopenResult), pause, session (ExecutionSession y SessionState), daily-record, agenda-item, deletion-impact, calendar-entry, metrics (tipo MetricsLevel y LevelMetrics) (enums en inglés)
 │   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves time_planner_* y migración de la versión anterior)
-│   ├── rules/         calendar, calendar-view, closure, consistency, pause, progress, recurrence, deadline, session (funciones puras)
+│   ├── rules/         calendar, calendar-view, closure, consistency, metrics, pause, progress, recurrence, deadline, session (funciones puras)
 │   ├── services/      planner.service.ts, lifecycle-actions.service.ts, native-dialog.service.ts
 │   └── utils/         date.utils.ts (getTodayISO)
 ├── features/
@@ -22,6 +22,7 @@ src/app/
 │   ├── calendar/      calendar-view
 │   ├── daily/         daily-dashboard, daily-summary
 │   ├── goals/         goals-list, goals-form, goal-detail
+│   ├── metrics/       metrics-view
 │   └── objectives/    objective-form, objective-detail
 ├── shared/
 │   ├── components/    global-dialog, progress-bar, task-tags

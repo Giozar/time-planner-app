@@ -3,6 +3,7 @@ export * from './calendar.rules';
 export * from './closure.rules';
 export * from './consistency.rules';
 export * from './deadline.rules';
+export * from './metrics.rules';
 export * from './pause.rules';
 export * from './progress.rules';
 export * from './recurrence.rules';

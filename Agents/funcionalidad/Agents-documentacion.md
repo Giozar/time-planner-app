@@ -16,6 +16,7 @@ Las rutas siguen la convención de [Agents/Agents.md](../Agents.md): empiezan en
 | Documento | Contiene | No contiene |
 |-----------|----------|-------------|
 | [docs/analisis-reglas-de-negocio.md](../../docs/analisis-reglas-de-negocio.md) | Lo **definido y acordado**: entidades, enums, reglas (RN), casos de uso (CU), modelo de datos y API propuestos. | Estados, «por validar», fechas de revisión, referencias al código, bugs, migraciones, propuestas ni decisiones abiertas. |
+| [docs/ideas-flujo-principal.md](../../docs/ideas-flujo-principal.md) | Guía visual del flujo principal en diagramas, solo de consulta. Si difiere del documento de reglas, vale el documento de reglas y la guía se ajusta. | Reglas que no estén en el documento de reglas, pendientes ni decisiones abiertas. |
 | [docs/estado-y-pendientes.md](../../docs/estado-y-pendientes.md) | Lo **por definir y por hacer**: comparación reglas ↔ código, trabajo pendiente, propuestas en discusión (`P-xx`), decisiones abiertas (`D-xx`) y correcciones pendientes a las reglas (`C-xx`). | Reglas acordadas: una regla solo existe cuando está en el documento de reglas. |
 | `timer-planner-frontend/docs/planes/NN-*.md` | Un bloque de trabajo por hacer: fases pendientes, cómo verificarlo y decisiones que lo bloquean. | Copias de las reglas (las cita por ID) ni lo ya hecho. |
 | `timer-planner-frontend/docs/funcionalidad.md` | Qué RN y CU aplican a cada feature y su estado. | El texto de las reglas. |
