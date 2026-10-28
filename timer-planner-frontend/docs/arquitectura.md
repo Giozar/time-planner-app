@@ -13,7 +13,7 @@ src/app/
 ├── core/
 │   ├── i18n/          labels.ts (etiquetas en español por enum)
 │   ├── models/        activity (incluye ItemClosure), goal, objective, hierarchy (tipos HierarchyLevel y ReopenResult), pause, session (ExecutionSession y SessionState), daily-record, agenda-item, deletion-impact, calendar-entry, metrics (tipo MetricsLevel y LevelMetrics) (enums en inglés)
-│   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves time_planner_* y migración de la versión anterior)
+│   ├── providers/     data.provider.ts (contrato) y local-storage.service.ts (claves time_planner_* y borrado de los datos con otro formato)
 │   ├── rules/         calendar, calendar-view, closure, consistency, metrics, pause, progress, recurrence, deadline, session (funciones puras)
 │   ├── services/      planner.service.ts, lifecycle-actions.service.ts, native-dialog.service.ts
 │   └── utils/         date.utils.ts (getTodayISO)
@@ -105,6 +105,7 @@ Para mantener la arquitectura sencilla:
 - Una clase de caso de uso por cada acción.
 - Un repositorio por entidad.
 - Mappers entre capas mientras no haya un backend con otro formato.
+- Migrar los datos guardados mientras no haya usuarios reales: al cambiar el formato, se borran.
 - Tokens de inyección adicionales si `DataProvider` ya resuelve el enlace.
 
 Cualquiera de estas se puede incorporar el día que realmente haga falta.
